@@ -64,6 +64,7 @@ export function useOrderbook(defaultMarket: string) {
       onHandleError(errorMessage);
     },
     refetchOnMount: false,
+    refetchOnWindowFocus: true,
     refetchInterval: 30 * 1000, // 30s
   });
 
