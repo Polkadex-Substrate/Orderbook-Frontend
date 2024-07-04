@@ -10,6 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { handleTransaction, removeFromStorage } from "@orderbook/core/helpers";
 import { ACTIVE_ACCOUNT_KEY } from "@orderbook/core/providers/user/profile/constants";
 import { KeyringPair } from "@polkadot/keyring/types";
+import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 
 import { appsyncOrderbookService } from "../utils/orderbookService";
 import { NOTIFICATIONS } from "../constants";
@@ -49,12 +50,12 @@ export function useRemoveProxyAccount({
       if (!selectedWallet) throw new Error("seletedWallet is not defined");
 
       const signedExtrinsic =
-        await appsyncOrderbookService.operation.removeAccount({
+        (await appsyncOrderbookService.operation.removeAccount({
           api,
           account: selectedWallet,
           proxyAddress: proxy,
           tokenFeeId,
-        });
+        })) as SubmittableExtrinsic;
       addToTxQueue(signedExtrinsic);
       await handleTransaction(signedExtrinsic);
 
