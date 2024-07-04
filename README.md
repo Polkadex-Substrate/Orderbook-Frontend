@@ -69,7 +69,7 @@ Next, you can link your Turborepo to your Remote Cache by running the following 
 npx turbo link
 ```
 
-## deploys(2)
+## deploys(3)
 
 ## Useful Links
 

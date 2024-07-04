@@ -216,7 +216,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
       // assetId,
     });
 
-    return signedExt;
+    return signedExt as SubmittableExtrinsic;
   }
 
   async claimReward({

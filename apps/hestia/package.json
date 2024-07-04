@@ -23,7 +23,7 @@
     "@polkadex/numericals": "^0.4.0",
     "@polkadex/polkadex-api": "^3.6.2",
     "@polkadex/subscan": "^1.1.61",
-    "@polkadex/thea": "^5.9.0",
+    "@polkadex/thea": "^6.1.1",
     "@polkadex/ux": "^6.26.0",
     "@polkadex/react-providers": "^2.2.1",
     "@polkadex/types": "^1.2.2",

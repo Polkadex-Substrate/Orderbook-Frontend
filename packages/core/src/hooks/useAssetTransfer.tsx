@@ -6,6 +6,7 @@ import {
   ExtensionAccount,
   useTransactionManager,
 } from "@polkadex/react-providers";
+import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 
 import { useSettingsProvider } from "../providers/public/settings";
 import { appsyncOrderbookService } from "../utils/orderbookService";
@@ -42,14 +43,16 @@ export const useAssetTransfer = (onRefetch: () => Promise<void>) => {
         .multipliedBy(UNIT_BN)
         .toString();
 
-      const signedExtrinsic = await appsyncOrderbookService.operation.transfer({
-        api,
-        account,
-        asset,
-        amount: amountFormatted,
-        dest,
-        tokenFeeId,
-      });
+      const signedExtrinsic = (await appsyncOrderbookService.operation.transfer(
+        {
+          api,
+          account,
+          asset,
+          amount: amountFormatted,
+          dest,
+          tokenFeeId,
+        }
+      )) as SubmittableExtrinsic;
       addToTxQueue(signedExtrinsic);
       await handleTransaction(signedExtrinsic);
 
