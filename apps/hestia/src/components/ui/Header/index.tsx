@@ -35,9 +35,9 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
     notifications: allNotifications,
     onToogleFundWallet,
   } = useSettingsProvider();
+  const lastUsedMarketUrl = getMarketUrl();
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
-  const lastUsedMarketUrl = getMarketUrl();
 
   const unreadNotifications = useMemo(() => {
     return allNotifications.filter((e) => e.active).length;
