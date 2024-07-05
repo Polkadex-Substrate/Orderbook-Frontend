@@ -2,10 +2,7 @@
 
 import { createColumnHelper } from "@tanstack/react-table";
 import { Typography } from "@polkadex/ux";
-import { RiArrowRightLine } from "@remixicon/react";
-import { GENESIS } from "@orderbook/core/index";
 
-import { NetworkCard } from "./networkCard";
 import { TokenInfo } from "./tokenInfo";
 import { LinkCard } from "./linkCard";
 
@@ -32,7 +29,7 @@ export const columns = [
     footer: (e) => e.column.id,
     filterFn: (row, id, value: string[]) => {
       const ticker = row.original.asset?.ticker?.toLowerCase() ?? "";
-      return value?.some((val) => val.toLowerCase().includes(ticker));
+      return value?.some((val) => val.toLowerCase() === ticker);
     },
 
     sortingFn: (rowA, rowB) => {
@@ -40,41 +37,6 @@ export const columns = [
       const numB = rowB.original.amount;
       return numA > numB ? 1 : numA < numB ? -1 : 0;
     },
-  }),
-  columnHelper.accessor((row) => row, {
-    id: "source",
-    cell: (e) => {
-      const { from, to } = e.getValue();
-
-      const isFromPolkadotNetwork = from?.genesis?.includes(GENESIS[0]);
-      const isToPolkadotNetwork = to?.genesis?.includes(GENESIS[0]);
-
-      return (
-        <div className="flex items-center gap-3">
-          <NetworkCard
-            name={from?.name}
-            isPolkadotEcosystem={isFromPolkadotNetwork}
-          />
-          <div className="flex items-center justify-center w-5 h-5 p-0.5 bg-level-1 border border-primary">
-            <RiArrowRightLine className="w-full h-full text-primary" />
-          </div>
-          <NetworkCard
-            name={to?.name}
-            isPolkadotEcosystem={isToPolkadotNetwork}
-          />
-        </div>
-      );
-    },
-    header: () => (
-      <Typography.Text size="xs" appearance="primary">
-        Source/Destination
-      </Typography.Text>
-    ),
-    footer: (e) => e.column.id,
-    filterFn: (row, id, value: string[]) =>
-      value?.some((val) =>
-        val.toLowerCase().includes(row.original.from?.name.toLowerCase() ?? "")
-      ),
   }),
   columnHelper.accessor((row) => row.hash, {
     id: "hash",

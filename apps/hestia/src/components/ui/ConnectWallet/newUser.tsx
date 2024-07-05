@@ -78,7 +78,7 @@ export const NewUser = ({
       </Interaction.Content>
       <Interaction.Footer>
         {walletBalance >= MINIMUM_PDEX_REQUIRED ? (
-          <Link href="/transfer/PDEX">
+          <Link href="/send-and-receive">
             <Interaction.Action className="w-full" onClick={onClose}>
               Transfer funds
             </Interaction.Action>

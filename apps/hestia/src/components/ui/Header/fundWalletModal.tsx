@@ -2,7 +2,6 @@ import React, { Dispatch, SetStateAction } from "react";
 import { Button, Modal, Typography } from "@polkadex/ux";
 import { RiCloseLine } from "@remixicon/react";
 import Link from "next/link";
-import { defaultConfig } from "@orderbook/core/config";
 
 import { FundHorizontalCard } from "../ReadyToUse/fundHorizontalCard";
 
@@ -13,7 +12,6 @@ export const FundWalletModal = ({
   open: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const { isBridgeEnabled } = defaultConfig;
   return (
     <Modal
       open={open}
@@ -49,10 +47,10 @@ export const FundWalletModal = ({
           <div className="flex flex-col gap-2">
             <FundHorizontalCard
               icon="Bridge"
-              title="Decentralized bridge"
-              description="Bridge your crypto to Polkadex and vice versa."
-              href={isBridgeEnabled ? "/thea" : "https://thea.polkadex.trade/"}
-              target="_blank"
+              title="Deposit to Orderbook"
+              description="Deposit your crypto assets to Polkadex Orderbook and vice versa."
+              href={"/send-and-receive"}
+              onClick={() => onOpenChange(false)}
             />
           </div>
         </div>
@@ -61,16 +59,13 @@ export const FundWalletModal = ({
             <Typography.Text appearance="secondary">
               I have crypto assets on Polkadex
             </Typography.Text>
-            <span className="bg-primary-base px-1 py-0.5 rounded-sm text-xs font-medium">
-              Step 2
-            </span>
           </div>
           <div className="flex flex-col gap-2">
             <FundHorizontalCard
               icon="TransferToTrading"
-              title="Transfer to trading account"
-              description="Move funds from your funding account to your trading account."
-              href="/transfer/PDEX?type=deposit"
+              title="Transfer to another Funding account"
+              description="Move funds from your funding account to another funding account."
+              href="/transfer/PDEX?type=transfer"
               onClick={() => onOpenChange(false)}
             />
           </div>

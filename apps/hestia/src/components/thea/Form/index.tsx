@@ -119,6 +119,8 @@ export const Form = () => {
   } = useFormik({
     initialValues,
     validationSchema: bridgeValidations(
+      !!sourceAccount,
+      !!destinationAccount,
       minAmount,
       max?.amount,
       destinationPDEXBalance,
@@ -332,7 +334,7 @@ export const Form = () => {
                     </Typography.Text>
                   </HoverInformation.Trigger>
                   <HoverInformation.Content
-                    className={classNames(!loading && "hidden")}
+                    className={classNames(sourceBalancesLoading && "hidden")}
                   >
                     <ResponsiveCard label="Source fee" loading={loading}>
                       {sourceFeeAmount} {sourceFeeTicker}

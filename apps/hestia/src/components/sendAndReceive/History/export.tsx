@@ -1,10 +1,11 @@
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
-import { Button, Tooltip, Typography } from "@polkadex/ux";
+import { Button, Tooltip } from "@polkadex/ux";
 import { useState } from "react";
 import CSVLink from "react-csv-downloader";
 import { RiDownload2Line } from "@remixicon/react";
 
 import { formatedDate } from "@/helpers";
+import { Transaction } from "@/hooks";
 
 const csvColumns = [
   "sourceChain",
@@ -19,14 +20,20 @@ const csvColumns = [
   id: c,
 }));
 
-export const Export = ({ data, address }: { data: any[]; address: string }) => {
-  const exportedFileName = `Bridge_${new Date().getTime()}_Polkadex_Thea`;
+export const Export = ({
+  data,
+  address,
+}: {
+  data: Transaction[];
+  address: string;
+}) => {
+  const exportedFileName = `Deposit_Withdraw_${new Date().getTime()}_Polkadex_Thea`;
   const [loading, setLoading] = useState(false);
   const { onHandleAlert, onHandleError } = useSettingsProvider();
 
   const prepareData = async () => {
     try {
-      onHandleAlert("Bridge history exported successfully...");
+      onHandleAlert("Deposit and Withdraw history exported successfully...");
       return data?.map((item) => {
         const date = formatedDate(new Date(item.timestamp), false);
 
@@ -65,11 +72,6 @@ export const Export = ({ data, address }: { data: any[]; address: string }) => {
             {loading ? "Exporting..." : "Export"}
           </Button.Outline>
         </Tooltip.Trigger>
-        <Tooltip.Content side="left" className="px-2 py-1">
-          <Typography.Text size="sm" appearance="primary">
-            * Last 6 months
-          </Typography.Text>
-        </Tooltip.Content>
       </Tooltip>
     </CSVLink>
   );

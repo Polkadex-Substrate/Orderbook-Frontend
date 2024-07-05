@@ -6,3 +6,5 @@ export * from "./usePool";
 export * from "./useQueryPools";
 export * from "./useBridge";
 export * from "./useTheaTransactions";
+export * from "./useDeposit";
+export * from "./useWithdraw";

@@ -23,24 +23,60 @@ import {
 import classNames from "classnames";
 import { useWindowSize } from "usehooks-ts";
 import { useProfile } from "@orderbook/core/providers/user/profile";
-import { toUnit } from "@polkadex/numericals";
+import { Thea, getChainConnector } from "@polkadex/thea";
+import { GENESIS } from "@orderbook/core/constants";
 
 import { columns } from "./columns";
 import { Filters } from "./filters";
 import { ResponsiveTable } from "./responsiveTable";
+import { SkeletonLoading } from "./loading";
 
-import { Transaction } from "@/hooks";
+import { Transaction, useTheaTransactions } from "@/hooks";
 
 const actionKeys = ["token", "date"];
-const responsiveKeys = ["hash", "date"];
+const responsiveKeys = ["date"];
+
+const polkadexConnector = getChainConnector(GENESIS[0]);
+const polkadexAssets =
+  polkadexConnector
+    ?.getAllAssets()
+    .map((e) => (!e.id ? { ...e, id: "0" } : e)) || [];
+
+const { getAllChains } = new Thea();
+const chains = getAllChains();
+
+const baseAssets = getAllChains()
+  .filter((c) => c.genesis !== GENESIS[0])
+  .map((e) => getChainConnector(e.genesis).getAllAssets())
+  .flat();
 
 export const History = forwardRef<
   HTMLDivElement,
   { maxHeight?: string; searchTerm: string }
->(({ maxHeight, searchTerm }, ref) => {
+>(({ searchTerm }, ref) => {
   const {
     selectedAddresses: { mainAddress },
   } = useProfile();
+
+  const [
+    {
+      data: deposits = [],
+      isLoading: depositsLoading,
+      isRefetching: depositsRefetching,
+      refetch: onDepositsRefetch,
+    },
+    {
+      data: withdrawals = [],
+      isLoading: withdrawalsLoading,
+      isRefetching: withdrawalsRefetching,
+      refetch: onWithdrawalsRefetch,
+    },
+  ] = useTheaTransactions({
+    sourceAddress: mainAddress,
+    assets: polkadexAssets,
+    chains,
+    baseAssets,
+  });
 
   const [responsiveState, setResponsiveState] = useState(false);
   const [responsiveData, setResponsiveData] = useState<Transaction | null>(
@@ -50,16 +86,6 @@ export const History = forwardRef<
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const { width } = useWindowSize();
-
-  const deposits: any = fakeData;
-  const depositsLoading = false;
-  const depositsRefetching = false;
-  const onDepositsRefetch = useCallback(() => {}, []);
-
-  const withdrawals = useMemo(() => [], []);
-  const withdrawalsLoading = false;
-  const withdrawalsRefetching = false;
-  const onWithdrawalsRefetch = useCallback(() => {}, []);
 
   const onRefetch = useCallback(async () => {
     await onDepositsRefetch();
@@ -104,8 +130,7 @@ export const History = forwardRef<
     }
   }, [responsiveState, responsiveView]);
 
-  if (depositsLoading || withdrawalsLoading)
-    return <div>Skeleton Component..</div>;
+  if (depositsLoading || withdrawalsLoading) return <SkeletonLoading />;
 
   return (
     <Fragment>
@@ -120,8 +145,8 @@ export const History = forwardRef<
             onRefetch={onRefetch}
             refetchingLoading={depositsRefetching || withdrawalsRefetching}
             data={data}
-            chains={[]}
-            assets={[]}
+            chains={chains}
+            assets={polkadexAssets}
             table={table}
             address={mainAddress}
           />
@@ -131,7 +156,7 @@ export const History = forwardRef<
             <div
               className="max-h-[400px] overflow-auto scrollbar-hide px-3"
               style={{
-                maxHeight,
+                maxHeight: "280px",
                 scrollbarGutter: "stable",
                 minHeight: "250px",
               }}
@@ -230,35 +255,3 @@ export const History = forwardRef<
 });
 
 History.displayName = "History";
-
-const fakeData = [
-  {
-    timestamp: Number(new Date().getTime()),
-    amount: toUnit(10, 12),
-    asset: {
-      id: "2",
-      ticker: "PDEX",
-      logo: "PDEX",
-      name: "Polkadex",
-      decimal: 12,
-    },
-    from: {
-      name: "Polkadex",
-      logo: "Polkadex",
-      genesis: "0x001",
-      type: "...",
-      isTestnet: false,
-    },
-    id: 1,
-    to: {
-      name: "Polkadot",
-      logo: "Polkadot",
-      genesis: "0x003",
-      type: "...",
-      isTestnet: false,
-    },
-    status: "Completed",
-    hash: "0x00001",
-    isDeposit: true,
-  },
-];
