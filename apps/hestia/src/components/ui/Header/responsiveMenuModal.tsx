@@ -1,7 +1,7 @@
 import React, { Dispatch, SetStateAction } from "react";
 import { Button, Modal, Typography } from "@polkadex/ux";
 import Image from "next/image";
-import { enabledFeatures, getMarketUrl } from "@orderbook/core/helpers";
+import { getMarketUrl } from "@orderbook/core/helpers";
 import { useWindowSize } from "usehooks-ts";
 import {
   RiCloseLine,
@@ -14,11 +14,11 @@ import {
   RiTwitterXFill,
   RiDiscordFill,
 } from "@remixicon/react";
+import { defaultConfig } from "@orderbook/core/config";
 
 import QrCode from "../../../../public/img/qrCode.png";
 
 import { HeaderLink } from "./headerLink";
-const { lmp: isRewardsEnabled, bridge: isBridgeEnabled } = enabledFeatures;
 export const ResponsiveMenuModal = ({
   open,
   onOpenChange,
@@ -27,6 +27,8 @@ export const ResponsiveMenuModal = ({
   onOpenChange: Dispatch<SetStateAction<boolean>>;
 }) => {
   const lastUsedMarketUrl = getMarketUrl();
+  const isRewardDisabled = !defaultConfig.enableLmp;
+  const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
   const { width } = useWindowSize();
   return (
     <Modal
@@ -70,7 +72,7 @@ export const ResponsiveMenuModal = ({
                     size="lg"
                     href="/thea"
                     className="text-lg"
-                    disabled={!isBridgeEnabled}
+                    disabled={isBridgeDisabled}
                   >
                     Bridge
                   </HeaderLink.Single>
@@ -78,7 +80,7 @@ export const ResponsiveMenuModal = ({
                     size="lg"
                     href="/rewards"
                     className="text-lg"
-                    disabled={!isRewardsEnabled}
+                    disabled={isRewardDisabled}
                   >
                     Rewards
                   </HeaderLink.Single>

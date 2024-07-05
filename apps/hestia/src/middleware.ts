@@ -1,18 +1,19 @@
 import { defaultConfig } from "@orderbook/core/config";
-import { enabledFeatures } from "@orderbook/core/helpers";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
-  const { maintenanceMode } = defaultConfig;
-
-  const { lmp: isRewardsEnabled, bridge: isBridgeEnabled } = enabledFeatures;
+  const {
+    enableLmp: isRewardsActive,
+    isBridgeEnabled,
+    maintenanceMode,
+  } = defaultConfig;
 
   const isTransferPage = req.nextUrl.pathname.startsWith("/transfer");
 
   if (maintenanceMode) {
     return NextResponse.redirect(new URL("/maintenance", req.url));
   }
-  if (!isRewardsEnabled && req.nextUrl.pathname.startsWith("/rewards")) {
+  if (!isRewardsActive && req.nextUrl.pathname.startsWith("/rewards")) {
     return NextResponse.redirect(new URL("/", req.url));
   }
   if (!isBridgeEnabled && req.nextUrl.pathname.startsWith("/thea")) {

@@ -4,7 +4,7 @@ import { Fragment, forwardRef, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { Logo } from "@polkadex/ux";
-import { enabledFeatures, getMarketUrl } from "@orderbook/core/helpers";
+import { getMarketUrl } from "@orderbook/core/helpers";
 import { defaultConfig } from "@orderbook/core/config";
 import {
   RiRedditFill,
@@ -24,7 +24,6 @@ import { NotificationsModal } from "./NotificationsModal";
 import { FundWalletModal } from "./fundWalletModal";
 
 const { defaultTheaSourceChain, defaultTheaDestinationChain } = defaultConfig;
-const { lmp: isRewardsEnabled, bridge: isBridgeEnabled } = enabledFeatures;
 
 export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const [menu, setMenu] = useState(false);
@@ -36,6 +35,8 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
     notifications: allNotifications,
     onToogleFundWallet,
   } = useSettingsProvider();
+  const isRewardDisabled = !defaultConfig.enableLmp;
+  const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
   const lastUsedMarketUrl = getMarketUrl();
 
   const unreadNotifications = useMemo(() => {
@@ -72,11 +73,11 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             </HeaderLink.Single>
             <HeaderLink.Single
               href={`/thea?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
-              disabled={!isBridgeEnabled}
+              disabled={isBridgeDisabled}
             >
               Bridge
             </HeaderLink.Single>
-            <HeaderLink.Single disabled={!isRewardsEnabled} href="/rewards">
+            <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
               Rewards
             </HeaderLink.Single>
             <HeaderLink.Dropdown

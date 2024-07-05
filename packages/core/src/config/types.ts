@@ -3,6 +3,8 @@ export type DefaultConfig = {
   gaTrackerKey: string;
   landingPageMarket: string;
   maintenanceMode: boolean;
+  enableLmp: boolean;
+  isBridgeEnabled: boolean;
   availableRoutes: string[];
   underMaintenance: string[];
   blockedAssets: string[];
@@ -17,9 +19,4 @@ export type DefaultConfig = {
 };
 
 export type Features = (typeof features)[number];
-export const features = [
-  "googleDriveStore",
-  "payWithAnotherFee",
-  "lmp",
-  "bridge",
-] as const;
+export const features = ["googleDriveStore", "payWithAnotherFee"] as const;

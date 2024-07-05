@@ -13,6 +13,8 @@ export const defaultConfig: DefaultConfig = {
   gaTrackerKey: process.env.GA_MEASUREMENT_ID ?? "G-PWZK8JEFLX",
   landingPageMarket: process.env.LANDING_PAGE || "DOTUSDT",
   maintenanceMode: process.env.MAINTENACE_MODE === "true",
+  enableLmp: process.env.ENABLE_LMP === "true",
+  isBridgeEnabled: process.env.IS_BRIDGE_ENABLED !== "false",
   availableRoutes: ["/trading", "/balances", "/transfer"],
   underMaintenance: process.env.UNDER_MAINTENACE?.split(",") ?? [],
   blockedAssets: process.env.BLOCKED_ASSETS?.split(",") || [],
@@ -27,7 +29,7 @@ export const defaultConfig: DefaultConfig = {
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   disabledFeatures: (process.env.DISABLED_FEATURES?.split(
     ","
-  ) as Array<Features>) ?? ["payWithAnotherFee", "lmp"],
+  ) as Array<Features>) ?? ["payWithAnotherFee"],
   defaultTheaSourceChain: process.env.DEFAULT_THEA_SOURCE_CHAIN ?? "Polkadot",
   defaultTheaDestinationChain:
     process.env.DEFAULT_THEA_DESTINATION_CHAIN ?? "Polkadex",
