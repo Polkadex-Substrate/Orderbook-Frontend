@@ -8,4 +8,6 @@ export const isFeatureDisabled = (v: Features) =>
 export const enabledFeatures = {
   googleDriveStore: isFeatureDisabled("googleDriveStore"),
   payWithAnotherFee: isFeatureDisabled("payWithAnotherFee"),
+  bridge: isFeatureDisabled("bridge"),
+  lmp: isFeatureDisabled("lmp"),
 };
