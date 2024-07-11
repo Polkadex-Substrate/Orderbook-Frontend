@@ -34,7 +34,7 @@ export const LimitOrder = ({
     );
 
   return (
-    <div className="flex flex-auto gap-2">
+    <div className="flex flex-auto gap-2 p-2">
       <BuyOrder market={market} availableQuoteAmount={availableQuoteAmount} />
       <SellOrder market={market} availableBaseAmount={availableBaseAmount} />
     </div>

@@ -1,4 +1,4 @@
-import { Button, Drawer } from "@polkadex/ux";
+import { Button } from "@polkadex/ux";
 import { Fragment, useEffect, useState, forwardRef } from "react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
@@ -8,11 +8,12 @@ import ConnectAccount from "./connectAccount";
 import { PlaceOrder } from ".";
 
 import { ResponsiveProfile } from "@/components/ui/Header/Profile/responsiveProfile";
+import { Drawer } from "@/components/ui/Temp/drawer";
 
 export const ResponsiveInteraction = forwardRef<
   HTMLDivElement,
-  { isResponsive?: boolean; market?: Market }
->(({ isResponsive, market }, ref) => {
+  { isResponsive?: boolean; market?: Market; id: string }
+>(({ isResponsive, market, id }, ref) => {
   const [buy, setBuy] = useState(false);
   const [sell, setSell] = useState(false);
 
@@ -28,9 +29,18 @@ export const ResponsiveInteraction = forwardRef<
 
   return (
     <Fragment>
-      <Drawer open={buy || sell} onOpenChange={buy ? setBuy : setSell}>
+      <Drawer
+        open={buy || sell}
+        onOpenChange={buy ? setBuy : setSell}
+        disablePreventScroll={isResponsive}
+      >
         <Drawer.Content>
-          <PlaceOrder isBuy={buy} isResponsive={isResponsive} market={market} />
+          <PlaceOrder
+            isBuy={buy}
+            isResponsive={isResponsive}
+            market={market}
+            id={id}
+          />
         </Drawer.Content>
       </Drawer>
       <div

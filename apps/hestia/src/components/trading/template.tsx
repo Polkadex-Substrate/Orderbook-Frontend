@@ -130,7 +130,7 @@ export function Template({ id }: { id: string }) {
                     defaultValue={60}
                     minSize={38}
                   >
-                    <PlaceOrder market={currentMarket} />
+                    <PlaceOrder market={currentMarket} id={id} />
                   </Resizable.Panel>
                   <Resizable.Handle />
                   <Resizable.Panel
@@ -163,7 +163,7 @@ export function Template({ id }: { id: string }) {
                     defaultValue={38}
                     minSize={38}
                   >
-                    <PlaceOrder market={currentMarket} />
+                    <PlaceOrder market={currentMarket} id={id} />
                   </Resizable.Panel>
                 </Fragment>
               )}
@@ -176,6 +176,7 @@ export function Template({ id }: { id: string }) {
           isResponsive={mobileView}
           ref={interactionRef}
           market={currentMarket}
+          id={id}
         />
       ) : (
         <Footer marketsActive ref={footerRef} />

@@ -1,6 +1,7 @@
 import { Typography, Separator, HoverCard } from "@polkadex/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { useState } from "react";
+import classNames from "classnames";
 
 import { Icons } from "..";
 
@@ -10,11 +11,13 @@ export const TradingFee = ({
   takerFee = "0.1",
   makerFee = "0.1",
   ticker = "PDEX",
+  leftAlign = true,
 }: {
   takerFee?: string;
   makerFee?: string;
   ticker: string;
   readMoreLink?: string;
+  leftAlign?: boolean;
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -22,14 +25,19 @@ export const TradingFee = ({
   return (
     <HoverCard open={open} onOpenChange={setOpen}>
       <HoverCard.Trigger
-        className="group"
+        className="group flex"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setOpen(true);
         }}
       >
-        <div className="flex items-center gap-1">
+        <div
+          className={classNames(
+            "flex flex-1 items-center gap-1",
+            !leftAlign && "justify-end"
+          )}
+        >
           <Icons.Fuel className="w-3 h-3 text-placeholder" />
           <Typography.Text size="xs" appearance="primary">
             0.1&#37;

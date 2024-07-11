@@ -16,6 +16,7 @@ export const Table = ({
   orders,
   asks,
   bids,
+  responsive,
 }: {
   isSell?: boolean;
   pricePrecision: number;
@@ -24,6 +25,7 @@ export const Table = ({
   orders: string[][];
   bids: string[][];
   asks: string[][];
+  responsive: boolean;
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +88,12 @@ export const Table = ({
         return (
           <div
             key={i}
-            className="relative grid grid-cols-[30%_35%_35%] py-1"
+            className={classNames(
+              "relative grid",
+              responsive
+                ? "grid-cols-[50%_50%] py-0.5"
+                : "grid-cols-[30%_35%_35%] py-1"
+            )}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -102,7 +109,7 @@ export const Table = ({
             />
             <Typography.Text
               appearance={isSell ? "danger" : "success"}
-              size="xs"
+              size={responsive ? "2xs" : "xs"}
               bold
               className="pl-2"
               onClick={(event) => {
@@ -116,7 +123,7 @@ export const Table = ({
               </Decimal>
             </Typography.Text>
             <Typography.Text
-              size="xs"
+              size={responsive ? "2xs" : "xs"}
               bold
               onClick={(event) => {
                 event.preventDefault();
@@ -129,20 +136,22 @@ export const Table = ({
                 {amount}
               </Decimal>
             </Typography.Text>
-            <Typography.Text
-              size="xs"
-              bold
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onChangeTotal(i);
-              }}
-              className="justify-self-end pr-2"
-            >
-              <Decimal fixed={pricePrecision} thousSep=",">
-                {total[i]}
-              </Decimal>
-            </Typography.Text>
+            {!responsive && (
+              <Typography.Text
+                size="xs"
+                bold
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onChangeTotal(i);
+                }}
+                className="justify-self-end pr-2"
+              >
+                <Decimal fixed={pricePrecision} thousSep=",">
+                  {total[i]}
+                </Decimal>
+              </Typography.Text>
+            )}
           </div>
         );
       })}

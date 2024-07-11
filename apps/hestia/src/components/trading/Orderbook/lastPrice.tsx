@@ -8,11 +8,13 @@ export const LastPrice = ({
   isPriceUp,
   loading,
   inverted,
+  responsive,
 }: {
   lastPrice: number;
   isPriceUp: boolean;
   loading: boolean;
   inverted: boolean;
+  responsive?: boolean;
 }) => {
   const { onSetPrice } = useProfile();
 
@@ -29,7 +31,7 @@ export const LastPrice = ({
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-1 text-sm font-semibold leading-none">
             <Typography.Text
-              size="lg"
+              size={responsive ? "md" : "lg"}
               appearance={!isPriceUp ? "danger" : "success"}
             >
               {lastPrice}
@@ -42,13 +44,15 @@ export const LastPrice = ({
           </div>
         </div>
       </Skeleton>
-      <Typography.Text
-        size="xs"
-        appearance="primary"
-        className="whitespace-nowrap"
-      >
-        Last price
-      </Typography.Text>
+      {!responsive && (
+        <Typography.Text
+          size="xs"
+          appearance="primary"
+          className="whitespace-nowrap"
+        >
+          Last price
+        </Typography.Text>
+      )}
     </div>
   );
 };

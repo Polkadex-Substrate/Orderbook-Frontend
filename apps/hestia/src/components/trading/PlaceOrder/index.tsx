@@ -8,13 +8,20 @@ import { useConnectWalletProvider } from "@orderbook/core/providers/user/connect
 import { useFunds, useTickers } from "@orderbook/core/hooks";
 import { BalanceFormatter } from "@orderbook/format";
 
+import { Orderbook } from "../Orderbook";
+
 import { LimitOrder } from "./Limit";
 import { MarketOrder } from "./Market";
 import { Unlock } from "./unlock";
 
-type Props = { market?: Market; isBuy?: boolean; isResponsive?: boolean };
+type Props = {
+  market?: Market;
+  isBuy?: boolean;
+  isResponsive?: boolean;
+  id: string;
+};
 
-export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
+export const PlaceOrder = ({ market, isBuy, isResponsive, id }: Props) => {
   const toHuman = BalanceFormatter.toHuman;
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const { selectedTradingAccount } = useConnectWalletProvider();
@@ -65,8 +72,9 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
             <Tabs.Content
               value="limit"
               id="placeOrderContent"
-              className="flex flex-1 flex-col gap-1 bg-level-0 p-2"
+              className="flex bg-level-0 max-h-96"
             >
+              {isResponsive && <Orderbook id={id} responsive />}
               <LimitOrder
                 market={market}
                 availableBaseAmount={availableBaseAmount}

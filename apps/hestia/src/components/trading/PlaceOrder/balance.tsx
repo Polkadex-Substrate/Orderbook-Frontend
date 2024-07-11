@@ -19,7 +19,7 @@ export const Balance = ({
       <Dropdown>
         <Dropdown.Trigger asChild>
           <Button.Icon size="2xs" onClick={() => window.alert("...")}>
-            <Icons.Exchange />
+            <Icons.Exchange className="w-full h-full" />
           </Button.Icon>
         </Dropdown.Trigger>
         <Dropdown.Content>

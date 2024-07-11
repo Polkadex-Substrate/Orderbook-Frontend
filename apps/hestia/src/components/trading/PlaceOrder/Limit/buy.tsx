@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { Button, Input, Tooltip, Spinner } from "@polkadex/ux";
+import { Button, Tooltip, Spinner } from "@polkadex/ux";
 import classNames from "classnames";
 import { useFormik } from "formik";
 import { useLimitOrder } from "@orderbook/core/hooks";
@@ -11,6 +11,7 @@ import { Market } from "@orderbook/core/utils/orderbookService/types";
 import { Balance } from "../balance";
 import ConnectAccount from "../connectAccount";
 
+import { Input } from "@/components/ui/Temp/input";
 import { Range } from "@/components/ui/Temp/range";
 import { TradingFee } from "@/components/ui/ReadyToUse";
 
@@ -100,7 +101,10 @@ export const BuyOrder = ({
 
   return (
     <form
-      className="flex flex-auto flex-col gap-2"
+      className={classNames(
+        "flex flex-auto flex-col",
+        isResponsive ? "gap-4 p-2" : "gap-2"
+      )}
       onSubmit={(e) => {
         e.preventDefault();
         if (!validateSubmit) setValidateSubmit(true);
@@ -118,6 +122,9 @@ export const BuyOrder = ({
             )}
           >
             <Input.Primary
+              vertical={isResponsive}
+              inputMode="decimal"
+              fontSize="md"
               name={PRICE}
               type="text"
               placeholder="0.0000000000"
@@ -131,8 +138,17 @@ export const BuyOrder = ({
               onBlur={() => setFieldTouched(PRICE, false)}
               className="max-sm:focus:text-[16px]"
             >
-              <Input.Label className="w-[50px]">Price</Input.Label>
-              <Input.Ticker>{market?.quoteAsset?.ticker}</Input.Ticker>
+              <Input.Label
+                className={classNames(!isResponsive && "w-[50px]")}
+                size={isResponsive ? "xs" : "sm"}
+              >
+                Price
+              </Input.Label>{" "}
+              <Input.Ticker appearance={isResponsive ? "primary" : "base"}>
+                {isResponsive
+                  ? `(${market?.quoteAsset?.ticker})`
+                  : market?.quoteAsset?.ticker}
+              </Input.Ticker>
               <Input.Button variant="increase" onClick={onIncreasePrice} />
               <Input.Button variant="decrease" onClick={onDecreasePrice} />
             </Input.Primary>
@@ -163,6 +179,9 @@ export const BuyOrder = ({
             )}
           >
             <Input.Primary
+              vertical={isResponsive}
+              inputMode="decimal"
+              fontSize="md"
               type="text"
               name={AMOUNT}
               placeholder="0.0000000000"
@@ -176,8 +195,17 @@ export const BuyOrder = ({
               onBlur={() => setFieldTouched(AMOUNT, false)}
               className="max-sm:focus:text-[16px]"
             >
-              <Input.Label className="w-[50px]">Amount</Input.Label>
-              <Input.Ticker>{market?.baseAsset?.ticker}</Input.Ticker>
+              <Input.Label
+                className={classNames(!isResponsive && "w-[50px]")}
+                size={isResponsive ? "xs" : "sm"}
+              >
+                Amount
+              </Input.Label>
+              <Input.Ticker appearance={isResponsive ? "primary" : "base"}>
+                {isResponsive
+                  ? `(${market?.baseAsset?.ticker})`
+                  : market?.baseAsset?.ticker}
+              </Input.Ticker>
               <Input.Button variant="increase" onClick={onIncreaseAmount} />
               <Input.Button variant="decrease" onClick={onDecreaseAmount} />
             </Input.Primary>
@@ -196,8 +224,16 @@ export const BuyOrder = ({
           {errors.amount}
         </Tooltip.Content>
       </Tooltip>
-      <div className="flex items-center gap-2 justify-between">
-        <TradingFee ticker={market?.baseAsset?.ticker || ""} />
+      <div
+        className={classNames(
+          "flex gap-2",
+          isResponsive ? "flex-col-reverse" : "items-center justify-between"
+        )}
+      >
+        <TradingFee
+          ticker={market?.baseAsset?.ticker || ""}
+          leftAlign={!isResponsive}
+        />
         <Balance baseTicker={market?.quoteAsset?.ticker || ""}>
           {availableQuoteAmount}
         </Balance>
@@ -234,6 +270,9 @@ export const BuyOrder = ({
             )}
           >
             <Input.Primary
+              vertical={isResponsive}
+              inputMode="decimal"
+              fontSize="md"
               type="text"
               name={TOTAL}
               placeholder="0.0000000000"
@@ -247,8 +286,17 @@ export const BuyOrder = ({
               onBlur={() => setFieldTouched(TOTAL, false)}
               className="max-sm:focus:text-[16px]"
             >
-              <Input.Label className="w-[50px]">Total</Input.Label>
-              <Input.Ticker>{market?.quoteAsset?.ticker}</Input.Ticker>
+              <Input.Label
+                className={classNames(!isResponsive && "w-[50px]")}
+                size={isResponsive ? "xs" : "sm"}
+              >
+                Total
+              </Input.Label>
+              <Input.Ticker appearance={isResponsive ? "primary" : "base"}>
+                {isResponsive
+                  ? `(${market?.quoteAsset?.ticker})`
+                  : market?.quoteAsset?.ticker}
+              </Input.Ticker>
               <Input.Button variant="increase" onClick={onIncreaseTotal} />
               <Input.Button variant="decrease" onClick={onDecreaseTotal} />
             </Input.Primary>
