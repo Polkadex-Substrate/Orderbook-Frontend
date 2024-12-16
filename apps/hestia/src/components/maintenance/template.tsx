@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button, Logo, Typography } from "@polkadex/ux";
 import Image from "next/image";
-import { RiDiscordFill, RiTelegramFill, RiTwitterFill } from "@remixicon/react";
+import { RiTelegramFill, RiTwitterFill, RiMailFill } from "@remixicon/react";
 
 import MaintenanceIllustration from "../../../public/img/maintenance.webp";
 
@@ -40,11 +40,8 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link
-                    target="_blank"
-                    href="https://discord.com/invite/Uvua83QAzk"
-                  >
-                    <RiDiscordFill className="w-full h-full" />
+                  <Link target="_blank" href="mailto:support@polkadex.trade">
+                    <RiMailFill className="w-full h-full" />
                   </Link>
                 </Button.Icon>
                 <Button.Icon
