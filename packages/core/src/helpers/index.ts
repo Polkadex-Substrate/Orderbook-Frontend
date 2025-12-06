@@ -34,3 +34,10 @@ export * from "./sleep";
 export * from "./isIdentical";
 export * from "./formatAmount";
 export * from "./orderbook";
+
+// New GraphQL infrastructure (Phase 1 migration)
+export * from "./graphql";
+export * from "./graphqlCompat";
+
+// Export GraphQL configuration functions
+export { isNewBackendEnabled, getGraphQLConfig, getAuthToken } from '../config/graphql';

@@ -7,6 +7,9 @@ import { READ_ONLY_TOKEN } from "@orderbook/core/constants";
 import { Maybe } from "@orderbook/core/helpers";
 import { GraphQLResult, GraphQLSubscription } from "@aws-amplify/api";
 
+// Import new GraphQL infrastructure
+import { isNewBackendEnabled, sendQuery as sendQueryNew } from "@orderbook/core/helpers";
+
 import { Websocket_streamsSubscription } from "../../../API";
 
 import { BookUpdateEvent } from "./types";
@@ -20,6 +23,10 @@ type Props = {
   API?: typeof amplifyApi;
 };
 
+/**
+ * Send query to GraphQL backend
+ * Routes to new Rust backend or legacy AppSync based on feature flag
+ */
 export async function sendQueryToAppSync<T = any>({
   query,
   variables,
@@ -27,6 +34,17 @@ export async function sendQueryToAppSync<T = any>({
   authMode = GRAPHQL_AUTH_MODE.AWS_LAMBDA,
   API = amplifyApi,
 }: Props): Promise<T> {
+  // Check if new backend is enabled
+  if (isNewBackendEnabled()) {
+    // Use new GraphQL infrastructure (Rust backend)
+    return await sendQueryNew({
+      query,
+      variables,
+      token,
+    }) as T;
+  }
+
+  // Legacy AppSync implementation
   const authOptions = {
     [GRAPHQL_AUTH_MODE.AWS_LAMBDA]: {
       query,
@@ -125,7 +143,7 @@ export function filterUserSubscriptionType(
 ) {
   return Boolean(
     data?.data?.websocket_streams?.data &&
-      JSON.parse(data?.data.websocket_streams.data).type === type
+    JSON.parse(data?.data.websocket_streams.data).type === type
   );
 }
 
