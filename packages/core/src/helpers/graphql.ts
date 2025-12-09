@@ -127,7 +127,7 @@ const createSplitLink = (token?: string): ApolloLink => {
  * @param token - Optional authentication token (defaults to READ_ONLY_TOKEN)
  * @returns Configured Apollo Client instance
  */
-export const createApolloClient = (token?: string): ApolloClient<NormalizedCacheObject> => {
+export const createApolloClient = (token?: string) => {
     const link = createSplitLink(token);
 
     return new ApolloClient({
@@ -163,7 +163,7 @@ export const createApolloClient = (token?: string): ApolloClient<NormalizedCache
  * Singleton Apollo Client instance
  * Can be reused across the application
  */
-let apolloClientInstance: ApolloClient<NormalizedCacheObject> | null = null;
+let apolloClientInstance: ReturnType<typeof createApolloClient> | null = null;
 
 /**
  * Get or create Apollo Client instance
@@ -175,7 +175,7 @@ let apolloClientInstance: ApolloClient<NormalizedCacheObject> | null = null;
 export const getApolloClient = (
     token?: string,
     forceNew = false
-): ApolloClient<NormalizedCacheObject> => {
+) => {
     if (!apolloClientInstance || forceNew) {
         apolloClientInstance = createApolloClient(token);
     }
