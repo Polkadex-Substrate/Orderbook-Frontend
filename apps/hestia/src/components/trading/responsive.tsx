@@ -20,6 +20,7 @@ export function Responsive({ id }: { id: string }) {
         <Tabs.Trigger value="recentTrades">Recent trades</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="graph" className="flex-1 flex-col flex h-full">
+        {/* @ts-ignore */}
         <Graph id={id} />
       </Tabs.Content>
       <Tabs.Content

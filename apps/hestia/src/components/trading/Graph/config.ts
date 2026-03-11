@@ -1,12 +1,13 @@
 import {
-  ChartPropertiesOverrides,
+  // ChartPropertiesOverrides,
   ResolutionString,
-} from "../../../../public/static/charting_library/charting_library";
+} from "../../../../public/static/charting_library/charting_library.min";
 import { themeConfig, commom } from "../../../../../../themeConfig";
 
 type Options = {
   studies_overrides: object;
-  overrides: Partial<ChartPropertiesOverrides>;
+  // overrides: Partial<ChartPropertiesOverrides>;
+  overrides: Partial<any>;
 };
 const extend = themeConfig.theme.extend;
 

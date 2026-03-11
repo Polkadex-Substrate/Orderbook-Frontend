@@ -234,8 +234,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       [args.basedOnFundingAccount ? "main_account" : "trade_account"]:
         args.address,
       limit: args.limit,
-      from: args.from.toISOString(),
-      to: args.to.toISOString(),
+      from: args.from.toString(),
+      to: args.to.toString(),
       nextToken: args.pageParams,
     };
 
@@ -331,8 +331,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       [args.basedOnFundingAccount ? "main_account" : "trade_account"]:
         args.address,
       limit: args.limit,
-      from: args.from.toISOString(),
-      to: args.to.toISOString(),
+      from: args.from.toString(),
+      to: args.to.toString(),
       nextToken: args.pageParams,
     };
 
@@ -416,8 +416,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       {
         main_account: args.address,
         limit: args.limit,
-        from: args.from.toISOString(),
-        to: args.to.toISOString(),
+        from: args.from.toString(),
+        to: args.to.toString(),
         transaction_type: args.transaction_type,
       },
       "listTransactionsByMainAccount",
@@ -473,8 +473,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       QUERIES.listOrderHistoryByMainAccount,
       {
         main_account: args.address,
-        from: args.from.toISOString(),
-        to: args.to.toISOString(),
+        from: args.from.toString(),
+        to: args.to.toString(),
       },
       "listOrderHistoryByMainAccount"
     );
@@ -498,8 +498,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       QUERIES.listTradesByMainAccount,
       {
         main_account: args.address,
-        from: args.from.toISOString(),
-        to: args.to.toISOString(),
+        from: args.from.toString(),
+        to: args.to.toString(),
       },
       "listTradesByMainAccount"
     );

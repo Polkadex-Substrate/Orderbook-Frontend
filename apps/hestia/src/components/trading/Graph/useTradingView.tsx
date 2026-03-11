@@ -15,7 +15,7 @@ import {
   IChartingLibraryWidget,
   LibrarySymbolInfo,
   ResolutionString,
-} from "../../../../public/static/charting_library/charting_library";
+} from "../../../../public/static/charting_library/charting_library.min";
 
 import { configurationData } from "./config";
 import { getLastUsedReslution } from "./helper";
@@ -41,6 +41,7 @@ export function useTradingView({ id }: { id: string }) {
       full_name: `Polkadex:${market?.name}`,
       symbol: market?.name,
       type: "crypto",
+      ticker: market?.name,
     }));
 
     return allSymbols;
@@ -143,12 +144,15 @@ export function useTradingView({ id }: { id: string }) {
             supported_resolutions: configurationData.supported_resolutions,
             volume_precision: 2,
             data_status: "streaming",
+            full_name: symbolItem.full_name,
+            listed_exchange: symbolItem.exchange,
+            format: "price",
           };
 
           setTimeout(() => onResolve(symbolInfo as LibrarySymbolInfo), 0);
         },
-        async getBars(symbolInfo, resolution, periodParams, onResult, onError) {
-          const { from, to } = periodParams;
+        async getBars(symbolInfo, resolution, from, to, onResult, onError) {
+          // const { from, to } = periodParams;
           try {
             if (!currentMarket?.id) return onResult([], { noData: true });
 
@@ -209,8 +213,9 @@ export function useTradingView({ id }: { id: string }) {
       })
     );
 
-  const onChangeFullScreen = () => tvWidget.current?.startFullscreen();
+  const onChangeFullScreen = () => { /* tvWidget.current?.startFullscreen(); */ };
   const onScreenshot = async () => {
+    /*
     const canvas = await tvWidget.current?.takeClientScreenshot();
     if (canvas) {
       const dataURL = canvas.toDataURL("image/jpeg");
@@ -221,6 +226,8 @@ export function useTradingView({ id }: { id: string }) {
       downloadLink.click();
       document.body.removeChild(downloadLink);
     }
+    */
+    tvWidget.current?.takeScreenshot();
   };
 
   const onChartReady = useCallback((v: boolean) => setIsReady(v), []);

@@ -7,3 +7,13 @@ export const formatAmount = (amount: number) => {
   });
   return trimmedBalance;
 };
+
+export function picoScale(amount: number | string): string {
+  const parsed = typeof amount === "string" ? parseFloat(amount) : amount;
+
+  if (isNaN(parsed)) {
+    throw new Error(`Invalid input: "${amount}" cannot be parsed as a number`);
+  }
+
+  return String(parsed * 1e-12);
+}

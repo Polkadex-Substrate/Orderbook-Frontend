@@ -140,8 +140,8 @@ export interface Subscription {
 
 export interface UserHistoryProps<T = null> {
   address: string;
-  from: Date;
-  to: Date;
+  from: string;
+  to: string;
   limit: number;
   pageParams: T;
   market?: string;
@@ -156,8 +156,8 @@ export interface UserAllHistoryProps {
 
 export interface TransactionHistoryProps<T = null> {
   address: string;
-  from: Date;
-  to: Date;
+  from: string;
+  to: string;
   limit: number;
   pageParams: T;
   transaction_type: "DEPOSIT" | "WITHDRAW";

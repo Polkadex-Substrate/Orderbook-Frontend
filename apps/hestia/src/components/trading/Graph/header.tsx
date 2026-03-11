@@ -3,7 +3,7 @@ import { useResizeObserver } from "usehooks-ts";
 import { useMemo, useRef } from "react";
 import { RiFullscreenLine, RiScreenshot2Line } from "@remixicon/react";
 
-import { ResolutionString } from "../../../../public/static/charting_library/charting_library";
+import { ResolutionString } from "../../../../public/static/charting_library/charting_library.min";
 
 import { supported_resolutions } from "./config";
 

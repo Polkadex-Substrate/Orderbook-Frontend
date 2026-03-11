@@ -5,7 +5,7 @@ import { encodeAddress } from "@polkadot/util-crypto";
 import { getNewClientId } from "@orderbook/core/helpers/getNewClientId";
 import { SS58_DEFAULT_FORMAT } from "@orderbook/core/constants";
 
-import { OrderSide, OrderType, OrderTypeEnum } from "../utils/orderbookService";
+import { OrderSide, OrderType, OrderTypeEnum } from "../utils/orderbookService/types";
 
 import { isAssetPDEX } from "./isAssetPDEX";
 

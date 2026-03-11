@@ -1,6 +1,6 @@
 import { TradingView as TradingViewConstants } from "@orderbook/core/constants";
 
-import { ResolutionString } from "../../../../public/static/charting_library/charting_library";
+import { ResolutionString } from "../../../../public/static/charting_library/charting_library.min";
 
 import { supported_resolutions } from "./config";
 

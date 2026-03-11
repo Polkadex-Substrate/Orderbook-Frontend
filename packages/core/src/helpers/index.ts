@@ -1,3 +1,6 @@
+// Export GraphQL configuration functions
+export { isNewBackendEnabled, getGraphQLConfig, getAuthToken } from '../config/graphql';
+
 export * from "./appsync";
 export * from "./cleanPositiveFloatInput";
 export * from "./createOrdersHelpers";
@@ -38,6 +41,3 @@ export * from "./orderbook";
 // New GraphQL infrastructure (Phase 1 migration)
 export * from "./graphql";
 export * from "./graphqlCompat";
-
-// Export GraphQL configuration functions
-export { isNewBackendEnabled, getGraphQLConfig, getAuthToken } from '../config/graphql';

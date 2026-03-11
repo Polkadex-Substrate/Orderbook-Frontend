@@ -14,6 +14,7 @@ import classNames from "classnames";
 import { columns } from "./columns";
 import { Loading } from "./loading";
 import { ResponsiveTable } from "./responsiveTable";
+import { picoScale } from "@/helpers";
 const responsiveKeys = ["inOrders", "fundingAccount"];
 
 export const Table = forwardRef<
@@ -31,14 +32,16 @@ export const Table = forwardRef<
 
   const { width } = useWindowSize();
 
+  const newData = useMemo(() => data.map((item) => item?.ticker === 'USDT' ? { ...item, onChainBalance: picoScale(item?.onChainBalance) } : { ...item }), [data]);
+
   const table = useReactTable({
-    data,
+    data: newData,
     state: { sorting },
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     columns,
     getCoreRowModel: getCoreRowModel(),
-  });
+  });  
 
   const responsiveView = useMemo(() => width <= 800, [width]);
 

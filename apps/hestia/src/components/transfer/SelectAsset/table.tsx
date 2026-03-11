@@ -1,5 +1,5 @@
 import { GenericMessage, Table as PolkadexTable, Skeleton } from "@polkadex/ux";
-import { Fragment, forwardRef, useState } from "react";
+import { Fragment, forwardRef, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {
   SortingState,
@@ -13,6 +13,7 @@ import classNames from "classnames";
 import { columns } from "./columns";
 
 import { FilteredAssetProps } from "@/hooks";
+import { picoScale } from "@/helpers";
 
 export const Table = forwardRef<
   HTMLDivElement,
@@ -28,8 +29,10 @@ export const Table = forwardRef<
     { desc: true, id: "fundingAccount" },
   ]);
 
+  const newData = useMemo(() => data.map((item) => item?.ticker === 'USDT' ? { ...item, onChainBalance: picoScale(item?.onChainBalance) } : { ...item }), [data]);
+
   const table = useReactTable({
-    data,
+    data: newData,
     state: { sorting },
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),

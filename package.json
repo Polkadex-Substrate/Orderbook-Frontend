@@ -8,15 +8,31 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
+    "@orderbook/eslint-config": "*",
+    "@types/minimatch": "^6.0.0",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsconfig": "*",
-    "turbo": "latest",
-    "@orderbook/eslint-config": "*"
+    "turbo": "latest"
   },
   "packageManager": "yarn@1.22.19",
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "resolutions": {
+    "@polkadot/api": "^11.2.1",
+    "@polkadot/types": "^11.2.1",
+    "@polkadot/util": "^12.6.2",
+    "@polkadot/util-crypto": "^12.6.2",
+    "@polkadot/wasm-crypto": "^7.5.3",
+    "@polkadot/x-global": "^12.6.2",
+    "@polkadot/x-randomvalues": "^12.6.2",
+    "@polkadot/x-textdecoder": "^12.6.2",
+    "@polkadot/x-textencoder": "^12.6.2",
+    "@polkadot/x-bigint": "^12.6.2"
+  },
+  "dependencies": {
+    "minimatch": "^10.2.4"
+  }
 }

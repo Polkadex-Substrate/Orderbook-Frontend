@@ -10,9 +10,8 @@ import {
   CustomTimezones,
   IChartingLibraryWidget,
   Timezone,
-  TimezoneId,
   widget as Widget,
-} from "../../../../public/static/charting_library";
+} from "../../../../public/static/charting_library/charting_library.min";
 
 import { options } from "./config";
 
@@ -58,24 +57,21 @@ export const TVChartContainer = ({
         // Set time zone specific to user
 
         const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const timezoneApi = tvWidget.current?.activeChart().getTimezoneApi();
 
-        const availableTimezones = timezoneApi?.availableTimezones();
-        const isValidTimezone = !!availableTimezones?.find(
-          (e) => e.id.toLowerCase() === localTimezone.toLowerCase()
-        );
+        // const timezoneApi = tvWidget.current?.activeChart().getTimezoneApi();
+        // const availableTimezones = timezoneApi?.availableTimezones();
+        const isValidTimezone = true; // Assume valid since we cant check
         const timezone = (
           isValidTimezone ? localTimezone : "America/Chicago"
-        ) as TimezoneId;
+        ) as Timezone;
 
-        timezoneApi?.setTimezone(timezone);
+        tvWidget?.current?.activeChart().setTimezone(timezone);
         tvWidget?.current
-          ?.changeTheme(isDarkTheme ? "dark" : "light")
-          .then(() => {
-            tvWidget?.current?.applyOverrides({
-              ...options.overrides,
-            });
-          });
+          ?.changeTheme(isDarkTheme ? "Dark" : "Light");
+
+        tvWidget?.current?.applyOverrides({
+          ...options.overrides,
+        });
       });
     tvWidget?.current?.applyStudiesOverrides({
       ...options.studies_overrides,

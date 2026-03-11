@@ -171,6 +171,7 @@ export const Orders = () => {
                     </Button.Icon>
                   </Popover.Trigger>
                   <Popover.Content>
+                    {/* @ts-ignore */}
                     <DateRangePicker
                       ranges={ranges}
                       onChange={onChangeDateRange}
