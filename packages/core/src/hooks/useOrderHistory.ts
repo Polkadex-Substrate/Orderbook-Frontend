@@ -44,8 +44,8 @@ export const useOrderHistory = (
     queryFn: async ({ pageParam = null }) => {
       return await appsyncOrderbookService.query.getOrderHistory({
         address,
-        from: dateFrom,
-        to: dateTo,
+        from: dateFrom?.toISOString(),
+        to: dateTo?.toISOString(),
         limit: 25,
         pageParams: pageParam,
         batchLimit: rowsPerPage,
