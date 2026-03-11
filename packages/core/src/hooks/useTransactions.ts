@@ -32,11 +32,12 @@ export function useTransactions() {
     queryKey: QUERY_KEYS.transactions(mainAddress, DEPOSIT),
     queryFn: async () => {
       const fromDate = subtractMonthsFromDateOrNow(3);
+      const toDate = new Date();
       return await appsyncOrderbookService.query.getTransactions({
         address: mainAddress,
         limit: 100000,
-        from: fromDate,
-        to: new Date(),
+        from: fromDate.getTime().toString(),
+        to: toDate.getTime().toString(),
         pageParams: null,
         transaction_type: DEPOSIT,
       });
@@ -50,11 +51,12 @@ export function useTransactions() {
       queryKey: QUERY_KEYS.transactions(mainAddress, WITHDRAW),
       queryFn: async () => {
         const fromDate = subtractMonthsFromDateOrNow(3);
+        const toDate = new Date();
         return await appsyncOrderbookService.query.getTransactions({
           address: mainAddress,
           limit: 100000,
-          from: fromDate,
-          to: new Date(),
+          from: fromDate.getTime().toString(),
+          to: toDate.getTime().toString(),
           pageParams: null,
           transaction_type: WITHDRAW,
         });

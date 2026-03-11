@@ -43,8 +43,8 @@ export function useTradeHistory(
     queryFn: async ({ pageParam = null }) => {
       return await appsyncOrderbookService.query.getTradeHistory({
         address,
-        from: dateFrom,
-        to: dateTo,
+        from: dateFrom?.toISOString(),
+        to: dateTo?.toISOString(),
         pageParams: pageParam,
         limit: TRADE_HISTORY_PER_PAGE_LIMIT,
         batchLimit: rowsPerPage,
