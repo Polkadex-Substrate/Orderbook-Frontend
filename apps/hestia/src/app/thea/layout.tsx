@@ -1,8 +1,13 @@
 "use client";
 
-import { TheaProvider } from "@orderbook/core/providers";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { ReactNode } from "react";
+
+const TheaLayout = dynamic(
+  () => import("@/components/thea/TheaLayout").then((mod) => mod.TheaLayout),
+  { ssr: false }
+);
 
 export default function Layout({ children }: { children: ReactNode }) {
   const params = useSearchParams();
@@ -11,12 +16,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   const destinationName = params.get("to");
 
   return (
-    <TheaProvider
+    <TheaLayout
       initialAssetTicker={assetTicker}
       initialSourceName={sourceName}
       initialDestinationName={destinationName}
     >
       {children}
-    </TheaProvider>
+    </TheaLayout>
   );
 }
