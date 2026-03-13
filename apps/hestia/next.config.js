@@ -16,6 +16,7 @@ const withPWA = require("next-pwa")({
 });
 
 const nextConfig = {
+  output: "export",
   transpilePackages: ["@orderbook/core"],
   reactStrictMode: false,
   generateBuildId: async () => {
