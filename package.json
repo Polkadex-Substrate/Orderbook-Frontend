@@ -9,7 +9,6 @@
   },
   "devDependencies": {
     "@orderbook/eslint-config": "*",
-    "@types/minimatch": "^6.0.0",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsconfig": "*",
