@@ -68,3 +68,6 @@ amplifytools.xcconfig
 #amplify-do-not-edit-end
 /apps/hestia/public/static/charting_library
 /apps/hestia/public/static/datafeeds
+
+yarn.lock
+package-lock.json
