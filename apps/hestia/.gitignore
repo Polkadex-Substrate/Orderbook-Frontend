@@ -35,3 +35,6 @@ yarn-error.log*
 next-env.d.ts
 
 !/apps/hestia/public/datafeeds/udf/dist/
+
+yarn.lock
+package-lock.json
