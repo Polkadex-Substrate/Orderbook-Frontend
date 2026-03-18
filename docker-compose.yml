@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  orderbook-fe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - POLKADEX_CHAIN=${POLKADEX_CHAIN}
+        - GOOGLE_ANALYTICS=${GOOGLE_ANALYTICS}
+        - API_REGION=${API_REGION}
+        - GRAPHQL_URL=${GRAPHQL_URL}
+        - IDENTITY_POOL_ID=${IDENTITY_POOL_ID}
+        - USER_POOL_ID=${USER_POOL_ID}
+        - USER_WEB_CLIENT_ID=${USER_WEB_CLIENT_ID}
+        - LANDING_PAGE=${LANDING_PAGE}
+        - SIGNUP_DISABLED=${SIGNUP_DISABLED}
+        - PIN_POINT_CLIENT_ID=${PIN_POINT_CLIENT_ID}
+        - MAINTENACE_MODE=${MAINTENACE_MODE}
+        - SHOW_SHUTDOWN_POPUP=${SHOW_SHUTDOWN_POPUP}
+        - UNDER_MAINTENACE=${UNDER_MAINTENACE}
+        - ENABLE_LMP=${ENABLE_LMP}
+        - IS_BRIDGE_ENABLED=${IS_BRIDGE_ENABLED}
+        - MAIN_URL=${MAIN_URL}
+        - BLOCKED_ASSETS=${BLOCKED_ASSETS}
+        - DEFAULT_TRANSFER_TOKEN=${DEFAULT_TRANSFER_TOKEN}
+        - SUBSCAN_API=${SUBSCAN_API}
+        - SENTRY_DSN=${SENTRY_DSN}
+        - SENTRY_AUTH=${SENTRY_AUTH}
+        - DISABLED_FEATURES=${DISABLED_FEATURES}
+        - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+    env_file:
+      - .env
+    image: polkadex-orderbook-fe:latest
+    container_name: polkadex-orderbook-fe
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

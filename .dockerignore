@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.github
+.idea
+__test__
+*.md
+.env*
+changed_files.txt
+diff_*.txt
