@@ -18,12 +18,10 @@ import { TableRewards } from "./TableRewards";
 
 import { Footer, Header } from "@/components/ui";
 
-// export function Template({ id }: { id: string }) {
-export function Template() {
+export function Template({ id }: { id: string }) {
   const { width } = useWindowSize();
   const { list } = useMarkets();
-  // const currentMarket = getCurrentMarket(list, id);
-  const currentMarket = getCurrentMarket(list, "PDEX");
+  const currentMarket = getCurrentMarket(list, id);
 
   const footerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);

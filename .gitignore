@@ -73,3 +73,5 @@ amplifytools.xcconfig
 
 yarn.lock
 package-lock.json
+
+.agent
