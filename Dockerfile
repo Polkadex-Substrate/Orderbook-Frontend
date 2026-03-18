@@ -1,14 +1,17 @@
 # ============================================
 # Stage 1: Install dependencies
 # ============================================
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy workspace root files needed for dependency resolution
-COPY package.json yarn.lock ./
+COPY package.json yarn.lock .npmrc ./
 COPY apps/hestia/package.json ./apps/hestia/
 COPY packages/core/package.json ./packages/core/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/format/package.json ./packages/format/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
 
 # Install all dependencies (including devDependencies for the build step)
 RUN yarn install --frozen-lockfile
@@ -16,13 +19,11 @@ RUN yarn install --frozen-lockfile
 # ============================================
 # Stage 2: Build the application
 # ============================================
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy installed node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/hestia/node_modules ./apps/hestia/node_modules
-COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
 
 # Copy all source code
 COPY . .
@@ -85,7 +86,7 @@ RUN npx turbo run build --filter=@orderbook/hestia
 # ============================================
 # Stage 3: Production runner (minimal image)
 # ============================================
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
