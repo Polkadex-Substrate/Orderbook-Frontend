@@ -32,7 +32,9 @@ services:
         - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     env_file:
       - .env
-    image: polkadex-orderbook-fe:latest
+    # You can set ECR_REGISTRY in your .env file
+    # Example: ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
+    image: 907213364062.dkr.ecr.ap-south-1.amazonaws.com/polkadex-orderbook-fe:latest
     container_name: polkadex-orderbook-fe
     ports:
       - "3000:3000"
