@@ -80,8 +80,11 @@ ENV DISABLED_FEATURES=$DISABLED_FEATURES
 ENV GOOGLE_API_KEY=$GOOGLE_API_KEY
 ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 
+ENV NODE_OPTIONS="--max_old_space_size=2048"
+ENV NEXT_TELEMETRY_DISABLED=1
+
 # Build hestia (turbo builds @orderbook/core first via dependsOn)
-RUN npx turbo run build --filter=@orderbook/hestia
+RUN npx turbo run build --filter=@orderbook/hestia --concurrency=1
 
 # ============================================
 # Stage 3: Production runner (minimal image)
