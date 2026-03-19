@@ -39,7 +39,7 @@ services:
         - DISABLED_THEA_CHAINS=${DISABLED_THEA_CHAINS}
         - NEXT_PUBLIC_HYPERBRIDGE_URL=${NEXT_PUBLIC_HYPERBRIDGE_URL}
     env_file:
-      - .env.local
+      - .env
     # You can set ECR_REGISTRY in your .env file
     # Example: ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
     image: 907213364062.dkr.ecr.ap-south-1.amazonaws.com/polkadex-orderbook-fe:latest
