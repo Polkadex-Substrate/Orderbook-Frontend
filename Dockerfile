@@ -54,6 +54,14 @@ ARG SENTRY_AUTH
 ARG DISABLED_FEATURES
 ARG GOOGLE_API_KEY
 ARG GOOGLE_CLIENT_ID
+ARG GRAPHQL_WS_URL
+ARG USE_NEW_BACKEND
+ARG SUBQUERY_URL
+ARG READ_ONLY_TOKEN
+ARG DEFAULT_THEA_SOURCE_CHAIN
+ARG DEFAULT_THEA_DESTINATION_CHAIN
+ARG DISABLED_THEA_CHAINS
+ARG NEXT_PUBLIC_HYPERBRIDGE_URL
 
 ENV POLKADEX_CHAIN=$POLKADEX_CHAIN
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=$GOOGLE_ANALYTICS
@@ -79,6 +87,14 @@ ENV SENTRY_AUTH=$SENTRY_AUTH
 ENV DISABLED_FEATURES=$DISABLED_FEATURES
 ENV GOOGLE_API_KEY=$GOOGLE_API_KEY
 ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+ENV GRAPHQL_WS_URL=$GRAPHQL_WS_URL
+ENV USE_NEW_BACKEND=$USE_NEW_BACKEND
+ENV SUBQUERY_URL=$SUBQUERY_URL
+ENV READ_ONLY_TOKEN=$READ_ONLY_TOKEN
+ENV DEFAULT_THEA_SOURCE_CHAIN=$DEFAULT_THEA_SOURCE_CHAIN
+ENV DEFAULT_THEA_DESTINATION_CHAIN=$DEFAULT_THEA_DESTINATION_CHAIN
+ENV DISABLED_THEA_CHAINS=$DISABLED_THEA_CHAINS
+ENV NEXT_PUBLIC_HYPERBRIDGE_URL=$NEXT_PUBLIC_HYPERBRIDGE_URL
 
 ENV NODE_OPTIONS="--max_old_space_size=2048"
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -99,11 +115,16 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy the standalone server output
-COPY --from=builder /app/apps/hestia/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/hestia/.next/standalone ./
 # Copy static assets (CSS, JS bundles with content hashes)
-COPY --from=builder /app/apps/hestia/.next/static ./apps/hestia/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/hestia/.next/static ./apps/hestia/.next/static
 # Copy public assets (charting library, icons, etc.)
-COPY --from=builder /app/apps/hestia/public ./apps/hestia/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/hestia/public ./apps/hestia/public
+
+# Create the cache directory and give the Next.js user permission to write to it
+RUN mkdir -p /app/apps/hestia/.next/cache/images && \
+    mkdir -p /app/apps/hestia/.next/cache/fetch-cache && \
+    chown -R nextjs:nodejs /app/apps/hestia/.next/cache
 
 USER nextjs
 

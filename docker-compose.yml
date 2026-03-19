@@ -30,8 +30,16 @@ services:
         - DISABLED_FEATURES=${DISABLED_FEATURES}
         - GOOGLE_API_KEY=${GOOGLE_API_KEY}
         - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - GRAPHQL_WS_URL=${GRAPHQL_WS_URL}
+        - USE_NEW_BACKEND=${USE_NEW_BACKEND}
+        - SUBQUERY_URL=${SUBQUERY_URL}
+        - READ_ONLY_TOKEN=${READ_ONLY_TOKEN}
+        - DEFAULT_THEA_SOURCE_CHAIN=${DEFAULT_THEA_SOURCE_CHAIN}
+        - DEFAULT_THEA_DESTINATION_CHAIN=${DEFAULT_THEA_DESTINATION_CHAIN}
+        - DISABLED_THEA_CHAINS=${DISABLED_THEA_CHAINS}
+        - NEXT_PUBLIC_HYPERBRIDGE_URL=${NEXT_PUBLIC_HYPERBRIDGE_URL}
     env_file:
-      - .env
+      - .env.local
     # You can set ECR_REGISTRY in your .env file
     # Example: ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
     image: 907213364062.dkr.ecr.ap-south-1.amazonaws.com/polkadex-orderbook-fe:latest
