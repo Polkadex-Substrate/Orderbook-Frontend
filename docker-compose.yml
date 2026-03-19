@@ -37,7 +37,7 @@ services:
     image: 907213364062.dkr.ecr.ap-south-1.amazonaws.com/polkadex-orderbook-fe:latest
     container_name: polkadex-orderbook-fe
     ports:
-      - "3000:3000"
+      - "8000:3000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
