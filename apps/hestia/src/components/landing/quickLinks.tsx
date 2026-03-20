@@ -16,7 +16,7 @@ export const QuickLinks = () => {
           </Typography.Paragraph>
         </div>
         <Link
-          href="https://docs.polkadex.trade/orderbookPolkadexFAQWallets/"
+          href="https://docs.polkadex.ee/orderbookPolkadexFAQWallets/"
           target="_blank"
         >
           <Button.Underline className="p-0 h-fit w-fit">

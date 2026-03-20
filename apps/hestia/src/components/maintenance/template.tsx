@@ -40,7 +40,7 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link target="_blank" href="mailto:support@polkadex.trade">
+                  <Link target="_blank" href="mailto:support@polkadex.ee">
                     <RiMailFill className="w-full h-full" />
                   </Link>
                 </Button.Icon>

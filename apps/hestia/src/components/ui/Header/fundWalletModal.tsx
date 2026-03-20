@@ -51,7 +51,7 @@ export const FundWalletModal = ({
               icon="Bridge"
               title="Decentralized bridge"
               description="Bridge your crypto to Polkadex and vice versa."
-              href={isBridgeEnabled ? "/thea" : "https://thea.polkadex.trade/"}
+              href={isBridgeEnabled ? "/thea" : "https://thea.polkadex.ee/"}
               target="_blank"
             />
           </div>

@@ -47,7 +47,7 @@ const TriggerComponent = ({ onClose, onNext }: InteractableProps) => {
       walletBalance={walletBalance || 0}
       onReadMore={() =>
         window.open(
-          "https://docs.polkadex.trade/orderbookPolkadexFAQHowToTradeStep3",
+          "https://docs.polkadex.ee/orderbookPolkadexFAQHowToTradeStep3",
           "_blank",
           "noopener, noreferrer"
         )

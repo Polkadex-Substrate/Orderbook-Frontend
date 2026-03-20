@@ -83,17 +83,17 @@ const data = [
     links: [
       {
         title: "Overview",
-        href: "https://docs.polkadex.trade/",
+        href: "https://docs.polkadex.ee/",
         target: "_blank",
       },
       {
         title: "Roadmap",
-        href: "https://polkadex.trade/roadmap",
+        href: "https://polkadex.ee/roadmap",
         target: "_blank",
       },
       {
         title: "Token economics",
-        href: "https://polkadex.trade/tokeneconomics",
+        href: "https://polkadex.ee/tokeneconomics",
         target: "_blank",
       },
     ],
@@ -103,12 +103,12 @@ const data = [
     links: [
       {
         title: "Orderbook",
-        href: "https://orderbook.polkadex.trade",
+        href: "https://orderbook.polkadex.ee",
         target: "_blank",
       },
       {
         title: "THEA Crosschain",
-        href: "https://orderbook.polkadex.trade/thea",
+        href: "https://orderbook.polkadex.ee/thea",
         target: "_blank",
       },
     ],
@@ -148,7 +148,7 @@ const data = [
       },
       {
         title: "Beginner's guide",
-        href: "https://docs.polkadex.trade/orderbookPolkadexFAQWallets",
+        href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
         target: "_blank",
       },
     ],
