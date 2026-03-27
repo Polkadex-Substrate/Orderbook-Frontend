@@ -8,7 +8,7 @@ import { Maybe } from "@orderbook/core/helpers";
 import { GraphQLResult, GraphQLSubscription } from "@aws-amplify/api";
 
 // Import new GraphQL infrastructure
-import { isNewBackendEnabled, sendQuery as sendQueryNew } from "@orderbook/core/helpers";
+import { isNewBackendEnabled, sendQuery as sendQueryNew, sendMutation as sendMutationNew } from "@orderbook/core/helpers";
 
 import { Websocket_streamsSubscription } from "../../../API";
 
@@ -36,12 +36,14 @@ export async function sendQueryToAppSync<T = any>({
 }: Props): Promise<T> {
   // Check if new backend is enabled
   if (isNewBackendEnabled()) {
-    // Use new GraphQL infrastructure (Rust backend)
-    return await sendQueryNew({
-      query,
-      variables,
-      token,
-    }) as T;
+    // Detect operation type from the query string
+    const trimmed = query.trim();
+    const isMutation = /^mutation[\s({]/i.test(trimmed);
+
+    if (isMutation) {
+      return await sendMutationNew({ mutation: query, variables, token }) as T;
+    }
+    return await sendQueryNew({ query, variables, token }) as T;
   }
 
   // Legacy AppSync implementation

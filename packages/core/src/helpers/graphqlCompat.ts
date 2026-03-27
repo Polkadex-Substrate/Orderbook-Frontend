@@ -8,6 +8,7 @@
  * - Logs which backend is being used for debugging
  */
 
+import gql from 'graphql-tag';
 import { isNewBackendEnabled } from '../config/graphql';
 import { getApolloClient } from './graphql';
 import { sendQueryToAppSync as sendQueryToAppSyncLegacy } from './appsync';
@@ -40,12 +41,12 @@ export async function sendQuery<T = any>({
 
         try {
             const result = await client.query({
-                query: require('graphql-tag')(query),
+                query: gql(query),
                 variables,
                 fetchPolicy: 'network-only',
             });
 
-            return result.data as T;
+            return { data: result.data } as unknown as T;
         } catch (error) {
             console.error('[GraphQL] Query error:', error);
             throw error;
@@ -87,11 +88,11 @@ export async function sendMutation<T = any>({
 
         try {
             const result = await client.mutate({
-                mutation: require('graphql-tag')(mutation),
+                mutation: gql(mutation),
                 variables,
             });
 
-            return result.data as T;
+            return { data: result.data } as unknown as T;
         } catch (error) {
             console.error('[GraphQL] Mutation error:', error);
             throw error;
@@ -141,7 +142,7 @@ export function subscribe({
         const client = getApolloClient(token);
 
         const observable = client.subscribe({
-            query: require('graphql-tag')(subscription),
+            query: gql(subscription),
             variables,
         });
 
