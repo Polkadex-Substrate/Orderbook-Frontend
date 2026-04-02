@@ -33,12 +33,14 @@ export function useOrderbook(defaultMarket: string) {
 
   const { markets: list } = useOrderbookService();
   const { onHandleError } = useSettingsProvider();
+  const currentMarket = getCurrentMarket(list, defaultMarket);
+
   const {
     currentTicker: { currentPrice },
     tickerLoading,
   } = useTickers(defaultMarket);
 
-  const { isPriceUp } = useRecentTrades(defaultMarket);
+  const { isPriceUp } = useRecentTrades(currentMarket?.id as string);
 
   const { data, isLoading, isRefetching } = useQuery({
     queryKey: QUERY_KEYS.orderBook(defaultMarket),
@@ -85,8 +87,6 @@ export function useOrderbook(defaultMarket: string) {
 
     return [sortArrayDescending(askOrders), sortArrayDescending(bidOrders)];
   }, [data?.asks, data?.bids, sizeState.length]);
-
-  const currentMarket = getCurrentMarket(list, defaultMarket);
 
   const handleChange = (select: string) => setFilterState(select);
 
