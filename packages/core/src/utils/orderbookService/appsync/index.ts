@@ -70,5 +70,5 @@ class AppsyncV1 implements OrderbookService {
 export const appsyncOrderbookService = new AppsyncV1({
   operation: appsyncOperations,
   query: appsyncReader,
-  subscriber: appsyncSubscriptions,
+  subscriber: orderbookSubscriptions,
 });
