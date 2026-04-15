@@ -18,7 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { RiArrowDownSLine, RiArrowRightLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiArrowLeftRightLine } from "@remixicon/react";
 import classNames from "classnames";
 import {
   TradeAccountType,
@@ -339,7 +339,7 @@ export const Form = ({
               onClick={handleChanteType}
               className="h-full flex items-center justify-center p-2 max-lg:w-full max-lg:border-y border-primary hover:bg-level-1 duration-300 transition-colors"
             >
-              <RiArrowRightLine
+              <RiArrowLeftRightLine
                 className={classNames(
                   "w-6 h-6 transition-all duration-300",
                   isFromFunding
