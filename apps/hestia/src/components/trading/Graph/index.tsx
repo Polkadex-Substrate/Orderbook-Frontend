@@ -57,14 +57,18 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType } from 'lightweight-charts';
+import { Market } from "@orderbook/core/utils/orderbookService";
 
-export const Graph = () => {
+export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
   // Configuration
   const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
   const GATEWAY_SECRET = process.env.NEXT_PUBLIC_GATEWAY_SECRET;
 
+  const firstAsset = currentMarket?.name?.split('/')[0];
+  const secondAsset = currentMarket?.name?.split('/')[1];
+
   // State
-  const [selectedPair, setSelectedPair] = useState('pdex-usdt');
+  const [selectedPair, setSelectedPair] = useState(firstAsset + '-' + secondAsset);
   const [statusBadge, setStatusBadge] = useState({
     text: 'Checking Server Status...',
     className: 'px-3 py-1 rounded-full text-xs font-medium bg-blue-900 text-blue-300'
@@ -72,6 +76,7 @@ export const Graph = () => {
   const [lastUpdate, setLastUpdate] = useState('--:--:--');
   const [isLoading, setIsLoading] = useState(false);
   const [isChartReady, setIsChartReady] = useState(false);
+  const [isChartError, setIsChartError] = useState(false);
   
   // Ticker state
   const [tickerData, setTickerData] = useState({
@@ -109,17 +114,17 @@ export const Graph = () => {
       if (!chartContainerRef.current) return;
 
       const containerWidth = chartContainerRef.current.clientWidth;
-      const containerHeight = 380;
+      const containerHeight = chartContainerRef.current.clientHeight;
 
-      if (containerWidth === 0) {
-        console.warn('Container width is 0, retrying...');
+      if (containerWidth === 0 || containerHeight === 0) {
+        console.warn('Container dimensions are 0, retrying...');
         setTimeout(initChart, 100);
         return;
       }
 
       chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { type: ColorType.Solid, color: '#131722' },
+          background: { type: ColorType.Solid, color: '#0d0d0f' },
           textColor: '#d1d4dc',
         },
         grid: {
@@ -129,10 +134,10 @@ export const Graph = () => {
         crosshair: {
           mode: 1, // CrosshairMode.Magnet
           vertLine: {
-            labelBackgroundColor: '#131722',
+            labelBackgroundColor: '#0d0d0f',
           },
           horzLine: {
-            labelBackgroundColor: '#131722',
+            labelBackgroundColor: '#0d0d0f',
           },
         },
         rightPriceScale: {
@@ -234,8 +239,9 @@ export const Graph = () => {
       resizeObserverRef.current = new ResizeObserver(entries => {
         if (entries.length === 0 || !entries[0].target) return;
         const newWidth = entries[0].contentRect.width;
-        if (chart && newWidth > 0) {
-          chart.applyOptions({ width: newWidth });
+        const newHeight = entries[0].contentRect.height;
+        if (chart && newWidth > 0 && newHeight > 0) {
+          chart.applyOptions({ width: newWidth, height: newHeight });
         }
       });
 
@@ -455,8 +461,9 @@ export const Graph = () => {
         text: 'Server Not Detected (Mock Data)',
         className: 'px-3 py-1 rounded-full text-xs font-medium bg-yellow-900 text-yellow-300'
       });
+      setIsChartError(true);
 
-      generateMockData(symbol);
+      // generateMockData(symbol);
     } finally {
       setIsLoading(false);
     }
@@ -502,11 +509,11 @@ export const Graph = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 bg-[#131722] min-h-screen text-[#d1d4dc]">
-      <div className="max-w-6xl mx-auto">
+    <div className="flex flex-col flex-1 h-full w-full bg-[#0d0d0f] text-[#d1d4dc]">
+      <div className="flex flex-col flex-1 h-full w-full">
         {/* Header */}
         <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="hidden flex items-center gap-3">
             <select
               id="symbol-select"
               value={selectedPair}
@@ -549,22 +556,28 @@ export const Graph = () => {
         </div>
 
         {/* Chart Container */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl relative">
-          {isLoading && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+         {isChartError ? (
+            <div className="flex items-center justify-center h-full w-full">
+              <p className="text-red-500">Chart data not available</p>
             </div>
-          )}
-          {/* Legend overlay */}
-          <div className="absolute top-4 left-4 z-20 bg-gray-900/80 p-2 rounded border border-gray-700 text-xs font-mono pointer-events-none">
-            <div className="flex gap-4">
-              <span className="font-bold text-blue-400">{legendData.symbol}</span>
-              <span>{legendData.ohlc}</span>
-              <span className="text-gray-400">{legendData.volume}</span>
-            </div>
-          </div>
-          <div ref={chartContainerRef} className="w-full h-[380px]"></div>
-        </div>
+            ) : (
+              <div className="flex-1 w-full h-full min-h-[300px] bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl relative">
+                {isLoading && (
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+                {/* Legend overlay */}
+                <div className="absolute top-4 left-4 z-20 bg-gray-900/80 p-2 rounded border border-gray-700 text-xs font-mono pointer-events-none">
+                  <div className="flex gap-4">
+                    <span className="font-bold text-blue-400">{legendData.symbol}</span>
+                    <span>{legendData.ohlc}</span>
+                    <span className="text-gray-400">{legendData.volume}</span>
+                  </div>
+                </div>
+                  <div ref={chartContainerRef} className="absolute inset-0"></div>
+              </div>
+            )}
 
         {/* Meta Info */}
         <footer className="hidden mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">

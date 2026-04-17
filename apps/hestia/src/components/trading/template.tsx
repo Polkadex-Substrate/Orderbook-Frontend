@@ -76,7 +76,7 @@ export function Template({ id }: { id: string }) {
                 <div className="flex flex-col flex-grow h-full w-full">
                   <AssetInfo currentMarket={currentMarket} />
                   {/* @ts-ignore */}
-                  <Graph id={id} />
+                  <Graph id={id} currentMarket={currentMarket} />
                 </div>
               </Resizable.Panel>
               <Resizable.Handle />
