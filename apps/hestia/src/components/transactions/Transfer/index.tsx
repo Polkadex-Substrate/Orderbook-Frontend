@@ -54,7 +54,7 @@ export const TransferHistory = forwardRef<HTMLDivElement, Props>(
 
     const { data, isLoading, isFetchingNextPage, fetchNextPage } =
       useTransferHistory(
-        defaultConfig.subscanApi,
+        defaultConfig.subqueryUrl,
         mainAddress,
         mainAddress?.length > 0 && assets?.length > 0,
         rowsPerPage

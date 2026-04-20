@@ -1,9 +1,9 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { QUERY_KEYS, SUBSCAN_PER_PAGE_LIMIT } from "@orderbook/core/constants";
-import { SUBSCAN_GETTERS } from "@orderbook/core/helpers/subscan";
+import { INDEXER_GETTERS } from "@orderbook/core/helpers/indexer";
 
 export const useTransferHistory = (
-  apiKey: string,
+  subqueryUrl: string,
   address: string,
   shouldFetch: boolean,
   PER_PAGE_LIMIT?: number
@@ -14,13 +14,13 @@ export const useTransferHistory = (
       PER_PAGE_LIMIT ?? SUBSCAN_PER_PAGE_LIMIT
     ),
     queryFn: async ({ pageParam = 0 }) => {
-      const data = await SUBSCAN_GETTERS.fetchTransfers(
-        apiKey,
+      const data = await INDEXER_GETTERS.fetchTransfers(
+        subqueryUrl,
         address,
         pageParam,
         PER_PAGE_LIMIT ?? SUBSCAN_PER_PAGE_LIMIT
       );
-      return data.data;
+      return data;
     },
     enabled: shouldFetch,
     getNextPageParam: (lastPage, pages) => {

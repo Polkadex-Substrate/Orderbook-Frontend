@@ -84,7 +84,7 @@ export function Template() {
   const [activeTab, setActiveTab] = useState("history");
 
   const { data, isLoading, refetch } = useTransferHistory(
-    defaultConfig.subscanApi,
+    defaultConfig.subqueryUrl,
     selectedWallet?.address as string,
     !!selectedWallet
   );
