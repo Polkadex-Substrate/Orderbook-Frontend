@@ -13,7 +13,6 @@ import { Help } from "./Help";
 import { Form } from "./Form";
 
 import { Footer, Header } from "@/components/ui";
-import { HyperbridgeEmbed } from "./HyperbridgeEmbed"
 
 export function Template() {
   const { width } = useWindowSize();
@@ -53,8 +52,7 @@ export function Template() {
                 </Typography.Text>
                 <RiInformation2Line className="w-6 h-6 text-primary" />
               </div>
-              <HyperbridgeEmbed height="750px" />
-              {/* <Form /> */}
+              <Form />
             </div>
             <Help />
           </div>
