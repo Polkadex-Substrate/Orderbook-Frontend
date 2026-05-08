@@ -29,7 +29,11 @@
     "@polkadot/x-randomvalues": "^12.6.2",
     "@polkadot/x-textdecoder": "^12.6.2",
     "@polkadot/x-textencoder": "^12.6.2",
-    "@polkadot/x-bigint": "^12.6.2"
+    "@polkadot/x-bigint": "^12.6.2",
+    "@polkadex/thea": "file:./polkadexjs/packages/thea",
+    "@polkadex/types": "file:./polkadexjs/packages/types",
+    "@polkadex/utils": "file:./polkadexjs/packages/utils",
+    "@polkadex/api-wrapper": "file:./polkadexjs/packages/api-wrapper"
   },
   "dependencies": {
     "minimatch": "^10.2.4"
