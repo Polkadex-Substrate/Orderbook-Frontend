@@ -3,7 +3,7 @@ import { ExtensionAccount } from "@polkadex/react-providers";
 import { SignatureEnumSr25519 } from "@orderbook/core/helpers";
 import { LmpApi } from "@polkadex/polkadex-api";
 import { Signer } from "@polkadot/types/types";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import {
   AccountUpdateEvent,
@@ -171,15 +171,15 @@ export interface OrderbookOperationStrategy extends BaseStrategy {
   cancelOrder: (args: ExecuteArgs) => Promise<void>;
   cancelAll: (args: ExecuteArgs) => Promise<void>;
   withdraw: (args: WithdrawArgs) => Promise<void>;
-  removeAccount: (args: RemoveAccountArgs) => Promise<SubmittableExtrinsic>;
+  removeAccount: (args: RemoveAccountArgs) => Promise<SubmittableExtrinsic<"promise">>;
   createProxyAcccount: (
     args: CreateProxyAcccountArgs
-  ) => Promise<SubmittableExtrinsic>;
+  ) => Promise<SubmittableExtrinsic<"promise">>;
 
-  deposit: (args: DepositArgs) => Promise<SubmittableExtrinsic>;
+  deposit: (args: DepositArgs) => Promise<SubmittableExtrinsic<"promise">>;
   claimReward: (args: ClaimRewardArgs) => Promise<void>;
-  transfer: (args: TransferArgs) => Promise<SubmittableExtrinsic>;
-  claimWithdrawal: (args: ClaimWithdrawArgs) => Promise<SubmittableExtrinsic>;
+  transfer: (args: TransferArgs) => Promise<SubmittableExtrinsic<"promise">>;
+  claimWithdrawal: (args: ClaimWithdrawArgs) => Promise<SubmittableExtrinsic<"promise">>;
 }
 
 export interface OrderbookService {

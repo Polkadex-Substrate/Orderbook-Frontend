@@ -1,5 +1,5 @@
 import { useTheaProvider } from "@orderbook/core/providers";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 import { useMutation } from "@tanstack/react-query";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { sleep } from "@orderbook/core/helpers";
@@ -100,7 +100,7 @@ export function useBridge({ onSuccess }: { onSuccess: () => void }) {
           );
       }
 
-      const ext = await transferConfig.transfer<SubmittableExtrinsic>(amount);
+      const ext = await transferConfig.transfer<SubmittableExtrinsic<"promise">>(amount);
 
       await signAndSubmitPromiseWrapper({
         signer: sourceAccount.signer,

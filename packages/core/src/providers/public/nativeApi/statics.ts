@@ -21,9 +21,13 @@ export async function createApi(apiUrl: string[]): Promise<void> {
     signedExtensions: {
       ChargeAssetTxPayment: {
         extrinsic: {
-          tip: "Compact<Balance>",
-          assetId: "Option<u128>",
+          tip: "Compact<u128>",
+          assetId: "Option<FrameSupportTokensFungibleUnionOfNativeOrWithId>",
         },
+        payload: {},
+      },
+      WeightReclaim: {
+        extrinsic: {},
         payload: {},
       },
     },

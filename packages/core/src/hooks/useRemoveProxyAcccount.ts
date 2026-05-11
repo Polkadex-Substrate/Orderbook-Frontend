@@ -10,7 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { handleTransaction, removeFromStorage } from "@orderbook/core/helpers";
 import { ACTIVE_ACCOUNT_KEY } from "@orderbook/core/providers/user/profile/constants";
 import { KeyringPair } from "@polkadot/keyring/types";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import { appsyncOrderbookService } from "../utils/orderbookService";
 import { NOTIFICATIONS } from "../constants";
@@ -55,7 +55,7 @@ export function useRemoveProxyAccount({
           account: selectedWallet,
           proxyAddress: proxy,
           tokenFeeId,
-        })) as SubmittableExtrinsic;
+        })) as SubmittableExtrinsic<"promise">;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       addToTxQueue(signedExtrinsic);

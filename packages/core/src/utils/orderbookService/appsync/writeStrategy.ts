@@ -5,9 +5,8 @@
 import { GraphQLResult } from "@aws-amplify/api";
 import BigNumber from "bignumber.js";
 import { UNIT_BN } from "@orderbook/core/constants";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 import { ISubmittableResult } from "@polkadot/types/types";
-import { SubmittableExtrinsic as SubmittableExtrinsicType } from "@polkadot/api/types";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 import { signAndSendExtrinsic } from "@orderbook/core/helpers";
 
 import {
@@ -168,7 +167,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
     api,
     asset,
     tokenFeeId,
-  }: DepositArgs): Promise<SubmittableExtrinsic> {
+  }: DepositArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
     const amountStr = new BigNumber(amount).multipliedBy(UNIT_BN).toString();
@@ -186,7 +185,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
     proxyAddress,
     api,
     tokenFeeId,
-  }: RemoveAccountArgs): Promise<SubmittableExtrinsic> {
+  }: RemoveAccountArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
     const ext = api.tx.ocex.removeProxyAccount(proxyAddress);
@@ -204,10 +203,10 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
     api,
     tokenFeeId,
     firstAccount,
-  }: CreateProxyAcccountArgs): Promise<SubmittableExtrinsic> {
+  }: CreateProxyAcccountArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
-    let ext: SubmittableExtrinsicType<"promise", ISubmittableResult>;
+    let ext: SubmittableExtrinsic<"promise", ISubmittableResult>;
     if (firstAccount) ext = api.tx.ocex.registerMainAccount(proxyAddress);
     else ext = api.tx.ocex.addProxyAccount(proxyAddress);
 
@@ -216,7 +215,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
       // assetId,
     });
 
-    return signedExt as SubmittableExtrinsic;
+    return signedExt as SubmittableExtrinsic<"promise">;
   }
 
   async claimReward({
@@ -234,7 +233,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
     const ext = (await lmp.claimRewardsTx(
       epoch,
       market
-    )) as unknown as SubmittableExtrinsicType<"promise">;
+    )) as unknown as SubmittableExtrinsic<"promise">;
 
     const res = await signAndSendExtrinsic(api, ext, { signer }, address, true);
     if (!res.isSuccess) {
@@ -249,7 +248,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
     amount,
     dest,
     tokenFeeId,
-  }: TransferArgs): Promise<SubmittableExtrinsic> {
+  }: TransferArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
 
@@ -270,7 +269,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
     account,
     sid,
     tokenFeeId,
-  }: ClaimWithdrawArgs): Promise<SubmittableExtrinsic> {
+  }: ClaimWithdrawArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
 

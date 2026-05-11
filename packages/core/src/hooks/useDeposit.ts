@@ -3,7 +3,7 @@ import {
   ExtensionAccount,
   useTransactionManager,
 } from "@polkadex/react-providers";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import { useSettingsProvider } from "../providers/public/settings";
 import { useNativeApi } from "../providers/public/nativeApi";
@@ -42,7 +42,7 @@ export const useDeposit = () => {
         asset,
         amount,
         tokenFeeId,
-      })) as SubmittableExtrinsic;
+      })) as SubmittableExtrinsic<"promise">;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       addToTxQueue(signedExtrinsic);
