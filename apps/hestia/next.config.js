@@ -3,13 +3,15 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const { execSync } = require("child_process");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.NEXT_PUBLIC_ANALYZE === "true",
 });
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { withSentryConfig } = require("@sentry/nextjs");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const withPWA = require("next-pwa")({
+const withPWA = require("@ducanh2912/next-pwa").default({
   dest: "public",
   register: true,
   disable: process.env.NODE_ENV === "development",
@@ -26,22 +28,6 @@ const nextConfig = {
     } catch (error) {
       return "orderbookDefaultId";
     }
-  },
-  // Optional build-time configuration options
-  sentry: {
-    // See the sections below for information on the following options:
-    //   'Configure Source Maps':
-    //     - disableServerWebpackPlugin
-    //     - disableClientWebpackPlugin
-    //     - hideSourceMaps
-    //     - widenClientFileUpload
-    //   'Configure Legacy Browser Support':
-    //     - transpileClientSDK
-    //   'Configure Serverside Auto-instrumentation':
-    //     - autoInstrumentServerFunctions
-    //     - excludeServerRoutes
-    //   'Configure Tunneling to avoid Ad-Blockers':
-    //     - tunnelRoute
   },
   eslint: {
     ignoreDuringBuilds: true,
