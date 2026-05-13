@@ -18,19 +18,14 @@ export const useProxyAccounts = (extensionAccounts: ExtensionAccount[]) => {
       extensionAccounts.map(({ address }) => address)
     ),
     queryFn: async () => {
-      const accounts: UserAddressTuple[] = [];
-      extensionAccounts.forEach(async ({ address: mainAddress }) => {
-        const proxies =
-          await appsyncOrderbookService.query.getTradingAddresses(mainAddress);
-
-        proxies.forEach((proxy) => {
-          accounts.push({
-            mainAddress,
-            tradeAddress: proxy,
-          });
-        });
-      });
-      return accounts;
+      const results = await Promise.all(
+        extensionAccounts.map(async ({ address: mainAddress }) => {
+          const proxies =
+            await appsyncOrderbookService.query.getTradingAddresses(mainAddress);
+          return proxies.map((tradeAddress) => ({ mainAddress, tradeAddress }));
+        })
+      );
+      return results.flat();
     },
     enabled: !!extensionAccounts?.length,
   });

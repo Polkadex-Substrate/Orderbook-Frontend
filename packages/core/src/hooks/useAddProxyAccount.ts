@@ -1,5 +1,5 @@
 import { useNativeApi } from "@orderbook/core/providers/public/nativeApi";
-import { UseQueryResult, useMutation } from "@tanstack/react-query";
+import { UseQueryResult, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ExtensionAccount,
   useTransactionManager,
@@ -13,7 +13,7 @@ import { MutateHookProps } from "@orderbook/core/hooks/types";
 import { KeyringPair$Json } from "@polkadot/keyring/types";
 
 import { appsyncOrderbookService } from "../utils/orderbookService";
-import { NOTIFICATIONS } from "../constants";
+import { NOTIFICATIONS, QUERY_KEYS } from "../constants";
 import { useSettingsProvider } from "../providers/public/settings";
 
 import { handleTransaction } from "./../helpers/signAndSendExtrinsic";
@@ -47,6 +47,7 @@ export function useAddProxyAccount({
   const { wallet } = useUserAccounts();
   const { onPushNotification } = useSettingsProvider();
   const { addToTxQueue } = useTransactionManager();
+  const queryClient = useQueryClient();
 
   const { mutateAsync, status, error } = useMutation({
     mutationFn: async (addProxyArgs: AddProxyAccountArgs) => {
@@ -87,6 +88,13 @@ export function useAddProxyAccount({
         // @ts-ignore
         addToTxQueue(signedExtrinsic);
         await handleTransaction(signedExtrinsic);
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.singleProxyAccounts(selectedWallet.address),
+        });
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.proxyAccounts([selectedWallet.address]),
+          exact: false,
+        });
         return;
       }
 
@@ -106,6 +114,13 @@ export function useAddProxyAccount({
       // @ts-ignore
       addToTxQueue(signedExtrinsic);
       await handleTransaction(signedExtrinsic);
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.singleProxyAccounts(selectedWallet.address),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.proxyAccounts([selectedWallet.address]),
+        exact: false,
+      });
       const { pair } = wallet.addFromMnemonic(mnemonic, name, password);
       if (importType === "GDrive" && googleDriveStore) {
         const jsonAccount = pair.toJson(password);
