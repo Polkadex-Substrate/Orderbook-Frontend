@@ -75,3 +75,6 @@ yarn.lock
 package-lock.json
 
 .agent
+
+CLAUDE.md
+CLAUDE.local.md
