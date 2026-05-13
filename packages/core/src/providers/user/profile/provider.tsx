@@ -7,6 +7,7 @@ import {
 import { useProxyAccounts } from "@orderbook/core/hooks";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import { appsyncOrderbookService } from "@orderbook/core/utils/orderbookService";
+import { useNativeApi } from "@orderbook/core/providers/public/nativeApi";
 
 import * as LOCAL_STORE from "./localstore";
 import { Provider } from "./context";
@@ -29,6 +30,7 @@ export const ProfileProvider: T.ProfileComponent = ({ children }) => {
   const { localAddresses } = useUserAccounts();
   const { onHandleError } = useSettingsProvider();
   const { extensionAccounts } = useExtensionAccounts();
+  const { api } = useNativeApi();
 
   // sync all tradeAddresses state with extension
   const { allProxiesAccounts: allAccounts } =
@@ -49,8 +51,20 @@ export const ProfileProvider: T.ProfileComponent = ({ children }) => {
       onHandleError("Invalid trade Address");
       return;
     }
+
+    // On-chain state is authoritative and has no indexing lag — check it first
+    if (api) {
+      const onChainProxy = await api.query.ocex.proxies(tradeAddress);
+      if (onChainProxy.isSome) {
+        const mainAddress = onChainProxy.unwrap().toString();
+        LOCAL_STORE.setLastUsedAccount({ mainAddress, tradeAddress });
+        setActiveAccount({ mainAddress, tradeAddress });
+        return;
+      }
+    }
+
+    // Fall back to AppSync with retry loop when API is unavailable
     const maxAttempts = 15;
-    // TODO: Temp solution, backend issue
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const mainAddress =

@@ -62,6 +62,12 @@ export function useAddProxyAccount({
           selectedWallet.address
         );
 
+      // On-chain state is authoritative; AppSync/DynamoDB can lag after first registration
+      const onChainAccount = await api.query.ocex.accounts(
+        selectedWallet.address
+      );
+      const firstAccount = !onChainAccount.isSome && !registeredProxies.length;
+
       // Register funding account as proxy
       if ("isExtensionProxy" in addProxyArgs) {
         if (registeredProxies.includes(selectedWallet.address))
@@ -75,7 +81,7 @@ export function useAddProxyAccount({
             account: selectedWallet,
             proxyAddress: selectedWallet.address,
             tokenFeeId,
-            firstAccount: !registeredProxies.length,
+            firstAccount,
           });
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -94,7 +100,7 @@ export function useAddProxyAccount({
           account: selectedWallet,
           proxyAddress: proxy,
           tokenFeeId,
-          firstAccount: !registeredProxies.length,
+          firstAccount,
         });
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
