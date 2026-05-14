@@ -3,7 +3,6 @@ import { useUserAccounts } from "@polkadex/react-providers";
 
 import { useProfile } from "../providers/user/profile";
 import { appsyncOrderbookService } from "../utils/orderbookService";
-import { useNativeApi } from "../providers/public/nativeApi";
 
 import { MutateHookProps } from "./types";
 
@@ -16,7 +15,6 @@ export type ImportFromMnemonic = {
 export const useImportProxyAccountMnemonic = (props: MutateHookProps) => {
   const { wallet, isReady } = useUserAccounts();
   const { onUserSelectTradingAddress } = useProfile();
-  const { api } = useNativeApi();
 
   const { mutateAsync, status, error } = useMutation({
     mutationFn: async ({ mnemonic, name, password }: ImportFromMnemonic) => {
@@ -24,19 +22,11 @@ export const useImportProxyAccountMnemonic = (props: MutateHookProps) => {
 
       const { pair } = wallet.addFromMnemonic(mnemonic, name, password);
 
-      // AppSync/DynamoDB can lag behind on-chain state — fall back to chain query
-      let fundingAddress = await appsyncOrderbookService.query.getFundingAddress(
+      const isValidPair = await appsyncOrderbookService.query.getFundingAddress(
         pair.address
       );
 
-      if (!fundingAddress && api) {
-        const onChainProxy = await api.query.ocex.proxies(pair.address);
-        fundingAddress = onChainProxy.isSome
-          ? onChainProxy.unwrap().toString()
-          : null;
-      }
-
-      if (!fundingAddress) {
+      if (!isValidPair) {
         wallet.remove(pair.address);
         throw new Error("No funding account linked to this trade account.");
       }
