@@ -14,6 +14,16 @@ const Progress = dynamic(
   { ssr: false }
 );
 
+const YbugProvider = dynamic(
+  () => import("../YbugProvider").then((mod) => mod.YbugProvider),
+  { ssr: false }
+);
+
+const YbugUserIdentifier = dynamic(
+  () => import("../YbugUserIdentifier").then((mod) => mod.YbugUserIdentifier),
+  { ssr: false }
+);
+
 const TransactionManagerProvider = dynamic(
   () =>
     import("@polkadex/react-providers").then(
@@ -102,7 +112,8 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
   return (
     <Fragment>
       <Toaster expand closeButton position="top-right" />
-      <QueryClientProvider client={queryClient}>
+      <YbugProvider>
+        <QueryClientProvider client={queryClient}>
         <SettingProvider
           defaultToast={{
             onError: (title, description) => {
@@ -135,6 +146,7 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
                           <TransactionManagerProvider>
                             <ConnectWalletProvider>
                               <Fragment>
+                                <YbugUserIdentifier />
                                 <Progress />
                                 {children}
                               </Fragment>
@@ -149,7 +161,8 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
             </ExtensionAccountsProvider>
           </ExtensionsProvider>
         </SettingProvider>
-      </QueryClientProvider>
+        </QueryClientProvider>
+      </YbugProvider>
     </Fragment>
   );
 };
