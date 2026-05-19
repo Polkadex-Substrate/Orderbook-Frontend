@@ -72,11 +72,17 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
               Trade
             </HeaderLink.Single>
             <HeaderLink.Single
-              href={`/thea?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
+              href={`/bridge?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
               disabled={isBridgeDisabled}
             >
               Bridge
             </HeaderLink.Single>
+            {/* <HeaderLink.Single
+              href={`/thea?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
+              disabled={isBridgeDisabled}
+            >
+              Thea
+            </HeaderLink.Single> */}
             <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
               Rewards
             </HeaderLink.Single>

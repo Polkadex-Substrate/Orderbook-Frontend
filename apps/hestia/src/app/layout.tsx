@@ -4,6 +4,10 @@ import { ReactNode } from "react";
 import { Metadata } from "next";
 import classNames from "classnames";
 import { Roboto } from "next/font/google";
+import { headers } from 'next/headers'
+import { cookieToInitialState } from 'wagmi'
+import { config } from '@/config/wagmi'
+import Web3ModalProvider from '@/context'
 
 import { DynamicProviders } from "@/components/ui/DynamicProviders";
 const font = Roboto({
@@ -25,6 +29,8 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const initialState = cookieToInitialState(config, headers().get('cookie'))
+
   return (
     <html lang="en" className="scrollbar-hide">
       <head>
@@ -42,7 +48,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           font.className
         )}
       >
-        <DynamicProviders>{children}</DynamicProviders>
+        <Web3ModalProvider initialState={initialState}>
+          <DynamicProviders>{children}</DynamicProviders>
+        </Web3ModalProvider>
       </body>
     </html>
   );

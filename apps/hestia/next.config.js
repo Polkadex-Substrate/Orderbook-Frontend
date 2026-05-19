@@ -18,6 +18,10 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 });
 
 const nextConfig = {
+  webpack: (config) => {
+    config.externals.push('pino-pretty', 'lokijs', 'encoding', 'porto', '@base-org/account')
+    return config
+  },
   output: "standalone",
   transpilePackages: ["@orderbook/core"],
   reactStrictMode: false,

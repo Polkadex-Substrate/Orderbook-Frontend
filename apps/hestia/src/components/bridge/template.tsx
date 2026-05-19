@@ -54,8 +54,8 @@ export function Template() {
                 </Typography.Text>
                 <RiInformation2Line className="w-6 h-6 text-primary" />
               </div>
-              <ConnectButton />
-              <WalletInfo />
+              {/* <ConnectButton /> */}
+              {/* <WalletInfo /> */}
               <Form />
             </div>
             <Help />
