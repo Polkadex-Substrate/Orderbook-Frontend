@@ -1,3 +1,16 @@
+// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
+// Real implementation is commented out below. Do not delete.
+
+// Noop stub — TheaHistory/index.tsx shows "Coming Soon" and does not render Filters.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const Filters = (_props: any) => null;
+
+export const filters = {
+  status: ["Completed", "In Progress"],
+};
+
+// ─── Original implementation (reference for HyperbridgeHistory) ──────────────
+/*
 import { Button, Icon, Popover, Typography } from "@polkadex/ux";
 import { Table } from "@tanstack/react-table";
 import classNames from "classnames";
@@ -134,3 +147,4 @@ export const Filters = <TData,>({
     </div>
   );
 };
+*/

@@ -1,5 +1,7 @@
 import {
   IndexerClient,
+  EvmChain,
+  SubstrateChain,
   createQueryClient,
   postRequestCommitment,
   RequestStatus,
@@ -18,15 +20,15 @@ import {
   parseUnits,
   toHex,
   custom,
-  maxUint256
+  maxUint256,
+  type EIP1193Provider,
 } from "viem";
-import HOST_MODULE from "./abis/ethSepoliaHostModule.ts";
-import PING_MODULE from "./abis/ethSepoliaPingModule.ts";
-import HANDLER_MODULE from "./abis/ethSepoliaHandlerModule.ts";
-import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule.ts";
-import TOKEN_GATEWAY_MODULE from "./abis/ethSepoliaTokenGatewayModule.ts";
+import HOST_MODULE from "./abis/ethSepoliaHostModule";
+import PING_MODULE from "./abis/ethSepoliaPingModule";
+import HANDLER_MODULE from "./abis/ethSepoliaHandlerModule";
+import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule";
+import TOKEN_GATEWAY_MODULE from "./abis/ethSepoliaTokenGatewayModule";
 import { privateKeyToAccount } from "viem/accounts";
-import {Wallet} from 'ethers';
 
 import { BRIDGE_CHAINS, BRIDGE_TOKENS, BRIDGE_ROUTES } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
@@ -81,55 +83,63 @@ const singleton = <T>(fn: () => T) => {
 export const getIndexer = singleton(() => {
   const query_client = createQueryClient({ url: indexerUrl });
 
-  return new IndexerClient({
-    source: {
-      consensusStateId: Source.consensus.stateId,
-      rpcUrl: Source.rpcUrls[0],
-      stateMachineId: Source.stateMachineId,
-      host: Source.ismpHost,
-    },
-    dest: {
-      hasher: "Blake2",
+  const sourceChain = EvmChain.fromParams({
+    chainId: _evmChain.chainId,
+    rpcUrl: Source.rpcUrls[0],
+    host: Source.ismpHost,
+    consensusStateId: Source.consensus.stateId,
+  });
+
+  return Promise.all([
+    SubstrateChain.connect({
       wsUrl: Destination.rpcUrls[0],
       consensusStateId: Destination.consensus.stateId,
+      hasher: _substrateChain.hasher,
       stateMachineId: Destination.chainId,
-    },
-    hyperbridge: {
-      consensusStateId: "PAS0",
-      stateMachineId: "KUSAMA-4009",
+    }),
+    SubstrateChain.connect({
       wsUrl: indexerUrl.replace("https://", "wss://"),
-    },
-    queryClient: query_client,
-    pollInterval: 1000,
-  });
+      consensusStateId: "PAS0",
+      hasher: "Blake2",
+      stateMachineId: "KUSAMA-4009",
+    }),
+  ]).then(
+    ([destChain, hyperbridgeChain]) =>
+      new IndexerClient({
+        source: sourceChain,
+        dest: destChain,
+        hyperbridge: hyperbridgeChain,
+        queryClient: query_client,
+        pollInterval: 1000,
+      }),
+  );
 });
 
 // ── Browser-compatible createHelpers ─────────────────────────────────────────
 // Mirrors the working script's createHelpers exactly, but uses window.ethereum
 // instead of a private key so it works with MetaMask / Enkrypt / WalletConnect
 async function createHelpers() {
-  if (typeof window === "undefined" || !window.ethereum) {
+  const ethereum = (window as Window & { ethereum?: EIP1193Provider }).ethereum;
+  if (typeof window === "undefined" || !ethereum) {
     throw new Error("No Ethereum wallet found.");
   }
 
   // Request accounts — this is what the working script does via privateKeyToAccount
-  const accounts: string[] = await window.ethereum.request({
+  const accounts: string[] = await ethereum.request({
     method: "eth_requestAccounts",
   });
   const address = accounts[0] as `0x${string}`;
 
   const walletClient = createWalletClient({
-    account: address,          // viem accepts raw address for json-rpc accounts
+    account: address,
     chain: sepolia,
-    transport: custom(window.ethereum),
+    transport: custom(ethereum),
   });
 
   const publicClient = createPublicClient({
     chain: sepolia,
     transport: http(sepoliaRpcURL),
   });
-
-  const sharedClient = { public: publicClient, wallet: walletClient };
 
   // ── Mirror the working script: read host → hostParams → feeToken ──────────
   const host = getContract({
@@ -143,13 +153,13 @@ async function createHelpers() {
   const feeToken = getContract({
     address: hostParams.feeToken,
     abi: FEE_TOKEN_MODULE.ABI,
-    client: sharedClient as any,
+    client: { public: publicClient, wallet: walletClient },
   });
 
   const tokenGateway = getContract({
     abi: TOKEN_GATEWAY_MODULE.ABI,
     address: tokenGatewayAddress,
-    client: sharedClient as any,
+    client: { public: publicClient, wallet: walletClient },
   });
 
   return {
@@ -159,7 +169,7 @@ async function createHelpers() {
     tokenGateway,
     feeToken,
     hostParams,
-    address,            // the connected wallet address, clean `0x${string}`
+    address,
   };
 }
 
@@ -190,7 +200,7 @@ async function getCommitment(helper: THelper, tx_hash: HexString) {
   });
 
   console.log(
-    `Transaction reciept: ${helper.chain.blockExplorers?.default?.url}/tx/${tx_hash}`
+    `Transaction reciept: ${helper.chain.blockExplorers?.default?.url}/tx/${tx_hash}`,
   );
   console.log("Block: ", receipt.blockNumber);
 
@@ -218,21 +228,16 @@ function getSubstrateAccount(mnemonic: string) {
 }
 
 export async function transferTokens(params: BridgeTransferParams) {
-  // const helper = await createHelpers();
+  const helper = await createHelpers();
 
-  const mnemonic = "poem coconut answer someone napkin elegant boss resource finger smoke wink ice";
-  const wallet = Wallet.fromPhrase(mnemonic);
-  console.log(wallet.privateKey);
-
-  const sender_account = wallet.privateKey as HexString;
-
-  const helper = await createHelpers({
-    account: sender_account,
-    chain: sepolia,
-    rpc_url: sepoliaRpcURL,
-  });
-
-  const { address, publicClient, walletClient, tokenGateway, feeToken, hostParams } = helper;
+  const {
+    address,
+    publicClient,
+    walletClient,
+    tokenGateway,
+    feeToken,
+    hostParams,
+  } = helper;
 
   const to: HexString = u8aToHex(decodeAddress(params.recipient, false));
   const assetId = readAssetId(Token.symbol);
@@ -279,9 +284,12 @@ export async function transferTokens(params: BridgeTransferParams) {
     functionName: "allowance",
     args: [address, tokenGatewayAddress as `0x${string}`],
   });
-  console.log("Current feeToken allowance:", (feeTokenAllowance as bigint).toString());
+  console.log(
+    "Current feeToken allowance:",
+    (feeTokenAllowance as bigint).toString(),
+  );
 
-  if ((feeTokenAllowance as bigint) === 0n) {
+  if ((feeTokenAllowance as bigint) === BigInt(0)) {
     console.log("Approving feeToken (maxUint256)...");
     const feeApproveTxHash = await walletClient.writeContract({
       address: hostParams.feeToken,
@@ -298,7 +306,7 @@ export async function transferTokens(params: BridgeTransferParams) {
   }
 
   // ── Step 3: Teleport ──────────────────────────────────────────────────────
-  const nativeCost = 0n;
+  const nativeCost = BigInt(0);
 
   function calculateRelayerFee(amount: number) {
     const fee = amount * 0.0012;
@@ -337,19 +345,7 @@ export async function transferTokens(params: BridgeTransferParams) {
 
   console.log("Bridge tx submitted ✅ hash:", hash);
 
-  // Ethereum private key
-  // const sender_account = privateKeyToAccount(
-  //   "0x0f8f58487987ec103948ade602d72fd9bea0ee29c8933f0b30809931943094df" as HexString
-  // );
-
-  // Substrate mnemonic
-  const recipient_account = getSubstrateAccount(
-    "genre van run town boy giraffe paddle obvious dragon play elder vivid"
-  );
-
   // make transfer
-  const tx_hash = '0x816c384765a27295af488248d1383b951e70f2ea29a202469490921231c065ee 0x5efe2fa827fad6de341d7d5ed236f6e0398f6a97aa85aa80c279203c09c25023 0x3f5e719d8e5406c654b811b2199b6b68f857e1a98896e1faa348bc481ef154bd';
-
   const postRequest = await getCommitment(helper, hash);
   const commitment = postRequest.commitment;
 

@@ -41,7 +41,7 @@ export const ResponsiveTable = ({
         <Button.Solid appearance="secondary" asChild>
           <Link
             href={{
-              pathname: "/thea",
+              pathname: "/bridge",
               query: {
                 from: "Polkadex",
                 to: chainName,
@@ -55,7 +55,7 @@ export const ResponsiveTable = ({
         <Button.Solid appearance="secondary" asChild>
           <Link
             href={{
-              pathname: "/thea",
+              pathname: "/bridge",
               query: {
                 from: chainName,
                 to: "Polkadex",

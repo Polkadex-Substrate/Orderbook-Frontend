@@ -83,7 +83,7 @@ export function useHyperbridgeFees({
           redeem: true,
           to: recipientPadded,
           dest: dstChain.stateMachineId,
-          timeout: 3600n,
+          timeout: BigInt(3600),
           data: "0x",
         });
 

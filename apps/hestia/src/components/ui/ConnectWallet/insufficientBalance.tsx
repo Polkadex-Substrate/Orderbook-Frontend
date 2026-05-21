@@ -99,7 +99,7 @@ export const InsufficientBalance = ({
                               <HoverCard.Trigger asChild>
                                 <Link
                                   href={{
-                                    pathname: "/thea",
+                                    pathname: "/bridge",
                                     query: {
                                       from: chainName,
                                       to: "Polkadex",

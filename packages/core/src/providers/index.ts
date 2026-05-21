@@ -7,4 +7,3 @@ export { SessionProvider } from "./user/sessionProvider";
 export { WithdrawsProvider } from "./user/withdrawsProvider";
 export { SubscriptionProvider } from "./user/subscription";
 export { ConnectWalletProvider } from "./user/connectWalletProvider";
-export * from "./user/thea";

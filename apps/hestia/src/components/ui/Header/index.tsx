@@ -23,8 +23,6 @@ import { ResponsiveMenuModal } from "./responsiveMenuModal";
 import { NotificationsModal } from "./NotificationsModal";
 import { FundWalletModal } from "./fundWalletModal";
 
-const { defaultTheaSourceChain, defaultTheaDestinationChain } = defaultConfig;
-
 export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const [menu, setMenu] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -72,17 +70,11 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
               Trade
             </HeaderLink.Single>
             <HeaderLink.Single
-              href={`/bridge?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
+              href="/bridge"
               disabled={isBridgeDisabled}
             >
               Bridge
             </HeaderLink.Single>
-            {/* <HeaderLink.Single
-              href={`/thea?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
-              disabled={isBridgeDisabled}
-            >
-              Thea
-            </HeaderLink.Single> */}
             <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
               Rewards
             </HeaderLink.Single>

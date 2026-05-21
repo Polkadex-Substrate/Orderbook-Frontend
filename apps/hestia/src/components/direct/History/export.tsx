@@ -20,7 +20,7 @@ const csvColumns = [
 }));
 
 export const Export = ({ data, address }: { data: any[]; address: string }) => {
-  const exportedFileName = `Bridge_${new Date().getTime()}_Polkadex_Thea`;
+  const exportedFileName = `Bridge_${new Date().getTime()}_Polkadex_Bridge`;
   const [loading, setLoading] = useState(false);
   const { onHandleAlert, onHandleError } = useSettingsProvider();
 

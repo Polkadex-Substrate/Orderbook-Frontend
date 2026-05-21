@@ -24,7 +24,6 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useFormik } from "formik";
 import classNames from "classnames";
 import { bridgeValidations } from "@orderbook/core/validations";
-import { ChainType } from "@polkadex/thea";
 
 import { SelectAsset } from "../selectAsset";
 import { ConnectAccount } from "../connectAccount";

@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  const initialState = cookieToInitialState(config, headers().get('cookie'))
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const initialState = cookieToInitialState(config, (await headers()).get('cookie'))
 
   return (
     <html lang="en" className="scrollbar-hide">

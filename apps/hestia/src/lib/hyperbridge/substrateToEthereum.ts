@@ -119,19 +119,27 @@ export async function transferSubstrateToEvm(params: SubstrateToEvmParams) {
 
   let txHash: string | null = null;
 
-  for await (const event of stream) {
-    console.log("Teleport event:", event.kind);
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value: event } = await reader.read();
+      if (done) break;
 
-    if (event.kind === "Dispatched") {
-      txHash = event.transaction_hash ?? null;
-      console.log("Tx dispatched ✅ hash:", txHash);
-      break;
-    }
+      console.log("Teleport event:", event.kind);
 
-    if (event.kind === "Finalized") {
-      console.log("Tx finalized ✅ hash:", event.transaction_hash);
-      break;
+      if (event.kind === "Dispatched") {
+        txHash = event.transaction_hash ?? null;
+        console.log("Tx dispatched ✅ hash:", txHash);
+        break;
+      }
+
+      if (event.kind === "Finalized") {
+        console.log("Tx finalized ✅ hash:", event.transaction_hash);
+        break;
+      }
     }
+  } finally {
+    reader.releaseLock();
   }
 
   if (!txHash) throw new Error("Teleport dispatched but no transaction hash returned");

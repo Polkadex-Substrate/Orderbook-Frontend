@@ -25,7 +25,7 @@ import {
 import { useBridgeProvider } from "./BridgeProvider";
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 
-import { useBridge, usePool } from "@/hooks";
+import { usePool } from "@/hooks";
 import {
   ErrorMessage,
   GenericHorizontalItem,
@@ -67,7 +67,7 @@ export const ConfirmTransaction = ({
 
   const showAutoSwap = useMemo(
     () => isDestinationPolkadex && !destinationPDEXBalance,
-    [isDestinationPolkadex, destinationPDEXBalance]
+    [isDestinationPolkadex, destinationPDEXBalance],
   );
 
   const { swapPrice: swapPriceRaw = 0, swapLoading } = usePool({
@@ -78,12 +78,12 @@ export const ConfirmTransaction = ({
 
   const shortSourceAddress = useMemo(
     () => truncateString(sourceAccount?.address ?? "", 4),
-    [sourceAccount?.address]
+    [sourceAccount?.address],
   );
 
   const shortDestinationAddress = useMemo(
     () => truncateString(destinationAccount?.address ?? "", 4),
-    [destinationAccount?.address]
+    [destinationAccount?.address],
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -100,7 +100,7 @@ export const ConfirmTransaction = ({
     if (showAutoSwap && amount <= autoSwapAmount)
       return CrossChainError.AUTO_SWAP(
         autoSwapAmount.toFixed(4),
-        selectedAsset?.ticker as string
+        selectedAsset?.ticker as string,
       );
   }, [
     amount,
@@ -114,7 +114,7 @@ export const ConfirmTransaction = ({
 
   const disabled = useMemo(
     () => !!error || isLoading || !checked,
-    [error, isLoading, checked]
+    [error, isLoading, checked],
   );
 
   const [
@@ -258,7 +258,8 @@ export const ConfirmTransaction = ({
                     </ResponsiveCard>
                     {showAutoSwap && Number(swapPriceRaw) > 0 && (
                       <ResponsiveCard label="Auto swap">
-                        {Number(swapPriceRaw).toFixed(4)} {selectedAsset?.ticker}
+                        {Number(swapPriceRaw).toFixed(4)}{" "}
+                        {selectedAsset?.ticker}
                       </ResponsiveCard>
                     )}
                   </HoverInformation.Content>
@@ -305,7 +306,9 @@ export const ConfirmTransaction = ({
                       });
                     }
 
-                    onHandleAlert("These tokens will reflect in your Funding wallet in 2-3 mins");
+                    onHandleAlert(
+                      "These tokens will reflect in your Funding wallet in 2-3 mins",
+                    );
                     onSuccess();
                   } catch (e) {
                     onHandleError("Failed to transfer tokens");

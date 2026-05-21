@@ -19,8 +19,20 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 
 const nextConfig = {
   webpack: (config) => {
-    config.externals.push('pino-pretty', 'lokijs', 'encoding', 'porto', '@base-org/account')
-    return config
+    config.externals.push(
+      "pino-pretty",
+      "lokijs",
+      "encoding",
+      "porto",
+      "@base-org/account",
+    );
+    // Force @headlessui/react to use its CJS build so webpack doesn't choke on
+    // the ESM build's access of React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+    // which isn't a named ESM export of React 18.
+    config.resolve.alias["@headlessui/react"] = require.resolve(
+      "@headlessui/react"
+    );
+    return config;
   },
   output: "standalone",
   transpilePackages: ["@orderbook/core"],
@@ -89,5 +101,5 @@ const sentryWebpackPluginOptions = {
 };
 
 module.exports = withBundleAnalyzer(
-  withSentryConfig(withPWA(nextConfig), sentryWebpackPluginOptions)
+  withSentryConfig(withPWA(nextConfig), sentryWebpackPluginOptions),
 );

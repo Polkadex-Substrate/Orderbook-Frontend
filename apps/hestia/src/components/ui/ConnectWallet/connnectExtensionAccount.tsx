@@ -3,7 +3,8 @@
 import { Interaction, ProviderCard, Typography } from "@polkadex/ux";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import { ExtensionStatus } from "@polkadex/react-providers";
-import { ExtensionDetails } from "@polkadex/types";
+
+export type ExtensionDetails = (typeof ExtensionsArray)[number];
 
 const ExtensionsArrayWhitelist = ExtensionsArray?.filter(
   (item) => item.id !== "metamask-polkadot-snap"

@@ -29,7 +29,7 @@ export const Balance = ({
             <Typography.Text asChild size="sm">
               <Link
                 href={{
-                  pathname: "/thea",
+                  pathname: "/bridge",
                   query: {
                     from: "Polkadex",
                     to: chainName,
@@ -45,7 +45,7 @@ export const Balance = ({
             <Typography.Text asChild size="sm">
               <Link
                 href={{
-                  pathname: "/thea",
+                  pathname: "/bridge",
                   query: {
                     from: chainName,
                     to: "Polkadex",
