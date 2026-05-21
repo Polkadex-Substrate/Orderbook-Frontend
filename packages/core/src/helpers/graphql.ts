@@ -17,6 +17,7 @@ import {
     ApolloLink,
     from,
     NormalizedCacheObject,
+    type DefaultOptions,
 } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
@@ -142,7 +143,6 @@ export const createApolloClient = (token?: string) => {
                 },
             },
         }),
-        // Development mode settings
         defaultOptions: {
             watchQuery: {
                 fetchPolicy: 'cache-and-network',
@@ -155,7 +155,7 @@ export const createApolloClient = (token?: string) => {
             mutate: {
                 errorPolicy: 'all',
             },
-        },
+        } as unknown as DefaultOptions,
     });
 };
 
