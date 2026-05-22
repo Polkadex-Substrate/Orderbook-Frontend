@@ -1,3 +1,30 @@
+// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
+// Real implementation is commented out below. Do not delete.
+
+// Stub exports so dependents (direct/History, TheaHistory sub-components) don't break.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Transaction = Record<string, any>;
+export type Transactions = Transaction[];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const useTheaTransactions = (_params: any) =>
+  [
+    {
+      data: [] as Transaction[],
+      isLoading: false,
+      isRefetching: false,
+      refetch: async () => ({}),
+    },
+    {
+      data: [] as Transaction[],
+      isLoading: false,
+      isRefetching: false,
+      refetch: async () => ({}),
+    },
+  ] as const;
+
+// ─── Original implementation (reference for HyperbridgeHistory) ──────────────
+/*
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { PolkadexChainQuery } from "@polkadex/subscan";
@@ -98,3 +125,4 @@ const formatResult = (
 
 export type Transactions = ReturnType<typeof formatResult>;
 export type Transaction = Transactions[0];
+*/

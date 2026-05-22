@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Button,
   Input,
@@ -17,12 +19,11 @@ import {
   RiWalletLine,
 } from "@remixicon/react";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { useTheaProvider } from "@orderbook/core/providers";
+import { useBridgeProvider } from "../BridgeProvider";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useFormik } from "formik";
 import classNames from "classnames";
 import { bridgeValidations } from "@orderbook/core/validations";
-import { ChainType } from "@polkadex/thea";
 
 import { SelectAsset } from "../selectAsset";
 import { ConnectAccount } from "../connectAccount";
@@ -33,10 +34,15 @@ import { SelectNetwork } from "./selectNetwork";
 
 import { createQueryString, formatAmount } from "@/helpers";
 import { useQueryPools } from "@/hooks";
+import { useWeb3Modal } from "@web3modal/wagmi/react";
+
 const initialValues = {
   amount: "",
 };
+
 export const Form = () => {
+  const { open } = useWeb3Modal();
+
   const [openAsset, setOpenAsset] = useState(false);
   const [openFeeModal, setOpenFeeModal] = useState(false);
   const [openSourceModal, setOpenSourceModal] = useState(false);
@@ -62,7 +68,10 @@ export const Form = () => {
     isDestinationPolkadex,
     destinationPDEXBalance,
     isDestinationPDEXBalanceLoading,
-  } = useTheaProvider();
+    setTransferAmount,
+    isEvmSource,
+  } = useBridgeProvider();
+
   const { destinationFee, sourceFee, max, min } = transferConfig ?? {};
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -120,14 +129,20 @@ export const Form = () => {
     initialValues,
     validationSchema: bridgeValidations(
       minAmount,
-      max?.amount,
+      sourceBalancesLoading ? undefined : max?.amount,
       destinationPDEXBalance,
       selectedAssetBalance,
       isDestinationPolkadex,
-      poolReserve?.reserve || 0
+      poolReserve?.reserve || 0,
     ),
     onSubmit: () => setOpenFeeModal(true),
   });
+
+  useEffect(() => {
+    const parsed = parseFloat(values.amount);
+    setTransferAmount(isNaN(parsed) ? 0 : parsed);
+  }, [values.amount, setTransferAmount]);
+
   const disabled = useMemo(
     () =>
       !selectedAsset ||
@@ -144,7 +159,7 @@ export const Form = () => {
       destinationChain,
       dirty,
       isValid,
-    ]
+    ],
   );
 
   const onChangeMax = () => {
@@ -154,7 +169,7 @@ export const Form = () => {
 
   const balanceAmount = useMemo(
     () => formatAmount(selectedAssetBalance),
-    [selectedAssetBalance]
+    [selectedAssetBalance],
   );
 
   const [
@@ -165,7 +180,6 @@ export const Form = () => {
   ] = useMemo(() => {
     const destValue = destinationFee?.amount;
     const sourceValue = sourceFee?.amount;
-
     return [
       destValue ? `~ ${formatAmount(destValue)}` : "Ø",
       destValue ? destinationFee?.ticker : "",
@@ -185,12 +199,7 @@ export const Form = () => {
       { name: "to", value: destinationChain?.name },
       { name: "asset", value: selectedAsset?.ticker },
     ];
-    createQueryString({
-      data,
-      pathname,
-      searchParams,
-      push,
-    });
+    createQueryString({ data, pathname, searchParams, push });
   }, [
     destinationChain?.name,
     pathname,
@@ -199,6 +208,43 @@ export const Form = () => {
     selectedAsset?.ticker,
     sourceChain?.name,
   ]);
+
+  // ── Reusable EVM wallet connect row ───────────────────────────────────────
+  const EvmWalletRow = ({ account }: { account: any }) => {
+    if (account) {
+      return (
+        <WalletCard
+          name={account.name}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            open();
+          }}
+        >
+          {account.address}
+        </WalletCard>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
+          <Typography.Text>Account not present</Typography.Text>
+        </div>
+        <Button.Solid
+          appearance="secondary"
+          size="xs"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            open();
+          }}
+        >
+          Connect wallet
+        </Button.Solid>
+      </div>
+    );
+  };
 
   return (
     <Fragment>
@@ -216,7 +262,7 @@ export const Form = () => {
         open={openSourceModal}
         onOpenChange={setOpenSourceModal}
         setAccount={setSourceAccount}
-        evm={sourceChain?.type !== ChainType.Substrate}
+        evm={sourceChain?.type !== "Substrate"}
       />
 
       <form
@@ -227,6 +273,7 @@ export const Form = () => {
           <div className="flex flex-col gap-3">
             <Typography.Heading>Networks</Typography.Heading>
             <div className="flex max-lg:flex-col gap-2">
+              {/* ── FROM ───────────────────────────────────────────────── */}
               <div className="flex flex-col gap-2 flex-1">
                 <div className="flex flex-col gap-2">
                   <Typography.Text appearance="primary">From</Typography.Text>
@@ -234,53 +281,29 @@ export const Form = () => {
                     name={sourceChain?.name}
                     icon={sourceChain?.logo}
                   >
-                    {supportedSourceChains.map((e) => {
-                      return (
-                        <SelectNetwork.Card
-                          key={e.genesis}
-                          icon={e.logo}
-                          value={e.name}
-                          onSelect={() => {
-                            onSelectSourceChain(e);
-                            if (e.type !== ChainType.Substrate)
-                              setOpenSourceModal(true);
-                          }}
-                        />
-                      );
-                    })}
+                    {supportedSourceChains.map((e) => (
+                      <SelectNetwork.Card
+                        key={e.id}
+                        icon={e.logo}
+                        value={e.name}
+                        onSelect={() => onSelectSourceChain(e)}
+                      />
+                    ))}
                   </SelectNetwork>
                 </div>
-                {sourceAccount ? (
-                  <WalletCard
-                    name={sourceAccount.name}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setOpenSourceModal(true);
-                    }}
-                  >
-                    {sourceAccount.address}
-                  </WalletCard>
+                {/* EVM source → WalletConnect | Substrate source → extension picker */}
+                {isEvmSource ? (
+                  <EvmWalletRow account={sourceAccount} />
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
-                      <Typography.Text>Account not present</Typography.Text>
-                    </div>
-                    <Button.Solid
-                      appearance="secondary"
-                      size="xs"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setOpenSourceModal(true);
-                      }}
-                    >
-                      Connect wallet
-                    </Button.Solid>
-                  </div>
+                  <AccountCombobox
+                    account={sourceAccount}
+                    setAccount={(e) => e && setSourceAccount(e)}
+                    evm={false}
+                  />
                 )}
               </div>
+
+              {/* ── SWAP BUTTON ────────────────────────────────────────── */}
               <Button.Icon
                 type="button"
                 variant="outline"
@@ -289,6 +312,8 @@ export const Form = () => {
               >
                 <RiArrowLeftRightLine className="w-full h-full" />
               </Button.Icon>
+
+              {/* ── TO ─────────────────────────────────────────────────── */}
               <div className="flex flex-col gap-2 flex-1">
                 <div className="flex flex-col gap-2">
                   <Typography.Text appearance="primary">To</Typography.Text>
@@ -296,26 +321,30 @@ export const Form = () => {
                     name={destinationChain?.name}
                     icon={destinationChain?.logo}
                   >
-                    {supportedDestinationChains.map((e) => {
-                      return (
-                        <SelectNetwork.Card
-                          key={e.genesis}
-                          icon={e.logo}
-                          value={e.name}
-                          onSelect={() => onSelectDestinationChain(e)}
-                        />
-                      );
-                    })}
+                    {supportedDestinationChains.map((e) => (
+                      <SelectNetwork.Card
+                        key={e.id}
+                        icon={e.logo}
+                        value={e.name}
+                        onSelect={() => onSelectDestinationChain(e)}
+                      />
+                    ))}
                   </SelectNetwork>
                 </div>
-                <AccountCombobox
-                  account={destinationAccount}
-                  setAccount={(e) => e && setDestinationAccount(e)}
-                  evm={destinationChain?.type !== ChainType.Substrate}
-                />
+                {/* EVM destination → extension picker | Substrate destination → WalletConnect */}
+                {isEvmSource ? (
+                  <AccountCombobox
+                    account={destinationAccount}
+                    setAccount={(e) => e && setDestinationAccount(e)}
+                    evm={false}
+                  />
+                ) : (
+                  <EvmWalletRow account={destinationAccount} />
+                )}
               </div>
             </div>
           </div>
+
           <div className="flex flex-col gap-3">
             <Typography.Heading>Asset</Typography.Heading>
             <div className="flex flex-col gap-2">
@@ -352,7 +381,7 @@ export const Form = () => {
                     <div
                       className={classNames(
                         "w-full pr-4",
-                        errors.amount && "border-danger-base border"
+                        errors.amount && "border-danger-base border",
                       )}
                     >
                       <Input.Vertical
@@ -392,13 +421,12 @@ export const Form = () => {
                       <Token
                         name={selectedAsset.ticker}
                         size="md"
-                        appearance={selectedAsset.ticker as TokenAppearance}
+                        appearance={selectedAsset.logo as TokenAppearance}
                         className="rounded-full border border-primary"
                       />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-level-5" />
                     )}
-
                     <Typography.Text size="md">
                       {selectedAsset ? selectedAsset.ticker : "Select token"}
                     </Typography.Text>
@@ -409,6 +437,7 @@ export const Form = () => {
             </div>
           </div>
         </div>
+
         {loading ? (
           <Button.Solid
             className="w-full py-5 flex items-center gap-1 opacity-60"
@@ -420,7 +449,7 @@ export const Form = () => {
           </Button.Solid>
         ) : (
           <Button.Solid className="w-full py-5" size="md" disabled={disabled}>
-            Bridge
+            Transfer
           </Button.Solid>
         )}
       </form>

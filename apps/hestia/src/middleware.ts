@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const {
     enableLmp: isRewardsActive,
-    isBridgeEnabled,
     maintenanceMode,
   } = defaultConfig;
 
@@ -12,9 +11,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/maintenance", req.url));
   }
   if (!isRewardsActive && req.nextUrl.pathname.startsWith("/rewards")) {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
-  if (!isBridgeEnabled && req.nextUrl.pathname.startsWith("/thea")) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 }
@@ -31,6 +27,5 @@ export const config = {
     "/history",
     "/balances",
     "/cexOnRamp",
-    "/thea",
   ],
 };

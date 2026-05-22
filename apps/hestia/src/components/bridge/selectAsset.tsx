@@ -11,7 +11,7 @@ import {
 import { SetStateAction, Dispatch, useCallback, ComponentProps } from "react";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
-import { useTheaProvider } from "@orderbook/core/providers";
+import { useBridgeProvider } from "./BridgeProvider";
 
 import { formatAmount } from "@/helpers";
 
@@ -31,7 +31,7 @@ export const SelectAsset = ({
     sourceBalances,
     sourceBalancesLoading,
     sourceChain,
-  } = useTheaProvider();
+  } = useBridgeProvider();
 
   return (
     <Modal

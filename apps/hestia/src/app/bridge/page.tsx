@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const Template = dynamic(
-  () => import("@/components/thea/template").then((mod) => mod.Template),
+  () => import("@/components/bridge/template").then((mod) => mod.Template),
   {
     ssr: false,
   }

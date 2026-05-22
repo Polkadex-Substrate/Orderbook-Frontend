@@ -107,8 +107,8 @@ const data = [
         target: "_blank",
       },
       {
-        title: "THEA Crosschain",
-        href: "https://orderbook.polkadex.ee/thea",
+        title: "Bridge",
+        href: "/bridge",
         target: "_blank",
       },
     ],

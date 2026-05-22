@@ -70,7 +70,7 @@ export const ResponsiveMenuModal = ({
                   </HeaderLink.Single>
                   <HeaderLink.Single
                     size="lg"
-                    href="/thea"
+                    href="/bridge"
                     className="text-lg"
                     disabled={isBridgeDisabled}
                   >

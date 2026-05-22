@@ -4,7 +4,6 @@ import classNames from "classnames";
 import { useMemo } from "react";
 import { useWindowSize } from "usehooks-ts";
 import { RiMore2Line, RiCloseLine, RiRefreshLine } from "@remixicon/react";
-import { Asset, Chain } from "@polkadex/thea";
 
 import { FacetedFilter } from "./facetedFilters";
 import { Export } from "./export";
@@ -15,8 +14,8 @@ export const filters = {
 
 interface FiltersProps<TData> {
   table: Table<TData>;
-  assets: Asset[];
-  chains: Chain[];
+  assets: any;
+  chains: any;
   data: any[];
   refetchingLoading: boolean;
   onRefetch: () => Promise<void>;
@@ -51,7 +50,7 @@ export const Filters = <TData,>({
       <div
         className={classNames(
           "flex items-center gap-4 flex-1",
-          responsiveFilter && "justify-"
+          responsiveFilter && "justify-",
         )}
       >
         {responsiveFilter ? (

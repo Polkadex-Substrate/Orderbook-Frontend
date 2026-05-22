@@ -2,8 +2,6 @@ import React, { Dispatch, SetStateAction } from "react";
 import { Button, Modal, Typography } from "@polkadex/ux";
 import { RiCloseLine } from "@remixicon/react";
 import Link from "next/link";
-import { defaultConfig } from "@orderbook/core/config";
-
 import { FundHorizontalCard } from "../ReadyToUse/fundHorizontalCard";
 
 export const FundWalletModal = ({
@@ -13,7 +11,6 @@ export const FundWalletModal = ({
   open: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const { isBridgeEnabled } = defaultConfig;
   return (
     <Modal
       open={open}
@@ -51,7 +48,7 @@ export const FundWalletModal = ({
               icon="Bridge"
               title="Decentralized bridge"
               description="Bridge your crypto to Polkadex and vice versa."
-              href={isBridgeEnabled ? "/thea" : "https://thea.polkadex.ee/"}
+              href="/bridge"
               target="_blank"
             />
           </div>

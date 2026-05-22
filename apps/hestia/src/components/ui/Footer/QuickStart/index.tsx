@@ -89,8 +89,8 @@ export const QuickStart = ({
                 className="underline"
                 asChild
               >
-                <Link href="/thea" target="_blank" rel="noreferrer noopener">
-                  using THEA
+                <Link href="/bridge" target="_blank" rel="noreferrer noopener">
+                  using Bridge
                 </Link>
               </Typography.Text>
               <Typography.Text size="sm" appearance="base">

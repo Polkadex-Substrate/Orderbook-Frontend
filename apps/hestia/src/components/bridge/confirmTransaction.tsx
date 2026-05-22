@@ -22,15 +22,18 @@ import {
   THEA_AUTOSWAP,
   parseScientific,
 } from "@orderbook/core/index";
-import { useTheaProvider } from "@orderbook/core/providers";
+import { useBridgeProvider } from "./BridgeProvider";
+import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 
-import { useBridge, usePool } from "@/hooks";
+import { usePool } from "@/hooks";
 import {
   ErrorMessage,
   GenericHorizontalItem,
   Terms,
 } from "@/components/ui/ReadyToUse";
 import { formatAmount } from "@/helpers";
+import { transferSubstrateToEvm } from "@/lib/hyperbridge/substrateToEthereum";
+import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 
 interface Props {
   openFeeModal: boolean;
@@ -55,16 +58,19 @@ export const ConfirmTransaction = ({
     selectedAsset,
     isDestinationPolkadex,
     selectedAssetIdPolkadex,
-  } = useTheaProvider();
+    isEvmSource,
+  } = useBridgeProvider();
   const { destinationFee, sourceFee, sourceFeeBalance, sourceFeeExistential } =
     transferConfig ?? {};
 
+  const { onHandleAlert, onHandleError } = useSettingsProvider();
+
   const showAutoSwap = useMemo(
     () => isDestinationPolkadex && !destinationPDEXBalance,
-    [isDestinationPolkadex, destinationPDEXBalance]
+    [isDestinationPolkadex, destinationPDEXBalance],
   );
 
-  const { swapPrice = 0, swapLoading } = usePool({
+  const { swapPrice: swapPriceRaw = 0, swapLoading } = usePool({
     asset: selectedAssetIdPolkadex,
     amount: THEA_AUTOSWAP,
     enabled: showAutoSwap,
@@ -72,28 +78,29 @@ export const ConfirmTransaction = ({
 
   const shortSourceAddress = useMemo(
     () => truncateString(sourceAccount?.address ?? "", 4),
-    [sourceAccount?.address]
+    [sourceAccount?.address],
   );
 
   const shortDestinationAddress = useMemo(
     () => truncateString(destinationAccount?.address ?? "", 4),
-    [destinationAccount?.address]
+    [destinationAccount?.address],
   );
-  const { mutateAsync, isLoading } = useBridge({ onSuccess });
+  const [isLoading, setIsLoading] = useState(false);
 
   const error = useMemo(() => {
+    const swapPrice = Number(swapPriceRaw);
     const autoSwapAmount = showAutoSwap ? swapPrice : 0;
     const balance = sourceFeeBalance?.amount ?? 0;
     const existential = sourceFeeExistential?.amount ?? 0;
     const fee = sourceFee?.amount ?? 0;
 
     if (balance <= fee + existential) return CrossChainError.SOURCE_FEE;
-    if (showAutoSwap && !swapPrice) return CrossChainError.NOT_ENOUGH_LIQUIDITY;
+    // if (showAutoSwap && !swapPrice) return CrossChainError.NOT_ENOUGH_LIQUIDITY;
 
     if (showAutoSwap && amount <= autoSwapAmount)
       return CrossChainError.AUTO_SWAP(
         autoSwapAmount.toFixed(4),
-        selectedAsset?.ticker as string
+        selectedAsset?.ticker as string,
       );
   }, [
     amount,
@@ -102,12 +109,12 @@ export const ConfirmTransaction = ({
     sourceFee?.amount,
     sourceFeeBalance?.amount,
     sourceFeeExistential?.amount,
-    swapPrice,
+    swapPriceRaw,
   ]);
 
   const disabled = useMemo(
     () => !!error || isLoading || !checked,
-    [error, isLoading, checked]
+    [error, isLoading, checked],
   );
 
   const [
@@ -198,8 +205,8 @@ export const ConfirmTransaction = ({
                       <Skeleton loading={swapLoading} className="min-h-4 w-10">
                         <div className="flex items-center gap-1">
                           <Typography.Text>
-                            {swapPrice > 0
-                              ? `${swapPrice.toFixed(4)} ${selectedAsset?.ticker}`
+                            {Number(swapPriceRaw) > 0
+                              ? `${Number(swapPriceRaw).toFixed(4)} ${selectedAsset?.ticker}`
                               : "--------"}
                           </Typography.Text>
                           <Typography.Text appearance="primary">
@@ -249,9 +256,10 @@ export const ConfirmTransaction = ({
                     >
                       {destinationFeeAmount} {destinationFeeTicker}
                     </ResponsiveCard>
-                    {showAutoSwap && swapPrice > 0 && (
+                    {showAutoSwap && Number(swapPriceRaw) > 0 && (
                       <ResponsiveCard label="Auto swap">
-                        {swapPrice.toFixed(4)} {selectedAsset?.ticker}
+                        {Number(swapPriceRaw).toFixed(4)}{" "}
+                        {selectedAsset?.ticker}
                       </ResponsiveCard>
                     )}
                   </HoverInformation.Content>
@@ -266,7 +274,49 @@ export const ConfirmTransaction = ({
               <Interaction.Action
                 disabled={disabled}
                 appearance={disabled ? "secondary" : "primary"}
-                onClick={async () => await mutateAsync({ amount })}
+                // onClick={async () => {
+                //   try {
+                //     setIsLoading(true);
+                //     await transferTokens({ amount, recipient: destinationAccount?.address });
+                //     onSuccess();
+                //   } catch (e) {
+                //     console.error("Bridge Error: ", e);
+                //   } finally {
+                //     setIsLoading(false);
+                //   }
+                // }}
+                onClick={async () => {
+                  try {
+                    setIsLoading(true);
+
+                    if (isEvmSource) {
+                      // EVM (Sepolia) → Substrate (Polkadex)
+                      await transferTokens({
+                        amount,
+                        recipient: destinationAccount?.address,
+                      });
+                    } else {
+                      // Substrate (Polkadex) → EVM (Sepolia)
+                      await transferSubstrateToEvm({
+                        amount,
+                        recipient: destinationAccount?.address,
+                        senderAddress: sourceAccount?.address,
+                        symbol: selectedAsset?.ticker,
+                        decimals: selectedAsset?.decimals,
+                      });
+                    }
+
+                    onHandleAlert(
+                      "These tokens will reflect in your Funding wallet in 2-3 mins",
+                    );
+                    onSuccess();
+                  } catch (e) {
+                    onHandleError("Failed to transfer tokens");
+                    console.error("Bridge Error:", e);
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
               >
                 Sign and Submit
               </Interaction.Action>

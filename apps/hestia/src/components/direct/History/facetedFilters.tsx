@@ -8,7 +8,7 @@ interface FacetedFilterProps<TData, TValue> {
   column: Column<TData, TValue> | undefined;
   title?: string;
   withoutBorder?: boolean;
-  values: string[];
+  values: any;
 }
 export const FacetedFilter = <TData, TValue>({
   column,
@@ -60,7 +60,7 @@ export const FacetedFilter = <TData, TValue>({
                 if (isSelected) selectedValues.delete(v);
                 else selectedValues.add(v);
                 column?.setFilterValue(
-                  selectedValues.size ? Array.from(selectedValues) : undefined
+                  selectedValues.size ? Array.from(selectedValues) : undefined,
                 );
               }}
             >

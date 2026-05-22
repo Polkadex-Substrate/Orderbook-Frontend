@@ -13,6 +13,8 @@ import { Help } from "./Help";
 import { Form } from "./Form";
 
 import { Footer, Header } from "@/components/ui";
+import ConnectButton from "./ConnectButton";
+import WalletInfo from "./WalletInfo";
 
 export function Template() {
   const { width } = useWindowSize();
@@ -52,6 +54,8 @@ export function Template() {
                 </Typography.Text>
                 <RiInformation2Line className="w-6 h-6 text-primary" />
               </div>
+              {/* <ConnectButton /> */}
+              {/* <WalletInfo /> */}
               <Form />
             </div>
             <Help />

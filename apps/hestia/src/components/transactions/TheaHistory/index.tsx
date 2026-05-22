@@ -1,5 +1,31 @@
 "use client";
 
+// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
+// Real implementation is commented out below. Do not delete.
+
+import { forwardRef } from "react";
+import { GenericMessage } from "@polkadex/ux";
+
+export const TheaHistory = forwardRef<
+  HTMLDivElement,
+  { maxHeight?: string; searchTerm: string }
+>((_props, ref) => (
+  <div ref={ref} className="flex items-center justify-center py-16">
+    <GenericMessage
+      title="Coming Soon"
+      illustration="NoResultFound"
+      className="bg-level-0 border-y border-y-primary"
+      imageProps={{ className: "w-10 self-center" }}
+    />
+  </div>
+));
+
+TheaHistory.displayName = "TheaHistory";
+
+// ─── Original implementation (reference for HyperbridgeHistory) ──────────────
+/*
+"use client";
+
 import { Table, GenericMessage } from "@polkadex/ux";
 import {
   forwardRef,
@@ -254,3 +280,4 @@ export const TheaHistory = forwardRef<
 });
 
 TheaHistory.displayName = "TheaHistory";
+*/

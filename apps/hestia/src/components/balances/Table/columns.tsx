@@ -87,7 +87,7 @@ export const columns = [
       return (
         <ActionsCard
           withdrawLink={{
-            pathname: "/thea",
+            pathname: "/bridge",
             query: {
               from: "Polkadex",
               to: chainName,
@@ -95,7 +95,7 @@ export const columns = [
             },
           }}
           depositLink={{
-            pathname: "/thea",
+            pathname: "/bridge",
             query: {
               from: chainName,
               to: "Polkadex",
