@@ -125,9 +125,9 @@ async function createHelpers() {
   }
 
   // Request accounts — this is what the working script does via privateKeyToAccount
-  const accounts: string[] = await ethereum.request({
+  const accounts = (await ethereum.request({
     method: "eth_requestAccounts",
-  });
+  })) as string[];
   const address = accounts[0] as `0x${string}`;
 
   const walletClient = createWalletClient({
