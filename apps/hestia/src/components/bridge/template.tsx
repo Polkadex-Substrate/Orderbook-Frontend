@@ -3,7 +3,7 @@
 import { Typography } from "@polkadex/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useMemo } from "react";
-import { RiInformation2Line } from "@remixicon/react";
+import { RiInformation2Line, RiToolsFill } from "@remixicon/react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { useMeasure } from "react-use";
 
@@ -13,8 +13,12 @@ import { Help } from "./Help";
 import { Form } from "./Form";
 
 import { Footer, Header } from "@/components/ui";
-import ConnectButton from "./ConnectButton";
-import WalletInfo from "./WalletInfo";
+
+const isMaintenance =
+  process.env.NEXT_PUBLIC_IS_HYPERBRIDGE_MAINTENANCE === "true";
+const maintenanceMessage =
+  process.env.NEXT_PUBLIC_HYPERBRIDGE_MAINTENANCE_MESSAGE ??
+  "Bridge is currently under maintenance. Please check back later.";
 
 export function Template() {
   const { width } = useWindowSize();
@@ -46,6 +50,17 @@ export function Template() {
             paddingBottom,
           }}
         >
+          {isMaintenance ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+              <RiToolsFill className="w-12 h-12 text-primary-base opacity-60" />
+              <Typography.Text bold size="lg">
+                Bridge Under Maintenance
+              </Typography.Text>
+              <Typography.Text appearance="primary">
+                {maintenanceMessage}
+              </Typography.Text>
+            </div>
+          ) : (
           <div className="flex-1 flex flex-col">
             <div className="flex flex-col flex-1">
               <div className="flex items-center justify-between p-4 border-b border-secondary-base">
@@ -60,6 +75,7 @@ export function Template() {
             </div>
             <Help />
           </div>
+          )}
         </main>
         {mobileView && (browserAccountPresent || extensionAccountPresent) && (
           <div
