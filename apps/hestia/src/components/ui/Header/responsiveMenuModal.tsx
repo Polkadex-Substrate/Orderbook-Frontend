@@ -28,6 +28,8 @@ export const ResponsiveMenuModal = ({
 }) => {
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
+  const isFaucetDisabled =
+    process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
   const lastUsedMarketUrl = getMarketUrl();
   const { width } = useWindowSize();
   return (
@@ -83,6 +85,14 @@ export const ResponsiveMenuModal = ({
                     disabled={isRewardDisabled}
                   >
                     Rewards
+                  </HeaderLink.Single>
+                  <HeaderLink.Single
+                    size="lg"
+                    href="/faucet"
+                    className="text-lg"
+                    disabled={isFaucetDisabled}
+                  >
+                    Faucet
                   </HeaderLink.Single>
                   <HeaderLink.Accordion
                     items={[

@@ -36,6 +36,8 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const lastUsedMarketUrl = getMarketUrl();
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
+  const isFaucetDisabled =
+    process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
 
   const unreadNotifications = useMemo(() => {
     return allNotifications.filter((e) => e.active).length;
@@ -77,6 +79,9 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             </HeaderLink.Single>
             <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
               Rewards
+            </HeaderLink.Single>
+            <HeaderLink.Single href="/faucet" disabled={isFaucetDisabled}>
+              Faucet
             </HeaderLink.Single>
             <HeaderLink.Dropdown
               items={[
