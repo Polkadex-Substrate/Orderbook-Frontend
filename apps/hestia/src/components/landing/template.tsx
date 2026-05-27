@@ -5,14 +5,11 @@ import { HowItWorks } from "./HowItWorks";
 import { Features } from "./features";
 import { QuickLinks } from "./quickLinks";
 import { Footer } from "./footer";
-import { TestnetModal } from "./testnetModal";
-
 import { Header } from "@/components/ui";
 
 export function Template() {
   return (
     <div className="flex flex-col flex-1">
-      <TestnetModal />
       <Header />
       <main>
         <Hero />
