@@ -428,7 +428,11 @@ export const Form = () => {
                       <div className="w-6 h-6 rounded-full bg-level-5" />
                     )}
                     <Typography.Text size="md">
-                      {selectedAsset ? selectedAsset.ticker : "Select token"}
+                      {selectedAsset
+                        ? selectedAsset.ticker === "WETH"
+                          ? "ETH"
+                          : selectedAsset.ticker
+                        : "Select token"}
                     </Typography.Text>
                   </div>
                   <RiArrowDownSLine className="w-4 h-4" />

@@ -1,13 +1,13 @@
 import {
-  IndexerClient,
+  IsmpClient,
   EvmChain,
   SubstrateChain,
   createQueryClient,
   postRequestCommitment,
-  RequestStatus,
+  WrappedHyperFungibleTokenABI,
 } from "@hyperbridge/sdk";
 import type { HexString } from "@polkadot/util/types";
-import { hexToU8a, u8aToHex } from "@polkadot/util";
+import { u8aToHex } from "@polkadot/util";
 import Keyring, { decodeAddress } from "@polkadot/keyring";
 import { sepolia } from "viem/chains";
 import {
@@ -15,20 +15,17 @@ import {
   createWalletClient,
   getContract,
   http,
-  keccak256,
   parseEventLogs,
   parseUnits,
   toHex,
   custom,
   maxUint256,
+  type Address,
   type EIP1193Provider,
 } from "viem";
+
 import HOST_MODULE from "./abis/ethSepoliaHostModule";
-import PING_MODULE from "./abis/ethSepoliaPingModule";
-import HANDLER_MODULE from "./abis/ethSepoliaHandlerModule";
 import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule";
-import TOKEN_GATEWAY_MODULE from "./abis/ethSepoliaTokenGatewayModule";
-import { privateKeyToAccount } from "viem/accounts";
 
 import { BRIDGE_CHAINS, BRIDGE_TOKENS, BRIDGE_ROUTES } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
@@ -38,7 +35,7 @@ const _substrateChain = BRIDGE_CHAINS.polkadex as SubstrateChainConfig;
 const _wethToken = BRIDGE_TOKENS.weth;
 const _route = BRIDGE_ROUTES[0];
 
-const tokenGatewayAddress = _evmChain.tokenGatewayAddress as HexString;
+const wethHftAddress = (_wethToken.chains.sepolia?.hftAddress ?? "") as Address;
 const sepoliaRpcURL = _evmChain.rpcUrl;
 const indexerUrl = _route.indexerUrl;
 const destinationRpcUrl = _substrateChain.wsUrl;
@@ -105,7 +102,7 @@ export const getIndexer = singleton(() => {
     }),
   ]).then(
     ([destChain, hyperbridgeChain]) =>
-      new IndexerClient({
+      new IsmpClient({
         source: sourceChain,
         dest: destChain,
         hyperbridge: hyperbridgeChain,
@@ -115,16 +112,12 @@ export const getIndexer = singleton(() => {
   );
 });
 
-// ── Browser-compatible createHelpers ─────────────────────────────────────────
-// Mirrors the working script's createHelpers exactly, but uses window.ethereum
-// instead of a private key so it works with MetaMask / Enkrypt / WalletConnect
 async function createHelpers() {
   const ethereum = (window as Window & { ethereum?: EIP1193Provider }).ethereum;
   if (typeof window === "undefined" || !ethereum) {
     throw new Error("No Ethereum wallet found.");
   }
 
-  // Request accounts — this is what the working script does via privateKeyToAccount
   const accounts = (await ethereum.request({
     method: "eth_requestAccounts",
   })) as string[];
@@ -141,42 +134,14 @@ async function createHelpers() {
     transport: http(sepoliaRpcURL),
   });
 
-  // ── Mirror the working script: read host → hostParams → feeToken ──────────
-  const host = getContract({
-    address: Source.ismpHost as `0x${string}`,
-    abi: HOST_MODULE.ABI,
-    client: publicClient,
-  });
-
-  const hostParams = await host.read.hostParams();
-
-  const feeToken = getContract({
-    address: hostParams.feeToken,
-    abi: FEE_TOKEN_MODULE.ABI,
+  const wrappedHft = getContract({
+    abi: WrappedHyperFungibleTokenABI,
+    address: wethHftAddress,
     client: { public: publicClient, wallet: walletClient },
   });
 
-  const tokenGateway = getContract({
-    abi: TOKEN_GATEWAY_MODULE.ABI,
-    address: tokenGatewayAddress,
-    client: { public: publicClient, wallet: walletClient },
-  });
-
-  return {
-    chain: sepolia,
-    publicClient,
-    walletClient,
-    tokenGateway,
-    feeToken,
-    hostParams,
-    address,
-  };
+  return { publicClient, walletClient, wrappedHft, address };
 }
-
-export const readAssetId = (token_symbol: string) => {
-  const encoder = new TextEncoder();
-  return keccak256(encoder.encode(token_symbol));
-};
 
 export function encodePolkaAddress(polkaAddress?: string): string {
   const keyring = new Keyring();
@@ -185,13 +150,12 @@ export function encodePolkaAddress(polkaAddress?: string): string {
 
 export type BridgeTransferParams = {
   amount: number;
-  recipient: string; // Polkadot destination address
+  recipient: string;
 };
 
 type THelper = Awaited<ReturnType<typeof createHelpers>>;
 
 async function getCommitment(helper: THelper, tx_hash: HexString) {
-  // wait for tx receipt to become available
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   const receipt = await helper.publicClient.waitForTransactionReceipt({
@@ -199,157 +163,126 @@ async function getCommitment(helper: THelper, tx_hash: HexString) {
     confirmations: 1,
   });
 
-  console.log(
-    `Transaction reciept: ${helper.chain.blockExplorers?.default?.url}/tx/${tx_hash}`,
-  );
-  console.log("Block: ", receipt.blockNumber);
-
-  // parse EvmHost PostRequestEvent emitted in the transcation logs
-  const event = parseEventLogs({ abi: HOST_MODULE.ABI, logs: receipt.logs })[0];
+  const event = parseEventLogs({
+    abi: HOST_MODULE.ABI,
+    logs: receipt.logs,
+  })[0];
 
   if (event.eventName !== "PostRequestEvent") {
     throw new Error("Unexpected Event type");
   }
 
   const request = event.args;
-
-  console.log("PostRequestEvent", { request });
-
   const commitment = postRequestCommitment(request).commitment;
 
   return { ...request, commitment };
 }
 
-function getSubstrateAccount(mnemonic: string) {
-  const keyring = new Keyring({ type: "sr25519" });
-  const account = keyring.addFromUri(mnemonic as string);
-
-  return account;
-}
-
 export async function transferTokens(params: BridgeTransferParams) {
-  const helper = await createHelpers();
+  if (!wethHftAddress) {
+    throw new Error(
+      "NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS is not set. " +
+        "Obtain the WrappedHFT contract address from the Hyperbridge team.",
+    );
+  }
 
-  const {
-    address,
-    publicClient,
-    walletClient,
-    tokenGateway,
-    feeToken,
-    hostParams,
-  } = helper;
+  const { address, publicClient, walletClient, wrappedHft } =
+    await createHelpers();
 
   const to: HexString = u8aToHex(decodeAddress(params.recipient, false));
-  const assetId = readAssetId(Token.symbol);
-  if (!assetId) throw new Error(`Invalid assetId for token ${Token.name}`);
-
   const amountWei = parseUnits(String(params.amount), Token.decimals);
+  const destBytes = toHex(Destination.chainId);
 
-  // ── Step 1: Approve WETH to TokenGateway ─────────────────────────────────
-  console.log("Checking WETH allowance...");
-  const wethAllowance = await publicClient.readContract({
-    address: Token.address,
-    abi: FEE_TOKEN_MODULE.ABI,
-    functionName: "allowance",
-    args: [address, tokenGatewayAddress as `0x${string}`],
-  });
-  console.log("Current WETH allowance:", (wethAllowance as bigint).toString());
+  // ── Step 1: Check if contract uses native ETH (isWeth mode) ──────────────
+  // When isWeth=true the contract wraps native ETH itself — no ERC20 approval.
+  // When isWeth=false the underlying ERC20 must be approved to the HFT contract.
+  const isWeth = (await publicClient.readContract({
+    address: wethHftAddress,
+    abi: WrappedHyperFungibleTokenABI,
+    functionName: "isWeth",
+  })) as boolean;
 
-  if ((wethAllowance as bigint) < amountWei) {
-    console.log("Approving WETH (maxUint256)...");
-    const approveTxHash = await walletClient.writeContract({
+  if (!isWeth) {
+    console.log("Checking WETH allowance...");
+    const wethAllowance = await publicClient.readContract({
       address: Token.address,
       abi: FEE_TOKEN_MODULE.ABI,
-      functionName: "approve",
-      // 👇 approve max instead of exact amount — contract may need amount + internal fees
-      args: [tokenGatewayAddress as `0x${string}`, maxUint256],
-      account: address,
+      functionName: "allowance",
+      args: [address, wethHftAddress],
     });
-    console.log("WETH approval tx:", approveTxHash);
-    await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
-    console.log("WETH approval confirmed ✅");
+
+    if ((wethAllowance as bigint) < amountWei) {
+      console.log("Approving WETH to WrappedHFT (maxUint256)...");
+      const approveTxHash = await walletClient.writeContract({
+        address: Token.address,
+        abi: FEE_TOKEN_MODULE.ABI,
+        functionName: "approve",
+        args: [wethHftAddress, maxUint256],
+        account: address,
+      });
+      console.log("WETH approval tx:", approveTxHash);
+      await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
+      console.log("WETH approval confirmed ✅");
+    } else {
+      console.log("WETH allowance sufficient ✅");
+    }
   } else {
-    console.log("WETH allowance sufficient ✅");
+    console.log(
+      "isWeth=true — no ERC20 approval needed, sending native ETH ✅",
+    );
   }
 
-  // ── Step 2: Approve feeToken to TokenGateway ─────────────────────────────
-  // The host's feeToken is used by the protocol to pay relayer/ISMP fees.
-  // Even with relayerFee=0, the contract checks allowance during execution.
-  console.log("Fee token address:", hostParams.feeToken);
-  console.log("Checking feeToken allowance...");
-
-  const feeTokenAllowance = await publicClient.readContract({
-    address: hostParams.feeToken,
-    abi: FEE_TOKEN_MODULE.ABI,
-    functionName: "allowance",
-    args: [address, tokenGatewayAddress as `0x${string}`],
-  });
-  console.log(
-    "Current feeToken allowance:",
-    (feeTokenAllowance as bigint).toString(),
-  );
-
-  if ((feeTokenAllowance as bigint) === BigInt(0)) {
-    console.log("Approving feeToken (maxUint256)...");
-    const feeApproveTxHash = await walletClient.writeContract({
-      address: hostParams.feeToken,
-      abi: FEE_TOKEN_MODULE.ABI,
-      functionName: "approve",
-      args: [tokenGatewayAddress as `0x${string}`, maxUint256],
-      account: address,
-    });
-    console.log("feeToken approval tx:", feeApproveTxHash);
-    await publicClient.waitForTransactionReceipt({ hash: feeApproveTxHash });
-    console.log("feeToken approval confirmed ✅");
-  } else {
-    console.log("feeToken allowance sufficient ✅");
-  }
-
-  // ── Step 3: Teleport ──────────────────────────────────────────────────────
-  const nativeCost = BigInt(0);
-
-  function calculateRelayerFee(amount: number) {
-    const fee = amount * 0.0012;
-    return fee.toFixed(18);
-  }
-
-  const relayerFeeEth = calculateRelayerFee(params.amount);
-  const relayerFee = parseUnits(relayerFeeEth, 18);
-
-  console.log("Relayer fee (ETH string):", relayerFeeEth);
-  console.log("Relayer fee (wei BigInt):", relayerFee.toString());
-
-  const transfer_params = {
-    amount: amountWei,
-    assetId,
-    data: "0x",
-    dest: toHex(Destination.chainId),
-    nativeCost,
-    redeem: false,
-    relayerFee,
-    timeout: BigInt(3600),
+  // ── Step 2: Build send params ─────────────────────────────────────────────
+  // relayerFee must be 0 for the isWeth=true path. When relayerFee > 0 the
+  // contract tries to pull that amount in WETH9 ERC20 (the underlying) from
+  // the caller, which fails unless the user has pre-approved the underlying.
+  // The ISMP dispatch fee is covered by msg.value on this testnet (fee = 0).
+  const sendParams = {
+    dest: destBytes,
     to,
+    amount: amountWei,
+    timeout: BigInt(3600),
+    relayerFee: 0n,
+    data: "0x" as `0x${string}`,
   } as const;
 
-  console.log("Submitting teleport with params:", {
-    amount: amountWei.toString(),
-    dest: toHex(Destination.chainId),
-    to,
-    assetId,
-  });
+  // quote() may revert if the destination chain isn't configured yet in the
+  // HFT contract. Treat that as 0 native fee (same behaviour as the SDK).
+  let nativeValue = 0n;
+  try {
+    console.log("Quoting native cost...");
+    nativeValue = (await publicClient.readContract({
+      address: wethHftAddress,
+      abi: WrappedHyperFungibleTokenABI,
+      functionName: "quote",
+      args: [sendParams],
+    })) as bigint;
+    console.log("Native cost (wei):", nativeValue.toString());
+  } catch (e) {
+    console.warn(
+      "quote() reverted — destination may not be configured yet. Proceeding with 0 native fee.",
+      e,
+    );
+  }
 
-  const hash = await tokenGateway.write.teleport([transfer_params], {
-    value: nativeCost,
+  // When isWeth=true, msg.value must cover both the bridge amount and the fee
+  // because the contract wraps native ETH internally (no separate ERC20 lock).
+  const txValue = isWeth ? amountWei + nativeValue : nativeValue;
+
+  // ── Step 3: Send ──────────────────────────────────────────────────────────
+  console.log("Submitting WrappedHFT.send()...");
+  const hash = await wrappedHft.write.send([sendParams], {
+    value: txValue,
     account: address,
   });
 
   console.log("Bridge tx submitted ✅ hash:", hash);
 
-  // make transfer
-  const postRequest = await getCommitment(helper, hash);
-  const commitment = postRequest.commitment;
-
-  console.log("✅ Post Request Commitment:", commitment);
+  const postRequest = await getCommitment(
+    { publicClient, walletClient, wrappedHft, address },
+    hash,
+  );
+  console.log("✅ Post Request Commitment:", postRequest.commitment);
 
   return hash;
 }

@@ -301,7 +301,6 @@ export const ConfirmTransaction = ({
                         amount,
                         recipient: destinationAccount?.address,
                         senderAddress: sourceAccount?.address,
-                        symbol: selectedAsset?.ticker,
                         decimals: selectedAsset?.decimals,
                       });
                     }

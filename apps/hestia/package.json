@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@cedelabs/widgets-universal": "^1.2.0",
-    "@hyperbridge/sdk": "^1.9.6",
+    "@hyperbridge/sdk": "^2.2.0",
     "@juggle/resize-observer": "^3.4.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@next/bundle-analyzer": "^15.0.0",

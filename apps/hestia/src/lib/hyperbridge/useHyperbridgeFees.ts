@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { TokenGateway, EvmChain, SubstrateChain } from "@hyperbridge/sdk";
-import { keccak256, toHex, pad, parseEther, formatEther } from "viem";
-import { BRIDGE_CHAINS } from "@/config/bridge";
+import { WrappedHyperFungibleTokenABI } from "@hyperbridge/sdk";
+import { createPublicClient, http, parseEther, formatEther, toHex } from "viem";
+import { sepolia } from "viem/chains";
+import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
 
 export interface FeeEstimate {
@@ -10,10 +11,15 @@ export interface FeeEstimate {
   ticker: string;
 }
 
-const DEFAULT_FEES: FeeEstimate = { sourceFee: 0, destinationFee: 0, ticker: "ETH" };
+const DEFAULT_FEES: FeeEstimate = {
+  sourceFee: 0,
+  destinationFee: 0,
+  ticker: "ETH",
+};
 
 const defaultSourceChain = BRIDGE_CHAINS.sepolia as EvmChainConfig;
 const defaultDestChain = BRIDGE_CHAINS.polkadex as SubstrateChainConfig;
+const _wethToken = BRIDGE_TOKENS.weth;
 
 export function useHyperbridgeFees({
   amount,
@@ -52,49 +58,55 @@ export function useHyperbridgeFees({
       setError(null);
 
       try {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore — SDK constructors are typed as private but are public at runtime
-        const sourceChain = new EvmChain({
-          chainId: srcChain.chainId,
-          rpcUrl: srcChain.rpcUrl,
-          host: srcChain.ismpHost,
-          consensusStateId: srcChain.consensusStateId,
+        const hftAddress = _wethToken.chains[srcChain.id]?.hftAddress;
+        if (!hftAddress) {
+          throw new Error(
+            "NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS is not set. " +
+              "Obtain the WrappedHFT contract address from the Hyperbridge team.",
+          );
+        }
+
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(srcChain.rpcUrl),
         });
 
-        // @ts-ignore
-        const destChain = new SubstrateChain({
-          stateMachineId: dstChain.stateMachineId,
-          wsUrl: dstChain.wsUrl,
-          hasher: dstChain.hasher,
-          consensusStateId: dstChain.consensusStateId,
-        });
+        const amountWei = parseEther(amount.toString());
+        const destBytes = toHex(dstChain.stateMachineId);
 
-        const tokenGateway = new TokenGateway({
-          source: sourceChain,
-          dest: destChain,
-        });
-
-        const assetId = keccak256(toHex(assetTicker));
-        const recipientPadded = pad(recipientAddress as `0x${string}`, { size: 32 });
-
-        const { totalNativeCost } = await tokenGateway.quoteNative({
-          amount: parseEther(amount.toString()),
-          assetId,
-          redeem: true,
-          to: recipientPadded,
-          dest: dstChain.stateMachineId,
+        const sendParams = {
+          dest: destBytes,
+          to: recipientAddress as `0x${string}`,
+          amount: amountWei,
           timeout: BigInt(3600),
-          data: "0x",
-        });
+          relayerFee: 0n,
+          data: "0x" as `0x${string}`,
+        } as const;
+
+        // quote() may revert if the destination chain isn't configured yet.
+        // Treat that as 0 native fee (same behaviour as the SDK).
+        let nativeValue = 0n;
+        try {
+          nativeValue = await publicClient.readContract({
+            address: hftAddress,
+            abi: WrappedHyperFungibleTokenABI,
+            functionName: "quote",
+            args: [sendParams],
+          }) as bigint;
+        } catch {
+          console.warn("quote() reverted — destination may not be configured yet in HFT contract.");
+        }
 
         setFees({
-          sourceFee: parseFloat(formatEther(totalNativeCost)),
+          sourceFee: parseFloat(formatEther(nativeValue)),
           destinationFee: 0,
           ticker: srcChain.nativeCurrency.symbol,
         });
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const message =
+          e instanceof Error ? e.message : "Fee estimation failed";
         console.error("Fee estimation failed:", e);
-        setError(e?.message ?? "Fee estimation failed");
+        setError(message);
         setFees(DEFAULT_FEES);
       } finally {
         setLoading(false);
@@ -104,7 +116,7 @@ export function useHyperbridgeFees({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [amount, recipientAddress, assetTicker, srcChain, dstChain]);
+  }, [amount, recipientAddress, assetTicker, srcChain, dstChain, enabled]);
 
   return { fees, loading, error };
 }

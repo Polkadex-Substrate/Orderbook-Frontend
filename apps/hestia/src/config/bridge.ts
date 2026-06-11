@@ -10,7 +10,6 @@ export interface EvmChainConfig {
   rpcUrl: string;
   ismpHost: `0x${string}`;
   consensusStateId: string;
-  tokenGatewayAddress: `0x${string}`;
   nativeCurrency: { symbol: string; decimals: number };
 }
 
@@ -34,7 +33,10 @@ export interface BridgeTokenConfig {
   ticker: string;
   decimals: number;
   logo: string;
-  chains: Record<string, { address?: `0x${string}`; assetId?: string }>;
+  chains: Record<
+    string,
+    { address?: `0x${string}`; assetId?: string; hftAddress?: `0x${string}` }
+  >;
 }
 
 export interface BridgeRouteConfig {
@@ -63,8 +65,6 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
     ismpHost: (process.env.NEXT_PUBLIC_BRIDGE_ISMP_HOST ??
       "0x2EdB74C269948b60ec1000040E104cef0eABaae8") as `0x${string}`,
     consensusStateId: "ETH0",
-    tokenGatewayAddress: (process.env.NEXT_PUBLIC_BRIDGE_TOKEN_GATEWAY_ADDRESS ??
-      "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6") as `0x${string}`,
     nativeCurrency: { symbol: "ETH", decimals: 18 },
   } satisfies EvmChainConfig,
 
@@ -96,7 +96,9 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
     chains: {
       sepolia: {
         address: (process.env.NEXT_PUBLIC_BRIDGE_WETH_ADDRESS ??
-          "0x7b79995e5f793a07bc00c21412e50ecae098e7f9") as `0x${string}`,
+          "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14") as `0x${string}`,
+        hftAddress: (process.env.NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS ??
+          "") as `0x${string}`,
       },
       polkadex: {
         assetId: "3",
@@ -145,9 +147,7 @@ export function getRouteSupportedTokens(
       r.destinationChainId === destinationChainId,
   );
   if (!route) return [];
-  return route.supportedTokenIds
-    .map((id) => BRIDGE_TOKENS[id])
-    .filter(Boolean);
+  return route.supportedTokenIds.map((id) => BRIDGE_TOKENS[id]).filter(Boolean);
 }
 
 export function getRouteConfig(

@@ -81,7 +81,7 @@ export const SelectAsset = ({
                             <TokenCard
                               key={e.id}
                               icon={e.ticker as TokenAppearance}
-                              ticker={e.ticker}
+                              ticker={e.ticker === "WETH" ? "ETH" : e.ticker}
                               tokenName={sourceChain?.name || ""}
                               balance={formatAmount(balance)}
                               loading={sourceBalancesLoading}

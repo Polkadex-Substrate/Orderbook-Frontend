@@ -7,13 +7,14 @@ This guide covers everything required to extend the Hyperbridge-backed bridge wi
 ## Table of Contents
 
 1. [Architecture Overview](#1-architecture-overview)
-2. [Adding a New Token to an Existing Route](#2-adding-a-new-token-to-an-existing-route)
-3. [Adding a New EVM Source Chain](#3-adding-a-new-evm-source-chain)
-4. [Adding a New Substrate Destination Chain](#4-adding-a-new-substrate-destination-chain)
-5. [Adding a Completely New Route (New EVM ↔ New Substrate)](#5-adding-a-completely-new-route-new-evm--new-substrate)
-6. [ABI Files](#6-abi-files)
-7. [Environment Variables Reference](#7-environment-variables-reference)
-8. [Testing Checklist](#8-testing-checklist)
+2. [HFT Contract Model (important — read first)](#2-hft-contract-model-important--read-first)
+3. [Adding a New Token to an Existing Route](#3-adding-a-new-token-to-an-existing-route)
+4. [Adding a New EVM Source Chain](#4-adding-a-new-evm-source-chain)
+5. [Adding a New Substrate Destination Chain](#5-adding-a-new-substrate-destination-chain)
+6. [Adding a Completely New Route (New EVM ↔ New Substrate)](#6-adding-a-completely-new-route-new-evm--new-substrate)
+7. [ABI Files](#7-abi-files)
+8. [Environment Variables Reference](#8-environment-variables-reference)
+9. [Testing Checklist](#9-testing-checklist)
 
 ---
 
@@ -37,10 +38,15 @@ config/bridge.ts
     ├── useSubstrateWethBalance.ts  accepts { wsUrl, assetId, decimals }
     ├── useSubstrateNativeBalance.ts accepts { wsUrl, decimals }
     ├── useHyperbridgeFees.ts       accepts { sourceChainConfig, destChainConfig }
+    │                               calls WrappedHFT.quote() → returns native fee in ETH
     │
-    ├── ethereumToSubstrate.ts      derives Source / Destination / Token from config
-    ├── substrateToEthereum.ts      derives POLKADEX_WS_URL / TOKEN_GATEWAY_ADDRESS
-    │                               / SEPOLIA_STATE_MACHINE from config
+    ├── ethereumToSubstrate.ts      EVM → Substrate
+    │   └── calls WrappedHFT.send() via WrappedHyperFungibleTokenABI (from @hyperbridge/sdk)
+    │       hftAddress sourced from BRIDGE_TOKENS[token].chains[evmChainId].hftAddress
+    │
+    ├── substrateToEthereum.ts      Substrate → EVM
+    │   └── calls api.tx.hyperFungibleToken.send()
+    │       destination: { Evm: chainId }  ← SCALE enum object, NOT string
     │
     └── config/wagmi.ts             derives EVM chain list from SUPPORTED_EVM_CHAIN_IDS
 ```
@@ -50,23 +56,78 @@ The config file defines three collections:
 | Collection | Purpose |
 |------------|---------|
 | `BRIDGE_CHAINS` | One entry per chain. EVM chains use `EvmChainConfig`; Substrate chains use `SubstrateChainConfig`. |
-| `BRIDGE_TOKENS` | One entry per bridgeable token. Each token carries per-chain details (EVM contract address or Substrate asset ID). |
+| `BRIDGE_TOKENS` | One entry per bridgeable token. Each token carries per-chain details (`address`, `assetId`, and `hftAddress` for each EVM chain). |
 | `BRIDGE_ROUTES` | One entry per directional route (source + destination + list of supported token IDs). |
 
 ---
 
-## 2. Adding a New Token to an Existing Route
+## 2. HFT Contract Model (important — read first)
+
+The bridge uses the **WrappedHyperFungibleToken (HFT)** contract pattern. Each bridgeable token has its own deployed `WrappedHFT` contract on every EVM chain. This replaced the older `TokenGateway.teleport()` model.
+
+### Per-token `hftAddress`
+
+The `hftAddress` field in `BRIDGE_TOKENS[token].chains[evmChainId]` is the address of the `WrappedHFT` contract for that specific token on that EVM chain. You get this address from the Hyperbridge team after they deploy and configure the contract for your token/destination pair.
+
+### `isWeth` flag
+
+Each `WrappedHFT` contract exposes an `isWeth()` view function. When `isWeth = true`:
+
+- **EVM → Substrate**: the contract wraps native ETH internally — no ERC-20 approval needed. `msg.value` must cover `amount + nativeFee`.
+- **Substrate → EVM**: on delivery, the contract calls `WETH9.withdraw()` and sends native ETH to the recipient. Tokens arrive as native ETH, not as WETH ERC-20.
+
+The UI accounts for this by displaying "ETH" instead of "WETH" in the token selector when the ticker is "WETH".
+
+### `relayerFee: 0n` is required
+
+Always set `relayerFee: 0n`. With `isWeth = true`, any non-zero `relayerFee` causes the contract to try pulling WETH9 ERC-20 from the caller as the fee, which fails with `ERC20InsufficientAllowance` because no approval was granted (and the entire point of `isWeth` is to avoid approvals).
+
+### `quote()` may revert for Substrate destinations
+
+`WrappedHFT.quote(SendParams)` can revert when the destination chain hasn't been configured yet in the contract (Hyperbridge team does this on their side). Always wrap `quote()` in a try-catch and fall back to `0n`:
+
+```ts
+let nativeValue = 0n;
+try {
+  nativeValue = await publicClient.readContract({
+    address: hftAddress,
+    abi: WrappedHyperFungibleTokenABI,
+    functionName: "quote",
+    args: [sendParams],
+  }) as bigint;
+} catch {
+  // destination may not be configured yet in the HFT contract
+}
+```
+
+### `IsmpHostStateMachine` enum (Substrate → EVM)
+
+When building the Substrate → EVM extrinsic, the `destination` field must be the SCALE-encoded `IsmpHostStateMachine` enum object — **not** a string like `"EVM-11155111"`:
+
+```ts
+// CORRECT
+const destination = { Evm: _evmChain.chainId };   // e.g. { Evm: 11155111 }
+
+// WRONG — Polkadot.js will throw "Cannot map Enum JSON, unable to find 'EVM-11155111'"
+const destination = "EVM-11155111";
+```
+
+---
+
+## 3. Adding a New Token to an Existing Route
 
 **Example:** Add USDC on the existing `sepolia → polkadex` route.
 
 ### Prerequisites
 
-Before writing code, collect the following information:
+Before writing code, collect the following from the Hyperbridge team and on-chain sources:
 
 | Item | Where to get it |
 |------|----------------|
 | EVM contract address of USDC on Sepolia | Sepolia block explorer or protocol docs |
 | Decimals of USDC on Sepolia | Contract `decimals()` call (typically `6` for USDC) |
+| **`WrappedHFT` contract address for USDC on Sepolia** | **Hyperbridge team** — they must deploy and configure this contract for USDC ↔ Polkadex before the bridge works |
+| **`isWeth` value for the USDC HFT contract** | Call `isWeth()` on the deployed contract. `false` for USDC (ERC-20 approval required). |
 | Substrate asset ID for USDC on Polkadex | Polkadex team / on-chain `assets.metadata` enumeration |
 | Icon key supported by `@polkadex/ux` `TokenAppearance` | `TokenAppearance` type definition in `@polkadex/ux` |
 
@@ -89,6 +150,9 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
       sepolia: {
         address: (process.env.NEXT_PUBLIC_BRIDGE_USDC_ADDRESS ??
           "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238") as `0x${string}`,
+        // WrappedHFT contract for USDC — get this address from Hyperbridge team
+        hftAddress: (process.env.NEXT_PUBLIC_BRIDGE_USDC_HFT_ADDRESS ??
+          "") as `0x${string}`,
       },
       polkadex: {
         assetId: "5",               // confirm with Polkadex team
@@ -97,6 +161,8 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
   },
 };
 ```
+
+> **Note on `hftAddress`**: The `WrappedHFT` contract must be deployed *and* configured by the Hyperbridge team for your token–destination pair before it can accept transfers. Getting `hftAddress` without this configuration means `send()` will revert. Confirm with the Hyperbridge team that `supportedChain("SUBSTRATE-PDEX")` returns a non-null peer module ID before going live.
 
 ### Step 2 — Add the token ID to the route's `supportedTokenIds`
 
@@ -116,22 +182,53 @@ export const BRIDGE_ROUTES: BridgeRouteConfig[] = [
 ];
 ```
 
-### Step 3 — Add the env var (optional but recommended)
+### Step 3 — Add the env vars
 
 In `.env.local` (or your deployment environment):
 
 ```env
 NEXT_PUBLIC_BRIDGE_USDC_ADDRESS=0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+NEXT_PUBLIC_BRIDGE_USDC_HFT_ADDRESS=0x<WrappedHFT address from Hyperbridge team>
 ```
 
-Expose it in `apps/hestia/next.config.js` under `env:`:
+Expose them in `apps/hestia/next.config.js` under `env:`:
 
 ```js
 // apps/hestia/next.config.js
 env: {
   // existing vars...
   NEXT_PUBLIC_BRIDGE_USDC_ADDRESS: process.env.NEXT_PUBLIC_BRIDGE_USDC_ADDRESS,
+  NEXT_PUBLIC_BRIDGE_USDC_HFT_ADDRESS: process.env.NEXT_PUBLIC_BRIDGE_USDC_HFT_ADDRESS,
 },
+```
+
+### Step 4 — Check `isWeth` behavior and adjust approval logic
+
+In `ethereumToSubstrate.ts`, the `isWeth` flag is read from the HFT contract at runtime:
+
+```ts
+const isWeth = await publicClient.readContract({
+  address: hftAddress,
+  abi: WrappedHyperFungibleTokenABI,
+  functionName: "isWeth",
+}) as boolean;
+```
+
+- `isWeth = false` (USDC): the code will check allowance and send an ERC-20 approval tx if needed. No additional changes required — the conditional is already in place.
+- `isWeth = true` (WETH): native ETH path, no approval. `msg.value = amountWei + nativeFee`.
+
+If the new token has `isWeth = true`, also update the UI display name mapping (see Section 3.5 below).
+
+### Step 5 — Update UI display name if `isWeth = true`
+
+If the new token behaves like WETH (funds arrive as native ETH on the EVM side), update the display-name overrides in:
+
+- [Form/index.tsx](../../components/bridge/Form/index.tsx) — selected asset label
+- [selectAsset.tsx](../../components/bridge/selectAsset.tsx) — token list item
+
+```tsx
+// Pattern already in place for WETH → ETH. Extend if needed:
+ticker === "WETH" ? "ETH" : ticker
 ```
 
 ### What happens automatically
@@ -141,12 +238,13 @@ env: {
 - Substrate-side USDC balance is fetched via `useSubstrateWethBalance` with `assetId: "5"`
 - `confirmTransaction.tsx` passes `selectedAsset.ticker` (`"USDC"`) and `selectedAsset.decimals` (`6`) to `transferSubstrateToEvm` automatically
 - The token icon uses `selectedAsset.logo` (`"usdc"`) as the `TokenAppearance` key
+- EVM → Substrate: `ethereumToSubstrate.ts` picks up `hftAddress` from `BRIDGE_TOKENS.usdc.chains.sepolia.hftAddress`
 
 **No other files need to change.**
 
 ---
 
-## 3. Adding a New EVM Source Chain
+## 4. Adding a New EVM Source Chain
 
 **Example:** Add Ethereum Mainnet as a source chain.
 
@@ -155,12 +253,13 @@ env: {
 | Item | Where to get it |
 |------|----------------|
 | ISMP Host contract address on Mainnet | Hyperbridge documentation / deployment registry |
-| Token Gateway contract address on Mainnet | Hyperbridge deployment registry |
+| `WrappedHFT` contract address(es) for each token on Mainnet | **Hyperbridge team** — one contract per bridgeable token |
 | Mainnet RPC URL | Alchemy / Infura / your own node |
 | Chain ID | `1` for Ethereum Mainnet |
 | State machine ID | `"EVM-1"` (pattern: `EVM-{chainId}`) |
 | Consensus state ID | e.g. `"ETH0"` for Ethereum (check Hyperbridge docs) |
-| ABI files | Copy and verify from Hyperbridge SDK or their deployment repo |
+
+> There is no longer a `tokenGatewayAddress` field on EVM chains — the gateway logic is per-token via `hftAddress`. Do not add it to `EvmChainConfig`.
 
 ### Step 1 — Add the chain to `BRIDGE_CHAINS` in `config/bridge.ts`
 
@@ -176,7 +275,7 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
     id: "mainnet",
     name: "Ethereum Mainnet",
     type: "EVM",
-    logo: "ethereum",                // reuse same icon key as Sepolia
+    logo: "ethereum",
     chainId: 1,
     stateMachineId: "EVM-1",
     rpcUrl:
@@ -185,16 +284,12 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
     ismpHost: (process.env.NEXT_PUBLIC_BRIDGE_MAINNET_ISMP_HOST ??
       "0x<MAINNET_ISMP_HOST_ADDRESS>") as `0x${string}`,
     consensusStateId: "ETH0",
-    tokenGatewayAddress: (process.env.NEXT_PUBLIC_BRIDGE_MAINNET_TOKEN_GATEWAY ??
-      "0x<MAINNET_TOKEN_GATEWAY_ADDRESS>") as `0x${string}`,
     nativeCurrency: { symbol: "ETH", decimals: 18 },
   } satisfies EvmChainConfig,
 };
 ```
 
-### Step 2 — Add token details for the new chain
-
-Any token that should be bridgeable from Mainnet needs its Mainnet contract address added under its `chains` entry:
+### Step 2 — Add `hftAddress` for each token on the new chain
 
 ```ts
 // apps/hestia/src/config/bridge.ts
@@ -204,12 +299,14 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
     id: "weth",
     // ...existing fields...
     chains: {
-      sepolia: { address: "0x7b79995e5f793a07bc00c21412e50ecae098e7f9" },
+      sepolia:  { address: "0x7b79...", hftAddress: "0x4BF5..." },
       polkadex: { assetId: "3" },
       // ── ADD THIS ──────────────────────────────────────────────────────────
       mainnet: {
         address: (process.env.NEXT_PUBLIC_BRIDGE_MAINNET_WETH_ADDRESS ??
           "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2") as `0x${string}`,
+        hftAddress: (process.env.NEXT_PUBLIC_BRIDGE_MAINNET_WETH_HFT_ADDRESS ??
+          "") as `0x${string}`,
       },
     },
   },
@@ -248,84 +345,41 @@ export const BRIDGE_ROUTES: BridgeRouteConfig[] = [
 import { mainnet, sepolia } from "wagmi/chains";
 
 const WAGMI_CHAIN_MAP: Record<number, Chain> = {
-  1: mainnet,           // <-- already here; if not, add it
+  1: mainnet,           // <-- add if not already present
   11155111: sepolia,
 };
 ```
 
-Because `chainId: 1` is now in `BRIDGE_CHAINS.mainnet`, `SUPPORTED_EVM_CHAIN_IDS` will automatically include `1`, and the wagmi config will pick it up from `WAGMI_CHAIN_MAP`.
+### Step 5 — ABI files for the new chain
 
-### Step 5 — Add ABI files for the new chain
+The `WrappedHyperFungibleTokenABI` comes from `@hyperbridge/sdk` and is chain-agnostic — no new ABI files needed for the HFT transfer logic.
 
-The transfer function in `ethereumToSubstrate.ts` uses Sepolia-specific ABIs. For Mainnet, the contract interfaces are the same but deployed at different addresses. Create a new set of ABI files:
+The two local ABI files (`ethSepoliaHostModule.ts`, `ethSepoliaFeeTokenModule.ts`) are only used on the Sepolia side for:
+- Parsing `PostRequestEvent` logs from the ISMP Host (for commitment extraction after a send)
+- Checking ERC-20 allowance and approving fee tokens
+
+If the Mainnet contracts have the same interfaces (they do — these are standard Hyperbridge contracts), create counterpart files:
 
 ```
 apps/hestia/src/lib/hyperbridge/abis/
-  ethSepoliaHostModule.ts            ← existing (Sepolia)
-  ethSepoliaFeeTokenModule.ts        ← existing (Sepolia)
-  ethSepoliaTokenGatewayModule.ts    ← existing (Sepolia)
-  ethMainnetHostModule.ts            ← NEW: copy structure, same ABI
-  ethMainnetFeeTokenModule.ts        ← NEW: copy structure, same ABI
-  ethMainnetTokenGatewayModule.ts    ← NEW: copy structure, same ABI
+  ethMainnetHostModule.ts        ← copy from ethSepoliaHostModule.ts (same ABI, different address)
+  ethMainnetFeeTokenModule.ts    ← copy from ethSepoliaFeeTokenModule.ts (same ABI)
 ```
 
-The ABI content (function signatures) is identical — only the file names differ. You can literally duplicate the existing files and rename them.
+Then update `ethereumToSubstrate.ts` to select the ABI set based on the active source chain.
 
-### Step 6 — Update `ethereumToSubstrate.ts` to select the right ABI and helpers per chain
-
-Currently `ethereumToSubstrate.ts` has one hardcoded `createHelpers()` function and one set of ABI imports. When supporting multiple source chains, the approach is to parameterize `createHelpers` and the ABI selection by the active source chain:
-
-```ts
-// apps/hestia/src/lib/hyperbridge/ethereumToSubstrate.ts
-
-// Import both sets of ABIs
-import SEPOLIA_HOST_MODULE from "./abis/ethSepoliaHostModule.ts";
-import SEPOLIA_TOKEN_GATEWAY_MODULE from "./abis/ethSepoliaTokenGatewayModule.ts";
-import MAINNET_HOST_MODULE from "./abis/ethMainnetHostModule.ts";
-import MAINNET_TOKEN_GATEWAY_MODULE from "./abis/ethMainnetTokenGatewayModule.ts";
-
-// ABI registry keyed by chain ID
-const ABI_MAP: Record<number, { host: typeof SEPOLIA_HOST_MODULE; tokenGateway: typeof SEPOLIA_TOKEN_GATEWAY_MODULE }> = {
-  11155111: { host: SEPOLIA_HOST_MODULE, tokenGateway: SEPOLIA_TOKEN_GATEWAY_MODULE },
-  1:        { host: MAINNET_HOST_MODULE, tokenGateway: MAINNET_TOKEN_GATEWAY_MODULE },
-};
-
-export async function transferTokens({
-  amount,
-  recipient,
-  sourceChainId = 11155111,          // accept source chain as parameter
-}: {
-  amount: number;
-  recipient: string;
-  sourceChainId?: number;
-}) {
-  const chainABIs = ABI_MAP[sourceChainId];
-  if (!chainABIs) throw new Error(`No ABI map for chainId ${sourceChainId}`);
-
-  const evmChain = Object.values(BRIDGE_CHAINS).find(
-    (c) => c.type === "EVM" && (c as EvmChainConfig).chainId === sourceChainId
-  ) as EvmChainConfig | undefined;
-  if (!evmChain) throw new Error(`Chain ${sourceChainId} not in BRIDGE_CHAINS`);
-
-  // rest of function uses evmChain.ismpHost, evmChain.tokenGatewayAddress,
-  // evmChain.rpcUrl, and chainABIs.host / chainABIs.tokenGateway
-}
-```
-
-Update `BridgeProvider.tsx` and `confirmTransaction.tsx` to pass `sourceChainId` when calling `transferTokens`.
-
-### Step 7 — Add env vars
+### Step 6 — Add env vars
 
 ```env
 NEXT_PUBLIC_BRIDGE_MAINNET_RPC_URL=https://eth.llamarpc.com
 NEXT_PUBLIC_BRIDGE_MAINNET_ISMP_HOST=0x<address>
-NEXT_PUBLIC_BRIDGE_MAINNET_TOKEN_GATEWAY=0x<address>
 NEXT_PUBLIC_BRIDGE_MAINNET_WETH_ADDRESS=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+NEXT_PUBLIC_BRIDGE_MAINNET_WETH_HFT_ADDRESS=0x<WrappedHFT address from Hyperbridge team>
 ```
 
 ---
 
-## 4. Adding a New Substrate Destination Chain
+## 5. Adding a New Substrate Destination Chain
 
 **Example:** Add Polkadot Asset Hub as a destination.
 
@@ -339,6 +393,7 @@ NEXT_PUBLIC_BRIDGE_MAINNET_WETH_ADDRESS=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756C
 | Hasher type | Hyperbridge docs (`"Keccak"` or `"Blake2"`) |
 | Native currency symbol + decimals | Chain documentation |
 | Asset ID for each token on this chain | Chain block explorer or team |
+| **Confirmation that `WrappedHFT.supportedChain(stateMachineId)` returns a non-null peer module** | **Hyperbridge team** — they must register the destination on each `WrappedHFT` contract |
 
 ### Step 1 — Add the chain to `BRIDGE_CHAINS`
 
@@ -349,7 +404,7 @@ assetHub: {
   id: "assetHub",
   name: "Polkadot Asset Hub",
   type: "Substrate",
-  logo: "polkadot",                // icon key in @polkadex/ux
+  logo: "polkadot",
   stateMachineId: "SUBSTRATE-ASSET-HUB",
   wsUrl:
     process.env.NEXT_PUBLIC_BRIDGE_ASSET_HUB_RPC_URL ??
@@ -368,10 +423,10 @@ assetHub: {
 weth: {
   // ...
   chains: {
-    sepolia:   { address: "0x7b79..." },
-    polkadex:  { assetId: "3" },
+    sepolia:  { address: "0x7b79...", hftAddress: "0x4BF5..." },
+    polkadex: { assetId: "3" },
     // ── ADD THIS ──────────────────────────────────────────────────────────
-    assetHub:  { assetId: "1984" },   // example asset ID on Asset Hub
+    assetHub: { assetId: "1984" },   // example asset ID on Asset Hub
   },
 },
 ```
@@ -392,50 +447,43 @@ weth: {
 },
 ```
 
-### Step 4 — Verify `useSubstrateWethBalance` pallet compatibility
+### Step 4 — Verify `IsmpHostStateMachine` enum variant for the new chain
+
+The Substrate → EVM direction uses `{ Evm: chainId }`. For Substrate → Substrate transfers (if ever needed), the enum variant will differ. Check the Polkadex pallet's `IsmpHostStateMachine` definition for the correct variant name before attempting cross-Substrate sends.
+
+### Step 5 — Verify `useSubstrateWethBalance` pallet compatibility
 
 Different Substrate chains expose balances through different pallets. The current `useSubstrateWethBalance.ts` tries two pallets in order:
 
 1. `api.query.assets.account` (standard Substrate Assets pallet)
 2. `api.query.ormlTokens.accounts` (ORML Tokens pallet, common in Polkadex ecosystem)
 
-Asset Hub uses `api.query.assets.account` with a numeric asset ID, so it should work out-of-the-box. If a new chain uses a different pallet, add a third branch in the `getApi().then(async (api) => { ... })` block inside `useSubstrateWethBalance.ts`:
+Asset Hub uses `api.query.assets.account` with a numeric asset ID, so it should work out-of-the-box. If a new chain uses a different pallet, add a third branch in the `getApi().then(async (api) => { ... })` block inside `useSubstrateWethBalance.ts`.
 
-```ts
-// apps/hestia/src/lib/hyperbridge/useSubstrateWethBalance.ts
-
-} else if (api.query.someCustomPallet?.balances) {
-  const unsub = await api.query.someCustomPallet.balances(
-    address,
-    assetId,
-    (result: any) => {
-      // parse and setBalance
-    },
-  );
-  unsubRef.current = unsub as unknown as () => void;
-}
-```
-
-### Step 5 — Check `useSubstrateNativeBalance` decimals
+### Step 6 — Check `useSubstrateNativeBalance` decimals
 
 `useSubstrateNativeBalance` reads the decimals from `nativeCurrency.decimals` in the chain config (set in Step 1). No code change needed — the decimals flow through automatically.
 
 ---
 
-## 5. Adding a Completely New Route (New EVM ↔ New Substrate)
+## 6. Adding a Completely New Route (New EVM ↔ New Substrate)
 
-A completely new route combines Steps 3 and 4 above:
+A completely new route combines Sections 4 and 5 above:
 
 1. Add both chains to `BRIDGE_CHAINS` (one `EvmChainConfig`, one `SubstrateChainConfig`).
-2. Add the token(s) or extend existing tokens with per-chain details in `BRIDGE_TOKENS`.
+2. Add the token(s) or extend existing tokens with per-chain details in `BRIDGE_TOKENS` — including `hftAddress` for the EVM side.
 3. Add the route to `BRIDGE_ROUTES`.
 4. Add the new EVM chain to `WAGMI_CHAIN_MAP` in `config/wagmi.ts`.
-5. Add ABI files for the new EVM chain and update `ethereumToSubstrate.ts` ABI selection (see [Step 5–6 in Section 3](#step-5--add-abi-files-for-the-new-chain)).
+5. Add local ABI files for the new EVM chain if the Host/FeeToken contracts differ from Sepolia (see [Section 7](#7-abi-files)).
 6. Add env vars.
+7. Confirm with the Hyperbridge team that:
+   - The `WrappedHFT` contract is deployed for each token on the new EVM chain
+   - `WrappedHFT.supportedChain(newSubstrateStateMachineId)` returns a non-null peer module
+   - The HFT pallet is deployed on the new Substrate chain (`api.tx.hyperFungibleToken?.send` exists)
 
 ---
 
-## 6. ABI Files
+## 7. ABI Files
 
 The ABI files live at:
 
@@ -443,37 +491,24 @@ The ABI files live at:
 apps/hestia/src/lib/hyperbridge/abis/
 ```
 
-Currently present (Sepolia):
+Currently present:
 
 | File | Purpose |
 |------|---------|
-| `ethSepoliaHostModule.ts` | ISMP Host contract — routes messages between chains |
-| `ethSepoliaFeeTokenModule.ts` | ERC-20 ABI used for fee token approvals |
-| `ethSepoliaHandlerModule.ts` | Message handler (not currently used in transfer flow) |
-| `ethSepoliaPingModule.ts` | Ping/echo test module (not used in production) |
-| `ethSepoliaTokenGatewayModule.ts` | Token Gateway — the primary bridge entry point (`teleport` call) |
+| `ethSepoliaHostModule.ts` | ISMP Host contract — used to parse `PostRequestEvent` logs after a send, to extract the post-request commitment |
+| `ethSepoliaFeeTokenModule.ts` | ERC-20 ABI — used only for ERC-20 allowance check and approval when `isWeth = false` |
+
+**Note**: The `WrappedHyperFungibleTokenABI` that drives the actual `send()` call comes from `@hyperbridge/sdk`, not from a local file. There is no local TokenGateway ABI file — that pattern was replaced by the HFT model.
 
 **When adding a new EVM chain:**
 
-1. Copy all five files, rename the prefix (e.g. `ethMainnet...`).
+1. Copy both files, rename the prefix (e.g. `ethMainnet...`).
 2. The ABI arrays inside are identical — these contracts share the same interface across chains.
 3. Only the deployed addresses differ, and those come from `BRIDGE_CHAINS` in config, not from ABI files.
 
-Example for Mainnet:
-
-```ts
-// apps/hestia/src/lib/hyperbridge/abis/ethMainnetTokenGatewayModule.ts
-
-// Copy the entire array from ethSepoliaTokenGatewayModule.ts
-// The ABI (function signatures) is the same — only the address changes,
-// and that comes from BRIDGE_CHAINS.mainnet.tokenGatewayAddress
-const TOKEN_GATEWAY_ABI = [ /* same as Sepolia */ ] as const;
-export default TOKEN_GATEWAY_ABI;
-```
-
 ---
 
-## 7. Environment Variables Reference
+## 8. Environment Variables Reference
 
 All bridge-related env vars live in `apps/hestia/next.config.js` under the `env:` block. They must also be added to `.env.local` (or the deployment environment) to take effect.
 
@@ -483,8 +518,8 @@ All bridge-related env vars live in `apps/hestia/next.config.js` under the `env:
 |----------|---------|---------|
 | `NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL` | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.rpcUrl` | Sepolia HTTP RPC endpoint |
 | `NEXT_PUBLIC_BRIDGE_ISMP_HOST` | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.ismpHost` | ISMP Host contract on Sepolia |
-| `NEXT_PUBLIC_BRIDGE_TOKEN_GATEWAY_ADDRESS` | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.tokenGatewayAddress` | Token Gateway contract on Sepolia |
 | `NEXT_PUBLIC_BRIDGE_WETH_ADDRESS` | `config/bridge.ts` → `BRIDGE_TOKENS.weth.chains.sepolia.address` | WETH ERC-20 contract on Sepolia |
+| `NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS` | `config/bridge.ts` → `BRIDGE_TOKENS.weth.chains.sepolia.hftAddress` | **WrappedHFT contract for WETH on Sepolia** — get from Hyperbridge team |
 | `NEXT_PUBLIC_BRIDGE_DESTINATION_RPC_URL` | `config/bridge.ts` → `BRIDGE_CHAINS.polkadex.wsUrl` | Polkadex WebSocket RPC |
 | `NEXT_PUBLIC_POLKADEX_STATE_MACHINE` | `config/bridge.ts` → `BRIDGE_CHAINS.polkadex.stateMachineId` | Polkadex state machine ID (`SUBSTRATE-PDEX`) |
 | `NEXT_PUBLIC_BRIDGE_INDEXER_URL` | `config/bridge.ts` → `BRIDGE_ROUTES[0].indexerUrl` | Hyperbridge indexer URL |
@@ -492,21 +527,21 @@ All bridge-related env vars live in `apps/hestia/next.config.js` under the `env:
 
 ### Pattern for new chains
 
-For each new EVM chain `X`, add:
+For each new EVM chain `X`:
 
 ```env
 NEXT_PUBLIC_BRIDGE_X_RPC_URL=
 NEXT_PUBLIC_BRIDGE_X_ISMP_HOST=
-NEXT_PUBLIC_BRIDGE_X_TOKEN_GATEWAY=
 ```
 
-For each new token `T` on chain `X`, add:
+For each new token `T` on EVM chain `X`:
 
 ```env
-NEXT_PUBLIC_BRIDGE_X_T_ADDRESS=
+NEXT_PUBLIC_BRIDGE_X_T_ADDRESS=          # underlying ERC-20 address
+NEXT_PUBLIC_BRIDGE_X_T_HFT_ADDRESS=      # WrappedHFT contract — from Hyperbridge team
 ```
 
-For each new Substrate chain `Y`, add:
+For each new Substrate chain `Y`:
 
 ```env
 NEXT_PUBLIC_BRIDGE_Y_RPC_URL=
@@ -515,7 +550,7 @@ NEXT_PUBLIC_BRIDGE_Y_STATE_MACHINE=
 
 ---
 
-## 8. Testing Checklist
+## 9. Testing Checklist
 
 After adding a new token or chain, verify the following before merging:
 
@@ -525,12 +560,27 @@ After adding a new token or chain, verify the following before merging:
 - [ ] New chain/token entry satisfies its interface type (the `satisfies` keyword in the config enforces this at compile time)
 - [ ] `SUPPORTED_EVM_CHAIN_IDS` includes the new chain ID (console-log it in dev if unsure)
 - [ ] `getRouteSupportedTokens(sourceId, destId)` returns the new token for the relevant route
+- [ ] `hftAddress` is set and non-empty for every EVM-side token entry
+
+### HFT contract verification
+
+- [ ] Call `isWeth()` on the HFT contract — confirm expected value (`true` for native-ETH-backed, `false` for ERC-20)
+- [ ] If `isWeth = false`: ERC-20 approval path is exercised in `ethereumToSubstrate.ts`
+- [ ] Call `supportedChain(destStateMachineId)` on the HFT contract — must return a non-null/non-empty peer module ID; if it returns empty bytes, contact the Hyperbridge team before going live
+- [ ] Confirm `relayerFee: 0n` in both `ethereumToSubstrate.ts` and `useHyperbridgeFees.ts` — never set non-zero
+- [ ] `quote()` is wrapped in try-catch with `0n` fallback (already in place; do not remove)
+
+### Substrate → EVM destination encoding
+
+- [ ] Destination is passed as `{ Evm: chainId }` object (not a string) to `api.tx.hyperFungibleToken.send()`
+- [ ] Confirm new Substrate chains use the correct `IsmpHostStateMachine` enum variant
 
 ### UI
 
 - [ ] Bridge page loads without errors: `yarn dev`, open `/bridge`
 - [ ] Source/destination chain dropdowns show the new chain
-- [ ] Token selector modal shows the new token
+- [ ] Token selector modal shows the new token with correct display name
+- [ ] If `isWeth = true`, the token displays as its native ETH equivalent (e.g. "ETH" not "WETH")
 - [ ] Selecting the new token updates the balance display
 - [ ] Token icon renders correctly (the `logo` key matches a valid `TokenAppearance` in `@polkadex/ux`)
 
@@ -544,6 +594,7 @@ After adding a new token or chain, verify the following before merging:
 
 - [ ] Fee estimation loads without errors when an amount is entered
 - [ ] Fee ticker reflects the native currency of the source chain (e.g. `ETH` for EVM sources)
+- [ ] `quote()` failure is handled gracefully (fee shows 0, not an error)
 
 ### Transfer (testnet only)
 
@@ -551,6 +602,7 @@ After adding a new token or chain, verify the following before merging:
 - [ ] Substrate → EVM: `transferSubstrateToEvm` dispatches the transaction; the extension signing prompt appears
 - [ ] Success alert is shown after both directions
 - [ ] Balances refresh after a successful transfer
+- [ ] EVM receipient receives the expected asset type (native ETH for `isWeth = true` tokens)
 
 ### Env var coverage
 
