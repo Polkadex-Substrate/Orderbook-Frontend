@@ -56,7 +56,7 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
     id: "sepolia",
     name: "Sepolia Testnet",
     type: "EVM",
-    logo: "ethereum",
+    logo: "Ethereum",
     chainId: 11155111,
     stateMachineId: "EVM-11155111",
     rpcUrl:
@@ -72,7 +72,7 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
     id: "polkadex",
     name: "Polkadex Testnet",
     type: "Substrate",
-    logo: "polkadex",
+    logo: "Polkadex",
     stateMachineId:
       process.env.NEXT_PUBLIC_POLKADEX_STATE_MACHINE ?? "SUBSTRATE-PDEX",
     wsUrl:

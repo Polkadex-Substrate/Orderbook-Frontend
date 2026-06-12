@@ -427,7 +427,7 @@ export const Form = () => {
                   <div className="flex items-center gap-2">
                     {selectedAsset ? (
                       <Token
-                        name={selectedAsset.ticker}
+                        name={selectedAsset.ticker === "WETH" ? "ETH" : selectedAsset.ticker}
                         size="md"
                         appearance={selectedAsset.logo as TokenAppearance}
                         className="rounded-full border border-primary"

@@ -5,7 +5,6 @@ import {
   Modal,
   Searchable,
   Skeleton,
-  TokenAppearance,
   TokenCard,
 } from "@polkadex/ux";
 import { SetStateAction, Dispatch, useCallback, ComponentProps } from "react";
@@ -80,7 +79,7 @@ export const SelectAsset = ({
                           <div className="flex-1 [&_span]:!normal-case">
                             <TokenCard
                               key={e.id}
-                              icon={e.ticker as TokenAppearance}
+                              icon={e.ticker === "WETH" ? "ETH" : e.ticker}
                               ticker={e.ticker === "WETH" ? "ETH" : e.ticker}
                               tokenName={sourceChain?.name || ""}
                               balance={formatAmount(balance)}
