@@ -70,6 +70,7 @@ export const Form = () => {
     isDestinationPDEXBalanceLoading,
     setTransferAmount,
     isEvmSource,
+    refetchSourceBalance,
   } = useBridgeProvider();
 
   const { destinationFee, sourceFee, max, min } = transferConfig ?? {};
@@ -255,6 +256,7 @@ export const Form = () => {
         onSuccess={() => {
           resetForm();
           setOpenFeeModal(false);
+          if (isEvmSource) refetchSourceBalance();
         }}
       />
       <SelectAsset open={openAsset} onOpenChange={setOpenAsset} />
@@ -357,7 +359,10 @@ export const Form = () => {
                   >
                     <RiInformationFill className="w-3 h-3 text-actionInput" />
                     <Typography.Text size="xs" appearance="primary">
-                      Available: {balanceAmount} {selectedAsset?.ticker}
+                      Available: {balanceAmount}{" "}
+                      {selectedAsset?.ticker === "WETH"
+                        ? "ETH"
+                        : selectedAsset?.ticker}
                     </Typography.Text>
                   </HoverInformation.Trigger>
                   <HoverInformation.Content
@@ -370,7 +375,10 @@ export const Form = () => {
                       {destinationFeeAmount} {destinationFeeTicker}
                     </ResponsiveCard>
                     <ResponsiveCard label="Available" loading={loading}>
-                      {balanceAmount} {selectedAsset?.ticker}
+                      {balanceAmount}{" "}
+                      {selectedAsset?.ticker === "WETH"
+                        ? "ETH"
+                        : selectedAsset?.ticker}
                     </ResponsiveCard>
                   </HoverInformation.Content>
                 </HoverInformation>

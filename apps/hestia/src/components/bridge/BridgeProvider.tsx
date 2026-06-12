@@ -45,6 +45,7 @@ interface BridgeContextProps {
   isEvmSource: boolean;
   transferAmount: number;
   setTransferAmount: (amount: number) => void;
+  refetchSourceBalance: () => void;
   sourceChain: BridgeChainConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSelectSourceChain: (chain: any) => void;
@@ -156,10 +157,12 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     }
   );
 
-  const { data: ethBalanceData } = useBalance({
+  const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({
     address: evmAddress as `0x${string}` | undefined,
   });
-  const ethBalance = ethBalanceData ? parseFloat(ethBalanceData.formatted) : 0;
+  const ethBalance = ethBalanceData
+    ? Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals
+    : 0;
 
   // ── Balances (Substrate side) ─────────────────────────────────────────────
   const substrateAddress = substrateAccount?.address;
@@ -176,10 +179,13 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     decimals: substrateChain.nativeCurrency.decimals,
   });
 
-  const selectedAssetBalance = useMemo(
-    () => (isEvmSource ? wethBalance : substrateWethBalance),
-    [isEvmSource, wethBalance, substrateWethBalance]
-  );
+  const selectedAssetBalance = useMemo(() => {
+    if (isEvmSource) {
+      // isWeth=true: user sends native ETH on the EVM side, so show native ETH balance
+      return selectedAsset.ticker === "WETH" ? ethBalance : wethBalance;
+    }
+    return substrateWethBalance;
+  }, [isEvmSource, selectedAsset.ticker, ethBalance, wethBalance, substrateWethBalance]);
 
   const sourceBalancesLoading = useMemo(
     () => (isEvmSource ? wethLoading : substrateWethLoading),
@@ -273,6 +279,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         sourceBalances,
         transferAmount,
         setTransferAmount,
+        refetchSourceBalance: refetchEthBalance,
       }}
     >
       {children}
