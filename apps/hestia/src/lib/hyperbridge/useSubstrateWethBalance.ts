@@ -47,7 +47,7 @@ export function useSubstrateWethBalance(
   options?: UseSubstrateAssetBalanceOptions,
 ) {
   const wsUrl = options?.wsUrl ?? defaultSubstrateChain.wsUrl;
-  const assetId = options?.assetId ?? defaultToken.chains.polkadex?.assetId ?? "3";
+  const assetId = options?.assetId;
   const decimals = options?.decimals ?? defaultToken.decimals;
   const divisor = Math.pow(10, decimals);
 
@@ -61,7 +61,7 @@ export function useSubstrateWethBalance(
       unsubRef.current = null;
     }
 
-    if (!address) {
+    if (!address || !assetId) {
       setBalance(0);
       return;
     }

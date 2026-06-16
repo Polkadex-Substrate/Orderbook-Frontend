@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useState,
   ReactNode,
@@ -10,10 +11,10 @@ import {
 } from "react";
 import { useAccount, useBalance } from "wagmi";
 
-import { useEvmTokenBalance } from "@/lib/hyperbridge/useEvmTokenBalance";
 import { useHyperbridgeFees } from "@/lib/hyperbridge/useHyperbridgeFees";
-import { useSubstrateWethBalance } from "@/lib/hyperbridge/useSubstrateWethBalance";
 import { useSubstrateNativeBalance } from "@/lib/hyperbridge/useSubstrateNativeBalance";
+import { useAllSubstrateBalances } from "@/lib/hyperbridge/useAllSubstrateBalances";
+import { useAllEvmTokenBalances } from "@/lib/hyperbridge/useAllEvmTokenBalances";
 import {
   BRIDGE_CHAINS,
   BRIDGE_TOKENS,
@@ -78,6 +79,8 @@ interface BridgeContextProps {
   supportedAssets: BridgeTokenConfig[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sourceBalances: any[];
+  // ticker (uppercase) → on-chain assetId, discovered from chain metadata
+  substrateAssetIds: Map<string, string>;
 }
 
 const BridgeContext = createContext<BridgeContextProps | undefined>(undefined);
@@ -94,7 +97,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [substrateAccount, setSubstrateAccount] = useState<any>(null);
   const [transferAmount, setTransferAmount] = useState(0);
-  const [selectedAsset] = useState<BridgeTokenConfig>(WETH_ASSET);
+  const [selectedAsset, setSelectedAsset] = useState<BridgeTokenConfig>(WETH_ASSET);
 
   const isEvmSource = direction === "evm-to-substrate";
 
@@ -107,9 +110,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
   // Supported chains and assets come from config
   const allChains = Object.values(BRIDGE_CHAINS);
-  const supportedAssets = getRouteSupportedTokens(
-    SEPOLIA_CHAIN.id,
-    POLKADEX_CHAIN.id
+  const supportedAssets = useMemo(
+    () => getRouteSupportedTokens(SEPOLIA_CHAIN.id, POLKADEX_CHAIN.id),
+    [],
   );
 
   // sourceAccount / destinationAccount are aliases based on direction
@@ -148,15 +151,6 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   // ── Balances (EVM side) ───────────────────────────────────────────────────
   const evmAddress = evmAccount?.address;
 
-  const { balance: wethBalance, isLoading: wethLoading } = useEvmTokenBalance(
-    evmAddress,
-    {
-      tokenAddress: selectedAsset.chains.sepolia?.address,
-      rpcUrl: evmChain.rpcUrl,
-      decimals: selectedAsset.decimals,
-    }
-  );
-
   const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({
     address: evmAddress as `0x${string}` | undefined,
   });
@@ -164,15 +158,41 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     ? Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals
     : 0;
 
+  // ERC-20 specs for all non-WETH EVM tokens (WETH uses native ETH balance)
+  const evmTokenSpecs = useMemo(
+    () =>
+      supportedAssets
+        .filter((t) => t.ticker !== "WETH" && !!t.chains.sepolia?.address)
+        .map((t) => ({
+          ticker: t.ticker,
+          tokenAddress: t.chains.sepolia!.address as `0x${string}`,
+          decimals: t.decimals,
+        })),
+    [supportedAssets],
+  );
+
+  const {
+    balances: evmAllTokenBalances,
+    isLoading: evmAllTokensLoading,
+    refetch: refetchEvmTokenBalance,
+  } = useAllEvmTokenBalances(evmAddress, evmTokenSpecs, { rpcUrl: evmChain.rpcUrl });
+
   // ── Balances (Substrate side) ─────────────────────────────────────────────
   const substrateAddress = substrateAccount?.address;
 
-  const { balance: substrateWethBalance, isLoading: substrateWethLoading } =
-    useSubstrateWethBalance(substrateAddress, {
-      wsUrl: substrateChain.wsUrl,
-      assetId: selectedAsset.chains.polkadex?.assetId,
-      decimals: selectedAsset.decimals,
-    });
+  const substrateTokenSpecs = useMemo(
+    () => supportedAssets.map((t) => ({ ticker: t.ticker, decimals: t.decimals })),
+    [supportedAssets],
+  );
+
+  const {
+    balances: substrateAllBalances,
+    assetIds: substrateAssetIds,
+    isLoading: substrateBalancesLoading,
+    refetch: refetchSubstrateBalances,
+  } = useAllSubstrateBalances(substrateAddress, substrateTokenSpecs, {
+    wsUrl: substrateChain.wsUrl,
+  });
 
   const { balance: pdexBalance } = useSubstrateNativeBalance(substrateAddress, {
     wsUrl: substrateChain.wsUrl,
@@ -181,20 +201,37 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
   const selectedAssetBalance = useMemo(() => {
     if (isEvmSource) {
-      // isWeth=true: user sends native ETH on the EVM side, so show native ETH balance
-      return selectedAsset.ticker === "WETH" ? ethBalance : wethBalance;
+      // WETH uses native ETH balance; all other tokens use ERC-20 balance
+      return selectedAsset.ticker === "WETH"
+        ? ethBalance
+        : (evmAllTokenBalances.get(selectedAsset.ticker) ?? 0);
     }
-    return substrateWethBalance;
-  }, [isEvmSource, selectedAsset.ticker, ethBalance, wethBalance, substrateWethBalance]);
+    return substrateAllBalances.get(selectedAsset.ticker) ?? 0;
+  }, [
+    isEvmSource,
+    selectedAsset.ticker,
+    ethBalance,
+    evmAllTokenBalances,
+    substrateAllBalances,
+  ]);
 
   const sourceBalancesLoading = useMemo(
-    () => (isEvmSource ? wethLoading : substrateWethLoading),
-    [isEvmSource, wethLoading, substrateWethLoading]
+    () => (isEvmSource ? evmAllTokensLoading : substrateBalancesLoading),
+    [isEvmSource, evmAllTokensLoading, substrateBalancesLoading],
   );
 
+  // All token balances for the token selector dropdown
   const sourceBalances = useMemo(
-    () => [{ ticker: selectedAsset.ticker, amount: selectedAssetBalance }],
-    [selectedAsset.ticker, selectedAssetBalance]
+    () =>
+      supportedAssets.map((t) => ({
+        ticker: t.ticker,
+        amount: isEvmSource
+          ? t.ticker === "WETH"
+            ? ethBalance
+            : (evmAllTokenBalances.get(t.ticker) ?? 0)
+          : (substrateAllBalances.get(t.ticker) ?? 0),
+      })),
+    [isEvmSource, supportedAssets, ethBalance, evmAllTokenBalances, substrateAllBalances],
   );
 
   // ── Fees ──────────────────────────────────────────────────────────────────
@@ -202,6 +239,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     amount: isEvmSource ? transferAmount : 0,
     recipientAddress: isEvmSource ? destinationAccount?.address : undefined,
     assetTicker: selectedAsset.ticker,
+    hftAddress: selectedAsset.chains[evmChain.id]?.hftAddress,
     enabled: isEvmSource,
     sourceChainConfig: evmChain,
     destChainConfig: substrateChain,
@@ -246,7 +284,13 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
   const onSelectSourceChain = () => {};
   const onSelectDestinationChain = () => {};
-  const onSelectAsset = () => {};
+  const onSelectAsset = (asset: BridgeTokenConfig) => setSelectedAsset(asset);
+
+  const refetchSourceBalance = useCallback(() => {
+    void refetchEthBalance();
+    void refetchEvmTokenBalance();
+    refetchSubstrateBalances();
+  }, [refetchEthBalance, refetchEvmTokenBalance, refetchSubstrateBalances]);
 
   return (
     <BridgeContext.Provider
@@ -277,9 +321,10 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         isDestinationPDEXBalanceLoading: false,
         supportedAssets,
         sourceBalances,
+        substrateAssetIds,
         transferAmount,
         setTransferAmount,
-        refetchSourceBalance: refetchEthBalance,
+        refetchSourceBalance,
       }}
     >
       {children}

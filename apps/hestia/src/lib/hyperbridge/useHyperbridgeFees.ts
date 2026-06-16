@@ -25,6 +25,7 @@ export function useHyperbridgeFees({
   amount,
   recipientAddress,
   assetTicker,
+  hftAddress: externalHftAddress,
   enabled = true,
   sourceChainConfig,
   destChainConfig,
@@ -32,6 +33,7 @@ export function useHyperbridgeFees({
   amount: number;
   recipientAddress?: string;
   assetTicker: string;
+  hftAddress?: string;
   enabled?: boolean;
   sourceChainConfig?: EvmChainConfig;
   destChainConfig?: SubstrateChainConfig;
@@ -58,10 +60,11 @@ export function useHyperbridgeFees({
       setError(null);
 
       try {
-        const hftAddress = _wethToken.chains[srcChain.id]?.hftAddress;
+        const hftAddress =
+          externalHftAddress ?? _wethToken.chains[srcChain.id]?.hftAddress;
         if (!hftAddress) {
           throw new Error(
-            "NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS is not set. " +
+            `No HFT address configured for ${assetTicker}. ` +
               "Obtain the WrappedHFT contract address from the Hyperbridge team.",
           );
         }
@@ -88,7 +91,7 @@ export function useHyperbridgeFees({
         let nativeValue = 0n;
         try {
           nativeValue = await publicClient.readContract({
-            address: hftAddress,
+            address: hftAddress as `0x${string}`,
             abi: WrappedHyperFungibleTokenABI,
             functionName: "quote",
             args: [sendParams],

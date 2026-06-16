@@ -16,6 +16,11 @@ const FAUCET_TOKENS: FaucetToken[] = [
   { id: "weth", ticker: "WETH", name: "Wrapped Ethereum" },
   { id: "usdc", ticker: "USDC", name: "USD Coin" },
   { id: "usdt", ticker: "USDT", name: "Tether USD" },
+  { id: "wbtc", ticker: "WBTC", name: "Wrapped Bitcoin" },
+  { id: "link", ticker: "LINK", name: "ChainLink Token" },
+  { id: "uni", ticker: "UNI", name: "Uniswap" },
+  { id: "aave", ticker: "AAVE", name: "Aave Token" },
+  { id: "wsteth", ticker: "WSTETH", name: "Wrapped Liquid Staked ETH 2.0" },
 ];
 
 const initialValues = {

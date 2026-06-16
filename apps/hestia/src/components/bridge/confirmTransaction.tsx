@@ -59,6 +59,7 @@ export const ConfirmTransaction = ({
     isDestinationPolkadex,
     selectedAssetIdPolkadex,
     isEvmSource,
+    substrateAssetIds,
   } = useBridgeProvider();
   const { destinationFee, sourceFee, sourceFeeBalance, sourceFeeExistential } =
     transferConfig ?? {};
@@ -294,14 +295,29 @@ export const ConfirmTransaction = ({
                       await transferTokens({
                         amount,
                         recipient: destinationAccount?.address,
+                        token: selectedAsset,
                       });
                     } else {
                       // Substrate (Polkadex) → EVM (Sepolia)
+                      // Prefer assetId discovered from chain metadata; fall back to
+                      // static config (WETH hardcoded as "3") only if not yet loaded.
+                      const discoveredId = substrateAssetIds.get(
+                        selectedAsset?.ticker?.toUpperCase() ?? "",
+                      );
+                      const staticId = selectedAsset?.chains.polkadex?.assetId;
+                      const resolvedAssetId = discoveredId ?? staticId;
+                      if (!resolvedAssetId) {
+                        throw new Error(
+                          `Asset ID for ${selectedAsset?.ticker} on Polkadex is not yet known. ` +
+                            "Please wait a moment for the chain data to load and try again.",
+                        );
+                      }
                       await transferSubstrateToEvm({
                         amount,
                         recipient: destinationAccount?.address,
                         senderAddress: sourceAccount?.address,
                         decimals: selectedAsset?.decimals,
+                        assetId: Number(resolvedAssetId),
                       });
                     }
 

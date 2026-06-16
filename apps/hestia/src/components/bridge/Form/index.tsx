@@ -256,7 +256,7 @@ export const Form = () => {
         onSuccess={() => {
           resetForm();
           setOpenFeeModal(false);
-          if (isEvmSource) refetchSourceBalance();
+          refetchSourceBalance();
         }}
       />
       <SelectAsset open={openAsset} onOpenChange={setOpenAsset} />

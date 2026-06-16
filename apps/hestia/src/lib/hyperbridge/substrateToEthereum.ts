@@ -27,6 +27,7 @@ export type SubstrateToEvmParams = {
   recipient: string; // EVM 0x address on Sepolia
   senderAddress: string; // Substrate ss58 address on Polkadex
   decimals?: number;
+  assetId?: number; // Polkadex asset ID; defaults to WETH (3)
 };
 
 // TODO(hft-migration): Replace with new HFT pallet extrinsic once Polkadex team
@@ -35,7 +36,7 @@ export type SubstrateToEvmParams = {
 export async function transferSubstrateToEvm(
   params: SubstrateToEvmParams,
 ): Promise<string> {
-  const { amount, recipient, senderAddress, decimals = 18 } = params;
+  const { amount, recipient, senderAddress, decimals = 18, assetId = WETH_ASSET_ID } = params;
 
   if (!recipient.startsWith("0x")) {
     throw new Error("Recipient must be an EVM address starting with 0x");
@@ -104,7 +105,7 @@ export async function transferSubstrateToEvm(
   //   relayer_fee   → 0 (non-zero pulls from user's asset balance; testnet works fine with 0)
   //   call_data     → None
   const sendParams = {
-    assetId: WETH_ASSET_ID,
+    assetId,
     destination: destinationEnum,
     recipient,
     amount: amountBigInt,

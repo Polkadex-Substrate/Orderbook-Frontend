@@ -28,14 +28,12 @@ import HOST_MODULE from "./abis/ethSepoliaHostModule";
 import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule";
 
 import { BRIDGE_CHAINS, BRIDGE_TOKENS, BRIDGE_ROUTES } from "@/config/bridge";
-import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
+import type { BridgeTokenConfig, EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
 
-const _evmChain = BRIDGE_CHAINS.sepolia as EvmChainConfig;
 const _substrateChain = BRIDGE_CHAINS.polkadex as SubstrateChainConfig;
-const _wethToken = BRIDGE_TOKENS.weth;
+const _evmChain = BRIDGE_CHAINS.sepolia as EvmChainConfig;
 const _route = BRIDGE_ROUTES[0];
 
-const wethHftAddress = (_wethToken.chains.sepolia?.hftAddress ?? "") as Address;
 const sepoliaRpcURL = _evmChain.rpcUrl;
 const indexerUrl = _route.indexerUrl;
 const destinationRpcUrl = _substrateChain.wsUrl;
@@ -59,6 +57,8 @@ export const Destination = {
   rpcUrls: [destinationRpcUrl],
   estimatedTransferTime: "10-15 minutes",
 };
+
+const _wethToken = BRIDGE_TOKENS.weth;
 
 export const Token = {
   name: _wethToken.name,
@@ -112,7 +112,7 @@ export const getIndexer = singleton(() => {
   );
 });
 
-async function createHelpers() {
+async function createHelpers(hftAddress: Address) {
   const ethereum = (window as Window & { ethereum?: EIP1193Provider }).ethereum;
   if (typeof window === "undefined" || !ethereum) {
     throw new Error("No Ethereum wallet found.");
@@ -136,7 +136,7 @@ async function createHelpers() {
 
   const wrappedHft = getContract({
     abi: WrappedHyperFungibleTokenABI,
-    address: wethHftAddress,
+    address: hftAddress,
     client: { public: publicClient, wallet: walletClient },
   });
 
@@ -151,6 +151,7 @@ export function encodePolkaAddress(polkaAddress?: string): string {
 export type BridgeTransferParams = {
   amount: number;
   recipient: string;
+  token: BridgeTokenConfig;
 };
 
 type THelper = Awaited<ReturnType<typeof createHelpers>>;
@@ -179,25 +180,30 @@ async function getCommitment(helper: THelper, tx_hash: HexString) {
 }
 
 export async function transferTokens(params: BridgeTransferParams) {
-  if (!wethHftAddress) {
+  const { amount, recipient, token } = params;
+
+  const hftAddress = (token.chains.sepolia?.hftAddress ?? "") as Address;
+  if (!hftAddress) {
     throw new Error(
-      "NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS is not set. " +
+      `No HFT address configured for ${token.ticker} on Sepolia. ` +
         "Obtain the WrappedHFT contract address from the Hyperbridge team.",
     );
   }
 
   const { address, publicClient, walletClient, wrappedHft } =
-    await createHelpers();
+    await createHelpers(hftAddress);
 
-  const to: HexString = u8aToHex(decodeAddress(params.recipient, false));
-  const amountWei = parseUnits(String(params.amount), Token.decimals);
+  const tokenAddress = (token.chains.sepolia?.address ?? "") as Address;
+
+  const to: HexString = u8aToHex(decodeAddress(recipient, false));
+  const amountWei = parseUnits(String(amount), token.decimals);
   const destBytes = toHex(Destination.chainId);
 
   // ── Step 1: Check if contract uses native ETH (isWeth mode) ──────────────
   // When isWeth=true the contract wraps native ETH itself — no ERC20 approval.
   // When isWeth=false the underlying ERC20 must be approved to the HFT contract.
   const isWeth = (await publicClient.readContract({
-    address: wethHftAddress,
+    address: hftAddress,
     abi: WrappedHyperFungibleTokenABI,
     functionName: "isWeth",
   })) as boolean;
@@ -205,19 +211,19 @@ export async function transferTokens(params: BridgeTransferParams) {
   if (!isWeth) {
     console.log("Checking WETH allowance...");
     const wethAllowance = await publicClient.readContract({
-      address: Token.address,
+      address: tokenAddress,
       abi: FEE_TOKEN_MODULE.ABI,
       functionName: "allowance",
-      args: [address, wethHftAddress],
+      args: [address, hftAddress],
     });
 
     if ((wethAllowance as bigint) < amountWei) {
       console.log("Approving WETH to WrappedHFT (maxUint256)...");
       const approveTxHash = await walletClient.writeContract({
-        address: Token.address,
+        address: tokenAddress,
         abi: FEE_TOKEN_MODULE.ABI,
         functionName: "approve",
-        args: [wethHftAddress, maxUint256],
+        args: [hftAddress, maxUint256],
         account: address,
       });
       console.log("WETH approval tx:", approveTxHash);
@@ -252,7 +258,7 @@ export async function transferTokens(params: BridgeTransferParams) {
   try {
     console.log("Quoting native cost...");
     nativeValue = (await publicClient.readContract({
-      address: wethHftAddress,
+      address: hftAddress,
       abi: WrappedHyperFungibleTokenABI,
       functionName: "quote",
       args: [sendParams],
