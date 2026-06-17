@@ -1,0 +1,2 @@
+# State files contain wallet addresses and keyring data — never commit them.
+funded-state.json
