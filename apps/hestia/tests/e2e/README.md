@@ -4,6 +4,33 @@ All commands are run from `apps/hestia/` unless stated otherwise.
 
 ---
 
+## Overview
+
+The Orderbook frontend (`apps/hestia`) uses [Playwright](https://playwright.dev/) for end-to-end testing. Playwright drives a real Chromium browser against the running Next.js dev server and asserts on what the UI actually renders — not on mocked data or isolated components.
+
+**Why Playwright for a DEX UI:**
+The app is heavily client-side (all providers load via `dynamic({ ssr: false })`), connects to a live Polkadex chain over WebSocket, and requires wallet extensions (Polkadot.js, MetaMask) for on-chain actions. Playwright is the only practical tool that can drive this full stack — it controls the browser, can interact with extension popups in headed mode, and can save and restore browser localStorage (including the trading account keyring) via `storageState`.
+
+**Integration points in the codebase:**
+
+| What | Where |
+|---|---|
+| Playwright config | `apps/hestia/playwright.config.ts` |
+| Scripts | `apps/hestia/package.json` — `test:e2e`, `test:e2e:flags`, `test:e2e:tier2:setup`, `test:e2e:tier2` |
+| All test files | `apps/hestia/tests/e2e/` |
+| Shared helpers | `apps/hestia/tests/e2e/helpers.ts` — `suppressTestnetModal`, `visibleTooltip` |
+| Tier 2 helpers | `apps/hestia/tests/e2e/tier2/helpers.ts` — `signCue`, `anyToast`, `confirmTransactionModal` |
+| Saved wallet state | `apps/hestia/tests/e2e/tier2/.auth/funded-state.json` (gitignored) |
+
+**The dev server** is started automatically by Playwright's `webServer` block in `playwright.config.ts` (`yarn dev` on port 3000). If the server is already running when you invoke `yarn test:e2e`, Playwright reuses it (`reuseExistingServer: true`) and skips the startup wait. The env-flag tests bring up a second server on port 3001 with overridden `NEXT_PUBLIC_*` vars to test the maintenance-mode and faucet-disabled paths without touching your primary server.
+
+**Two-tier design:** Tests are split by whether they need a wallet:
+
+- **Tier 1** (`validation/`) — fully headless, no wallet, CI-safe. Covers form validation, disabled-button states, and env-var gating using `suppressTestnetModal` to neutralise the Radix focus-trap modal that would otherwise block keyboard events.
+- **Tier 2** (`tier2/`) — headed, semi-automated. Playwright drives everything around the signing step; the human approves extension popups when the `👉 ACTION REQUIRED` cue appears in the terminal. Place-Order tests (PO-01..PO-12) are an exception — they use a browser-wallet trading account stored in `localStorage["gDrive"]`, so signing is in-process with no popup at all.
+
+---
+
 ## Quick Reference
 
 | Command | What it runs | Headed | Human needed |
