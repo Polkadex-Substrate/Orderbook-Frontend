@@ -4,6 +4,7 @@ import { Typography, Token, TokenAppearance, Button, Dropdown } from "@polkadex/
 import { RiArrowDownSLine } from "@remixicon/react";
 import { PropsWithChildren } from "react";
 import { useMeasure } from "react-use";
+import classNames from "classnames";
 
 export type FaucetToken = {
   id: string;
@@ -13,49 +14,53 @@ export type FaucetToken = {
 
 const SelectToken = ({
   selected,
+  disabled = false,
   children,
 }: PropsWithChildren<{
   selected?: FaucetToken;
+  disabled?: boolean;
 }>) => {
   const [ref, bounds] = useMeasure<HTMLButtonElement>();
 
   return (
-    <Dropdown>
-      <Dropdown.Trigger asChild ref={ref}>
-        <Button.Outline
-          asChild
-          type="button"
-          appearance="quaternary"
-          className="gap-1 px-3 py-7 justify-between w-full cursor-pointer"
-        >
-          <div>
-            <div className="flex items-center gap-2">
-              {selected ? (
-                <Token
-                  name={selected.ticker}
-                  size="md"
-                  appearance={selected.id as TokenAppearance}
-                  className="rounded-full border border-primary"
-                />
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-level-5" />
-              )}
-              <Typography.Text size="lg" bold>
-                {selected?.ticker ?? "Select token"}
-              </Typography.Text>
+    <div className={classNames(disabled && "pointer-events-none opacity-40")}>
+      <Dropdown>
+        <Dropdown.Trigger asChild ref={ref}>
+          <Button.Outline
+            asChild
+            type="button"
+            appearance="quaternary"
+            className="gap-1 px-3 py-7 justify-between w-full cursor-pointer"
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                {selected ? (
+                  <Token
+                    name={selected.ticker}
+                    size="md"
+                    appearance={selected.id as TokenAppearance}
+                    className="rounded-full border border-primary"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-level-5" />
+                )}
+                <Typography.Text size="lg" bold>
+                  {selected?.ticker ?? "Select token"}
+                </Typography.Text>
+              </div>
+              <RiArrowDownSLine className="w-4 h-4" />
             </div>
-            <RiArrowDownSLine className="w-4 h-4" />
-          </div>
-        </Button.Outline>
-      </Dropdown.Trigger>
-      <Dropdown.Content
-        className="max-h-[250px] hover:overflow-auto overflow-hidden"
-        style={{ minWidth: bounds.width + 20 }}
-        sideOffset={0}
-      >
-        {children}
-      </Dropdown.Content>
-    </Dropdown>
+          </Button.Outline>
+        </Dropdown.Trigger>
+        <Dropdown.Content
+          className="max-h-[250px] hover:overflow-auto overflow-hidden"
+          style={{ minWidth: bounds.width + 20 }}
+          sideOffset={0}
+        >
+          {children}
+        </Dropdown.Content>
+      </Dropdown>
+    </div>
   );
 };
 

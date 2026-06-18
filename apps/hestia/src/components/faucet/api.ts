@@ -24,6 +24,15 @@ export type DripResult = {
   dailyLimit: number;
 };
 
+export type DripSepoliaResult = {
+  success: boolean;
+  token: string;
+  amount: string;
+  address: string;
+  txHash: string;
+  explorerUrl: string;
+};
+
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
     const body = await response.json();
@@ -55,6 +64,23 @@ export async function faucetDrip(
     method: "POST",
     headers: requestHeaders(),
     body: JSON.stringify({ address, asset }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await extractErrorMessage(response));
+  }
+
+  return response.json();
+}
+
+export async function faucetDripSepolia(
+  address: string,
+  token: string
+): Promise<DripSepoliaResult> {
+  const response = await fetch(`${BASE_URL}/api/drip/sepolia`, {
+    method: "POST",
+    headers: requestHeaders(),
+    body: JSON.stringify({ address, token }),
   });
 
   if (!response.ok) {
