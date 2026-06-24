@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import {
   suppressTestnetModal,
   FUNDED_STATE_PATH,
@@ -182,6 +182,7 @@ test.describe("Journey 4 — Place Order", () => {
 
   // ─── PO-09 — No trading session (session expired) ─────────────────────────
   test.skip(
+    true,
     // PO-09 requires the trading account session to be expired or removed.
     // Reproducible by clearing gDrive from localStorage — do this manually.
     "PO-09 — requires expired trading session (clear gDrive from localStorage)"

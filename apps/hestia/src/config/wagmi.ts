@@ -26,13 +26,17 @@ const chains = SUPPORTED_EVM_CHAIN_IDS.map(
   (id) => WAGMI_CHAIN_MAP[id]
 ).filter(Boolean) as [Chain, ...Chain[]];
 
+const isClient = typeof window !== "undefined";
+
 export const config = defaultWagmiConfig({
   chains,
   projectId,
   metadata,
   ssr: true,
   storage: createStorage({ storage: cookieStorage }),
-  enableWalletConnect: true,
+  // WalletConnect initialises @walletconnect/core which opens indexedDB at
+  // module-load time and crashes the RSC runtime. Gate it to the browser only.
+  enableWalletConnect: isClient,
   enableInjected: true,
   enableEIP6963: true,
   enableCoinbase: true,

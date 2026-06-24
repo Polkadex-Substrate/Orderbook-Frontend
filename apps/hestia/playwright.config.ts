@@ -1,4 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config as loadDotenv } from "dotenv";
+import path from "path";
+
+
+// Load .env.local so non-NEXT_PUBLIC_ test vars (e.g. TEST_SUBSTRATE_ADDRESS)
+// are available to the Playwright test process without needing shell exports.
+loadDotenv({ path: path.resolve(__dirname, ".env.local"), override: false });
 
 // libasound.so.2 may not be installed system-wide (e.g. Ubuntu 26.04 without apt access).
 // Set PLAYWRIGHT_LD_LIBRARY_PATH to a directory containing libasound.so.2 to work around this.
@@ -36,6 +43,7 @@ const envFlagServer = process.env.RUN_ENV_FLAG_TESTS
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -43,10 +51,16 @@ export default defineConfig({
   // Tier 2 projects override this to 1 via their own config.
   // CI always runs at 1 worker.
   workers: process.env.CI ? 1 : (process.env.TIER2 ? 1 : 2),
+  // Next.js dev mode compiles routes on first request — allow 90s per test
+  // so cold-start compilation doesn't consume the entire budget before
+  // assertions run.  CI uses a built server so 30s is sufficient there.
+  timeout: process.env.CI ? 30_000 : 90_000,
   reporter: "list",
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
+    // Generous navigation timeout for dev-mode cold compilation.
+    navigationTimeout: process.env.CI ? 30_000 : 60_000,
   },
   // ─── Project routing ───────────────────────────────────────────────────────
   //
@@ -77,25 +91,20 @@ export default defineConfig({
     },
     {
       // One-time setup — run once before tier2 to create the funded storageState.
+      // Extension loading + persistent profile are handled by tests/e2e/tier2/fixtures.ts.
       name: "tier2-setup",
-      use: {
-        ...devices["Desktop Chrome"],
-        headless: false,         // human needs to see the browser
-      },
+      use: { ...devices["Desktop Chrome"] },
       testMatch: ["**/tier2/setup.spec.ts"],
       timeout: 600_000,          // 10 min — human does a lot of steps
       retries: 0,
     },
     {
       // Semi-automated Tier 2 tests — all run headed, serially, at 1 worker.
-      // PO tests restore storageState and sign silently.
+      // PO tests sign silently via browser-wallet keyring (no popup).
       // IT/HFT/AC/EX tests use signCue() to prompt the human for extension interaction.
+      // Extension loading + persistent profile are handled by tests/e2e/tier2/fixtures.ts.
       name: "tier2",
-      use: {
-        ...devices["Desktop Chrome"],
-        headless: false,
-        actionTimeout: 30_000,
-      },
+      use: { ...devices["Desktop Chrome"], actionTimeout: 30_000 },
       testMatch: ["**/tier2/*.spec.ts"],
       testIgnore: ["**/tier2/setup.spec.ts"],
       timeout: 300_000,          // 5 min per test (generous for human signing)

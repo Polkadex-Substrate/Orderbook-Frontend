@@ -10,9 +10,10 @@ import { visibleTooltip } from "../helpers";
 test.describe("Bridge — wallet-disconnected UI states", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/bridge");
+    // 45s: generous for first-load JS hydration on uncompiled dev routes.
     await expect(
       page.getByRole("button", { name: "Transfer" })
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 45_000 });
   });
 
   test("HFT-13 — EVM wallet not connected: account-not-present row visible, Transfer disabled", async ({
@@ -42,7 +43,7 @@ test.describe("Bridge — amount field validation", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/bridge");
     await expect(page.locator('input[name="amount"]')).toBeVisible({
-      timeout: 15_000,
+      timeout: 45_000,
     });
   });
 

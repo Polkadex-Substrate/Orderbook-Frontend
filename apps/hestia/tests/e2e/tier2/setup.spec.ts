@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { suppressTestnetModal, FUNDED_STATE_PATH } from "./helpers";
 import * as path from "path";
 import * as fs from "fs";

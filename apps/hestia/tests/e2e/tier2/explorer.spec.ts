@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { suppressTestnetModal, FUNDED_STATE_PATH } from "./helpers";
 
 // Journey 5 — Explorer / Transfer History (EX-01..EX-09)
@@ -87,10 +87,10 @@ test.describe("Journey 5 — Explorer (SubQuery-gated)", () => {
   }) => {
     test.skip(!subqueryConfigured, "Set NEXT_PUBLIC_SUBQUERY_URL to run indexer tests");
 
-    // Scroll to bottom of the transfer list to trigger infinite scroll
-    await page.locator("[role='main']").evaluate((el) =>
-      el.scrollTo(0, el.scrollHeight)
-    );
+    // Scroll to bottom of the transfer list to trigger infinite scroll.
+    // Use the native <main> element selector — CSS [role='main'] only matches
+    // elements with an explicit role attribute, not the implicit ARIA role of <main>.
+    await page.locator("main").evaluate((el) => el.scrollTo(0, el.scrollHeight));
 
     // Wait briefly for next-page fetch
     await page.waitForTimeout(3_000);
@@ -111,7 +111,7 @@ test.describe("Journey 5 — Explorer (SubQuery-gated)", () => {
 
     // The indexer helper falls back gracefully — shows empty state, no JS error
     // "No results found" OR transfers are shown (if URL is valid)
-    const hasResults = await page.getByText(/no results found/i).isVisible({ timeout: 10_000 });
+    // "No results found" is acceptable — just verify no unhandled JS error appears
     const hasError = await page.getByText(/unhandled.*error|runtime.*error/i).isVisible({ timeout: 2_000 });
     expect(hasError, "No unhandled error should be shown").toBe(false);
   });
@@ -138,10 +138,13 @@ test.describe("Journey 5 — Explorer (SubQuery-gated)", () => {
       page.getByText("PDEX").first()
     ).toBeVisible({ timeout: INDEXER_TIMEOUT });
 
-    // Timestamps are rendered as relative time or date strings
-    // Check a date/time element is present (common formats: "2m ago", "Jan 01")
+    // The date column uses intlFormat({ month:"short", ... }) which produces strings
+    // like "Jun 24, 2024, 12:00 PM" — but locale "EN" can also yield numeric formats.
+    // Match any of: "2m ago", "Jun 24", "2024-06-24", "6/24/2024", "24.06.2024".
     await expect(
-      page.getByText(/\d+.*ago|\d{4}[-/]\d{2}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i).first()
+      page.getByText(
+        /\d+\s*(s|m|h|d|w|month|year)s?\s*ago|[a-z]{3,9}\s+\d+|\d{1,4}[./-]\d{1,2}[./-]\d{1,4}/i
+      ).first()
     ).toBeVisible({ timeout: 5_000 });
   });
 });
@@ -172,13 +175,21 @@ test.describe("EX-06 — Fresh address shows empty state", () => {
       .isVisible({ timeout: 5_000 })
       .catch(() => false);
 
-    if (notConnected) {
-      // AC-02 must run first to make this meaningful — skip with instruction
-      test.skip(
-        // Connect a wallet with no history, then re-run this test.
-        // After connecting: the history table renders with "No results found".
-      );
-    }
+    // Option B: wallet IS connected but has existing transfer history.
+    // The persistent context from tier2-setup already has transfers, so "No results
+    // found" will not appear.  Skip rather than assert incorrect state.
+    const hasRows = !notConnected && await page
+      .locator("table tbody tr, [data-row]")
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
+
+    test.skip(
+      notConnected || hasRows,
+      notConnected
+        ? "Connect a wallet with no transfer history, then re-run."
+        : "Wallet has existing transfers; empty-state test requires a fresh address."
+    );
 
     // With a connected wallet that has no transfers
     await expect(page.getByText("No results found")).toBeVisible({

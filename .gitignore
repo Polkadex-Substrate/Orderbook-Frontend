@@ -74,6 +74,11 @@ amplifytools.xcconfig
 yarn.lock
 package-lock.json
 
+# Playwright Tier 2 persistent Chrome profile (contains wallet key data)
+apps/hestia/tests/e2e/.chrome-profile/
+# Playwright Tier 2 saved auth state
+apps/hestia/tests/e2e/tier2/.auth/
+
 .agent
 
 CLAUDE.md

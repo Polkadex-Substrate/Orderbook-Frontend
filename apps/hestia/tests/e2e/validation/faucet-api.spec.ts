@@ -41,7 +41,8 @@ async function fillAddress(page: Page) {
 async function submitAndExpectSuccess(page: Page) {
   await page.getByRole("button", { name: "Request Tokens" }).click();
   // faucetDrip success fires onHandleAlert("Tokens Sent!", `${amount} has been sent...`)
-  await expect(page.getByText("Tokens Sent!")).toBeVisible({ timeout: 30_000 });
+  // 60s: WETH drip can take longer than other tokens on testnet.
+  await expect(page.getByText("Tokens Sent!")).toBeVisible({ timeout: 60_000 });
 }
 
 // ---------------------------------------------------------------------------

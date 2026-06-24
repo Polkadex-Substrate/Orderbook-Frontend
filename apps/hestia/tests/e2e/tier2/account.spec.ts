@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { suppressTestnetModal, signCue, SIGN_TIMEOUT, anyToast } from "./helpers";
 
 // Journey 0 — Account Setup (AC-02, AC-03, AC-05, AC-06, AC-07, AC-08)

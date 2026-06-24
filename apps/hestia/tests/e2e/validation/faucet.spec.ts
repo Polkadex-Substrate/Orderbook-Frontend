@@ -13,7 +13,7 @@ test.describe("Faucet form validation", () => {
     await page.goto("/faucet");
     await expect(
       page.getByRole("button", { name: "Request Tokens" })
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 45_000 });
   });
 
   test("FA-06 — submit button disabled when no token is selected", async ({

@@ -10,7 +10,7 @@ import { config } from '@/config/wagmi'
 import Web3ModalProvider from '@/context'
 
 import { DynamicProviders } from "@/components/ui/DynamicProviders";
-import { TestnetModal } from "@/components/ui/testnetModal";
+import TestnetModalClient from "@/components/ui/TestnetModalClient";
 const font = Roboto({
   weight: ["100", "300", "400", "500", "700", "900"],
   subsets: ["latin"],
@@ -49,7 +49,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           font.className
         )}
       >
-        <TestnetModal />
+        <TestnetModalClient />
         <Web3ModalProvider initialState={initialState}>
           <DynamicProviders>{children}</DynamicProviders>
         </Web3ModalProvider>
