@@ -2,10 +2,11 @@
 
 import { Button, Input, Tooltip, Typography } from "@polkadex/ux";
 import { RiLoader2Line } from "@remixicon/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormik } from "formik";
 import classNames from "classnames";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { useProfile } from "@orderbook/core/providers/user/profile";
 
 import { faucetRegister, faucetDrip, faucetDripSepolia } from "../api";
 import { SelectToken, type FaucetToken } from "./selectToken";
@@ -47,6 +48,7 @@ export const Form = () => {
   >();
   const [selectedToken, setSelectedToken] = useState<FaucetToken | undefined>();
   const { onHandleAlert, onHandleError } = useSettingsProvider();
+  const { selectedAddresses } = useProfile();
 
   const availableTokens = useMemo(
     () =>
@@ -129,12 +131,25 @@ export const Form = () => {
     },
   });
 
+  useEffect(() => {
+    if (
+      selectedNetwork?.id === "polkadex" &&
+      selectedAddresses.mainAddress
+    ) {
+      setFieldValue("walletAddress", selectedAddresses.mainAddress);
+    }
+  }, [selectedNetwork?.id, selectedAddresses.mainAddress, setFieldValue]);
+
   const handleNetworkSelect = (network: FaucetNetwork) => {
     setSelectedNetwork(network);
     setSelectedToken(undefined);
     setFieldValue("networkId", network.id);
     setFieldValue("tokenId", "");
-    setFieldValue("walletAddress", "");
+    const autoAddress =
+      network.id === "polkadex" && selectedAddresses.mainAddress
+        ? selectedAddresses.mainAddress
+        : "";
+    setFieldValue("walletAddress", autoAddress);
   };
 
   const handleTokenSelect = (token: FaucetToken) => {
@@ -181,38 +196,40 @@ export const Form = () => {
           </div>
         </div>
 
-        {/* Wallet Address */}
-        <div className="flex flex-col gap-3">
-          <Typography.Heading>Wallet Address</Typography.Heading>
-          <div className="flex flex-col gap-2">
-            <Typography.Text appearance="primary">
-              {addressLabel}
-            </Typography.Text>
-            <Tooltip open={!!(touched.walletAddress && errors.walletAddress)}>
-              <Tooltip.Trigger asChild>
-                <div
-                  className={classNames(
-                    "flex items-center border border-primary rounded-sm",
-                    touched.walletAddress &&
-                      errors.walletAddress &&
-                      "border-danger-base",
-                  )}
-                >
-                  <Input.Vertical
-                    type="text"
-                    autoComplete="off"
-                    placeholder={addressPlaceholder}
-                    {...getFieldProps("walletAddress")}
-                    className="max-sm:focus:text-[16px] w-full pl-4 py-4"
-                  />
-                </div>
-              </Tooltip.Trigger>
-              <Tooltip.Content className="bg-level-5 z-[2] p-1">
-                {errors.walletAddress}
-              </Tooltip.Content>
-            </Tooltip>
+        {/* Wallet Address — only shown after network is selected */}
+        {selectedNetwork && (
+          <div className="flex flex-col gap-3">
+            <Typography.Heading>Wallet Address</Typography.Heading>
+            <div className="flex flex-col gap-2">
+              <Typography.Text appearance="primary">
+                {addressLabel}
+              </Typography.Text>
+              <Tooltip open={!!(touched.walletAddress && errors.walletAddress)}>
+                <Tooltip.Trigger asChild>
+                  <div
+                    className={classNames(
+                      "flex items-center border border-primary rounded-sm",
+                      touched.walletAddress &&
+                        errors.walletAddress &&
+                        "border-danger-base",
+                    )}
+                  >
+                    <Input.Vertical
+                      type="text"
+                      autoComplete="off"
+                      placeholder={addressPlaceholder}
+                      {...getFieldProps("walletAddress")}
+                      className="max-sm:focus:text-[16px] w-full pl-4 py-4"
+                    />
+                  </div>
+                </Tooltip.Trigger>
+                <Tooltip.Content className="bg-level-5 z-[2] p-1">
+                  {errors.walletAddress}
+                </Tooltip.Content>
+              </Tooltip>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {isSubmitting ? (
