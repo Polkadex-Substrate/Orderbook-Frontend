@@ -139,6 +139,10 @@ export const QUERY_KEYS = {
     address,
     assets,
   ],
+  lmpPairs: () => [PREFIX, "lmpPairs"],
+  lmpLeaderboardV2: (epoch: number, pair?: string) => [PREFIX, "lmpLeaderboardV2", epoch, pair],
+  lmpDMMs: () => [PREFIX, "lmpDMMs"],
+  lmpHistory: (address: string) => [PREFIX, "lmpHistory", address],
   googleSession: () => [PREFIX, "googleSession"],
   googleAccounts: () => [PREFIX, "googleAccounts"],
   getTheConfig: (
