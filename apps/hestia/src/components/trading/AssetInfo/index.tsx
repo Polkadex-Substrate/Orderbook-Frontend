@@ -81,6 +81,7 @@ export const AssetInfo = ({ currentMarket }: { currentMarket?: Market }) => {
   return (
     <div
       ref={ref}
+      data-tour="market-selector"
       className={classNames(
         "flex flex-wrap border-b border-primary ",
         maxWidth ? "flex-col" : "gap-3"

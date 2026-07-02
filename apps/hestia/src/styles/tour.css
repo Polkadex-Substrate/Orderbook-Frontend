@@ -1,0 +1,115 @@
+/* Driver.js — Polkadex dark theme overrides */
+
+.driver-popover.polkadex-tour-popover {
+  background-color: #111318;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 20px 22px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  max-width: 340px;
+  font-family: inherit;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-title {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-description {
+  color: #8b929e;
+  font-size: 13px;
+  line-height: 1.65;
+  margin-bottom: 0;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-footer {
+  margin-top: 18px;
+  gap: 8px;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-progress-text {
+  color: #4a5568;
+  font-size: 12px;
+  line-height: 1;
+  align-self: center;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-prev-btn {
+  background: transparent;
+  color: #8b929e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-shadow: none;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-prev-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-next-btn {
+  background: #e6007a;
+  color: #ffffff;
+  border: 1px solid #e6007a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-shadow: none;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-next-btn:hover {
+  background: #c8006a;
+  border-color: #c8006a;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-close-btn {
+  color: #4a5568;
+  font-size: 18px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.driver-popover.polkadex-tour-popover .driver-popover-close-btn:hover {
+  color: #e2e8f0;
+}
+
+/* Arrow colors — match popover background for all sides */
+.driver-popover.polkadex-tour-popover.driver-popover-arrow-side-top .driver-popover-arrow {
+  border-top-color: #111318;
+}
+
+.driver-popover.polkadex-tour-popover.driver-popover-arrow-side-bottom .driver-popover-arrow {
+  border-bottom-color: #111318;
+}
+
+.driver-popover.polkadex-tour-popover.driver-popover-arrow-side-left .driver-popover-arrow {
+  border-left-color: #111318;
+}
+
+.driver-popover.polkadex-tour-popover.driver-popover-arrow-side-right .driver-popover-arrow {
+  border-right-color: #111318;
+}
+
+/* Overlay */
+.driver-overlay {
+  background: rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Active element highlight ring */
+.driver-active-element {
+  outline: 2px solid rgba(230, 0, 122, 0.5) !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

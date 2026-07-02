@@ -19,11 +19,12 @@ import { ResponsiveAssetInfo } from "./AssetInfo/responsiveAssetInfo";
 
 import { ConnectTradingInteraction } from "@/components/ui/ConnectWalletInteraction/connectTradingInteraction";
 import { Footer, Header } from "@/components/ui";
-import { useSizeObserver } from "@/hooks";
+import { useSizeObserver, useTour } from "@/hooks";
 
 export function Template({ id }: { id: string }) {
   const [footerRef, footerHeight] = useSizeObserver();
   const [interactionRef, interactionHeight] = useSizeObserver();
+  const { startTour } = useTour();
 
   const mainPanelRef = useRef<ImperativePanelHandle>(null);
   const orderbookPanelRef = useRef<ImperativePanelHandle>(null);
@@ -181,6 +182,14 @@ export function Template({ id }: { id: string }) {
       ) : (
         <Footer marketsActive ref={footerRef} />
       )}
+      <button
+        onClick={startTour}
+        title="Take a tour"
+        className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-[#E6007A] text-white shadow-lg hover:bg-[#c8006a] transition-colors duration-200 focus:outline-none"
+        aria-label="Start product tour"
+      >
+        <span className="text-base font-bold leading-none select-none">?</span>
+      </button>
     </Fragment>
   );
 }

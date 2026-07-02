@@ -48,7 +48,11 @@ export const Profile = ({
     return (
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <Button.Solid size="2sm" onClick={onOpenFundWallet}>
+          <Button.Solid
+            size="2sm"
+            data-tour="fund-account-btn"
+            onClick={onOpenFundWallet}
+          >
             Fund Account
           </Button.Solid>
           <Tooltip>
@@ -115,7 +119,7 @@ export const Profile = ({
       </div>
     );
   return (
-    <div className="flex items-center gap-2">
+    <div data-tour="connect-wallet-btn" className="flex items-center gap-2">
       <Button.Solid size="2sm" className="font-medium" onClick={onClick}>
         Connect wallet
       </Button.Solid>

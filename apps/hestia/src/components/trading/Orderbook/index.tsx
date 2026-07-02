@@ -31,7 +31,7 @@ export const Orderbook = ({ id }: { id: string }) => {
   } = useOrderbook(currentMarket?.id ?? "");
 
   return (
-    <div className="flex flex-col flex-1 h-full overflow-hidden">
+    <div data-tour="orderbook" className="flex flex-col flex-1 h-full overflow-hidden">
       <Header
         selectedDecimal={sizeState.size}
         decimalSizes={initialState}

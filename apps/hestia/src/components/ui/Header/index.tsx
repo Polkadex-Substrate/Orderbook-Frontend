@@ -58,6 +58,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
       />
       <header
         ref={ref}
+        data-tour="header"
         className="flex justify-between items-center px-3 flex-wrap border-b border-primary sticky top-0 left-0 bg-backgroundBase z-10"
       >
         <div className="flex-1 flex items-center gap-5 py-2 overflow-auto">

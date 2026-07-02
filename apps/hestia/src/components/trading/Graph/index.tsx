@@ -509,7 +509,7 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
   };
 
   return (
-    <div className="flex flex-col flex-1 h-full w-full bg-[#0d0d0f] text-[#d1d4dc]">
+    <div data-tour="price-chart" className="flex flex-col flex-1 h-full w-full bg-[#0d0d0f] text-[#d1d4dc]">
       <div className="flex flex-col flex-1 h-full w-full">
         {/* Header */}
         <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -53,6 +53,7 @@
     "@babel/plugin-transform-modules-systemjs": ">=7.29.4"
   },
   "dependencies": {
+    "driver.js": "^1.6.0",
     "minimatch": "^10.2.4"
   }
 }

@@ -44,7 +44,7 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
   }, [selectedTradingAccount]);
 
   return (
-    <Tabs defaultValue="limit" className="flex-1 flex h-full">
+    <Tabs data-tour="place-order" defaultValue="limit" className="flex-1 flex h-full">
       <div className="flex items-center justify-between border-b border-primary">
         <Tabs.List className="px-2 py-2.5">
           <Tabs.Trigger value="limit">Limit</Tabs.Trigger>

@@ -95,7 +95,7 @@ export const Orders = () => {
   );
 
   return (
-    <Tabs defaultValue="openOrders" className="flex-1 h-full">
+    <Tabs data-tour="orders-panel" defaultValue="openOrders" className="flex-1 h-full">
       <div className="flex items-center justify-between border-b border-primary">
         <ScrollArea className=" overflow-hidden" style={{ maxWidth }}>
           <Tabs.List className="px-2 py-2.5 whitespace-nowrap">
