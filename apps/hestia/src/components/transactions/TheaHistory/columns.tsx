@@ -3,11 +3,11 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { Typography } from "@polkadex/ux";
 import { RiArrowRightLine } from "@remixicon/react";
-import { GENESIS } from "@orderbook/core/index";
 
 import { NetworkCard } from "./networkCard";
 import { TokenInfo } from "./tokenInfo";
 import { LinkCard } from "./linkCard";
+import { ClaimRefundButton } from "./claimRefundButton";
 
 import { formatedDate } from "@/helpers";
 import { Transaction } from "@/hooks";
@@ -18,9 +18,9 @@ export const columns = [
   columnHelper.accessor((row) => row.timestamp, {
     id: "date",
     cell: (e) => {
-      const date = formatedDate(new Date(e.getValue()), false);
+      const date = formatedDate(new Date(Number(e.getValue())), false);
       return (
-        <Typography.Text size="sm" className=" whitespace-nowrap">
+        <Typography.Text size="sm" className="whitespace-nowrap">
           {date}
         </Typography.Text>
       );
@@ -35,11 +35,8 @@ export const columns = [
   columnHelper.accessor((row) => row, {
     id: "token",
     cell: (e) => {
-      const { asset, amount, status } = e.getValue();
-      const value = amount.toFormat();
-      const ready = ["CLAIMED", "APPROVED", "READY"].includes(status);
-
-      return <TokenInfo ticker={asset?.ticker} ready={ready} amount={value} />;
+      const { symbol, amount, status } = e.getValue();
+      return <TokenInfo ticker={symbol} status={status} amount={amount} />;
     },
     header: () => (
       <Typography.Text size="xs" appearance="primary">
@@ -47,38 +44,27 @@ export const columns = [
       </Typography.Text>
     ),
     footer: (e) => e.column.id,
-    filterFn: (row, id, value: string[]) => {
-      const ticker = row.original.asset?.ticker?.toLowerCase() ?? "";
+    filterFn: (row, _id, value: string[]) => {
+      const ticker = row.original.symbol?.toLowerCase() ?? "";
       return value?.some((val) => val.toLowerCase().includes(ticker));
     },
-
     sortingFn: (rowA, rowB) => {
-      const numA = rowA.original.amount;
-      const numB = rowB.original.amount;
+      const numA = parseFloat(rowA.original.amount);
+      const numB = parseFloat(rowB.original.amount);
       return numA > numB ? 1 : -1;
     },
   }),
   columnHelper.accessor((row) => row, {
     id: "source",
     cell: (e) => {
-      const { from, to } = e.getValue();
-
-      const isFromPolkadotNetwork = from?.genesis?.includes(GENESIS[0]);
-      const isToPolkadotNetwork = to?.genesis?.includes(GENESIS[0]);
-
+      const { sourceChain, destinationChain } = e.getValue();
       return (
         <div className="flex items-center gap-3">
-          <NetworkCard
-            name={from?.name}
-            isPolkadotEcosystem={isFromPolkadotNetwork}
-          />
+          <NetworkCard name={sourceChain} />
           <div className="flex items-center justify-center w-5 h-5 p-0.5 bg-level-1 border border-primary">
             <RiArrowRightLine className="w-full h-full text-primary" />
           </div>
-          <NetworkCard
-            name={to?.name}
-            isPolkadotEcosystem={isToPolkadotNetwork}
-          />
+          <NetworkCard name={destinationChain} />
         </div>
       );
     },
@@ -88,21 +74,34 @@ export const columns = [
       </Typography.Text>
     ),
     footer: (e) => e.column.id,
-    filterFn: (row, id, value: string[]) =>
+    filterFn: (row, _id, value: string[]) =>
       value?.some((val) =>
-        val.toLowerCase().includes(row.original.from?.name.toLowerCase() ?? "")
+        val
+          .toLowerCase()
+          .includes(row.original.sourceChain.toLowerCase() ?? ""),
       ),
   }),
-  columnHelper.accessor((row) => row.hash, {
+  columnHelper.accessor((row) => row, {
     id: "hash",
     cell: (e) => {
-      const data = e.getValue();
-
-      return <LinkCard value={data} />;
+      const { transactionHash, sourceChain } = e.getValue();
+      return (
+        <LinkCard value={transactionHash} sourceChain={sourceChain} />
+      );
     },
     header: () => (
       <Typography.Text size="xs" appearance="primary">
         Hash
+      </Typography.Text>
+    ),
+    footer: (e) => e.column.id,
+  }),
+  columnHelper.accessor((row) => row, {
+    id: "action",
+    cell: (e) => <ClaimRefundButton transaction={e.getValue()} />,
+    header: () => (
+      <Typography.Text size="xs" appearance="primary">
+        Action
       </Typography.Text>
     ),
     footer: (e) => e.column.id,

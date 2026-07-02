@@ -1,15 +1,28 @@
 import { Typography, TokenAppearance, Token } from "@polkadex/ux";
 import classNames from "classnames";
 
+import { CrossChainTxStatus } from "@orderbook/core/index";
+
+const STATUS_CONFIG: Record<
+  CrossChainTxStatus,
+  { dot: string; text: string; appearance: "success" | "attention" | "danger" }
+> = {
+  COMPLETED: { dot: "bg-success-base", text: "Completed", appearance: "success" },
+  PENDING: { dot: "bg-attention-base", text: "Pending", appearance: "attention" },
+  TIMEDOUT: { dot: "bg-danger-base", text: "Timed Out", appearance: "danger" },
+};
+
 export const TokenInfo = ({
   ticker = "",
-  ready,
+  status,
   amount,
 }: {
   ticker?: string;
-  ready: boolean;
+  status: CrossChainTxStatus;
   amount: string;
 }) => {
+  const { dot, text, appearance } = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
+
   return (
     <div className="flex items-center gap-3">
       <Token
@@ -23,17 +36,9 @@ export const TokenInfo = ({
           {amount} {ticker}
         </Typography.Text>
         <div className="flex items-center gap-1">
-          <div
-            className={classNames(
-              "w-1.5 h-1.5 rounded-full",
-              ready ? "bg-success-base" : "bg-attention-base"
-            )}
-          />
-          <Typography.Text
-            appearance={ready ? "success" : "attention"}
-            size="xs"
-          >
-            {ready ? "Completed" : "Pending"}
+          <div className={classNames("w-1.5 h-1.5 rounded-full", dot)} />
+          <Typography.Text appearance={appearance} size="xs">
+            {text}
           </Typography.Text>
         </div>
       </div>

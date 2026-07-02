@@ -120,6 +120,12 @@ export const QUERY_KEYS = {
     assetsAmount,
   ],
   queryPools: () => [PREFIX, "queryPools"],
+  crossChainTransactions: (address: string, status?: string) => [
+    PREFIX,
+    "crossChainTransactions",
+    address,
+    status ?? "all",
+  ],
   getTheaBalances: (address: string, chain: string, assets: string[]) => [
     PREFIX,
     "getTheaBalances",

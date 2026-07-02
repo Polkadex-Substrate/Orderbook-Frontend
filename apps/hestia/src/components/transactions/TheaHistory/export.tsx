@@ -35,16 +35,16 @@ export const Export = ({
     try {
       onHandleAlert("Bridge history exported successfully...");
       return data?.map((item) => {
-        const date = formatedDate(new Date(item.timestamp), false);
+        const date = formatedDate(new Date(Number(item.timestamp)), false);
 
         return {
-          sourceChain: item.from?.name ?? "",
-          destinationChain: item.to?.name ?? "",
-          assetTicker: item.asset?.ticker ?? "",
+          sourceChain: item.sourceChain ?? "",
+          destinationChain: item.destinationChain ?? "",
+          assetTicker: item.symbol ?? "",
           status: item.status,
-          amount: item.amount.toString(),
+          amount: item.amount,
           from: address,
-          hash: item.hash,
+          hash: item.transactionHash,
           date,
         };
       });

@@ -230,7 +230,7 @@ export const BRIDGE_ROUTES: BridgeRouteConfig[] = [
     timeout: 3600,
     indexerUrl:
       process.env.NEXT_PUBLIC_BRIDGE_INDEXER_URL ??
-      "https://hyperbridge-paseo-rpc.blockops.network",
+      "https://gargantua.indexer.polytope.technology",
   },
 ];
 

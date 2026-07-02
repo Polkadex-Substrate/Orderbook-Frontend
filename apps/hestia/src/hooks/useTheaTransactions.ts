@@ -1,9 +1,17 @@
-// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
-// Real implementation is commented out below. Do not delete.
-
-// Stub exports so dependents (direct/History, TheaHistory sub-components) don't break.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Transaction = Record<string, any>;
+// Type for cross-chain (Hyperbridge) transactions from the new GraphQL API.
+// Consumed by TheaHistory and its sub-components.
+export type Transaction = {
+  transactionHash: string;
+  commitment?: string | null;
+  address: string;
+  assetId: string;
+  symbol: string;
+  amount: string;
+  sourceChain: string;
+  destinationChain: string;
+  status: "PENDING" | "TIMEDOUT" | "COMPLETED";
+  timestamp: string;
+};
 export type Transactions = Transaction[];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,32 +1,22 @@
-import { Chain, HoverCard, Typography } from "@polkadex/ux";
-import { RiInformationFill } from "@remixicon/react";
+import { Chain, Typography } from "@polkadex/ux";
+
+// Maps the full chain name (as stored in the BE) to the Chain icon identifier
+// understood by @polkadex/ux — same values used in the bridge and faucet configs.
+const CHAIN_ICON: Record<string, string> = {
+  "Sepolia Testnet": "Ethereum",
+  "Polkadex Testnet": "Polkadex",
+};
 
 export const NetworkCard = ({
   name = "",
-  isPolkadotEcosystem,
 }: {
   name?: string;
-  isPolkadotEcosystem?: boolean;
 }) => {
-  if (isPolkadotEcosystem)
-    return (
-      <div className="flex items-center gap-2">
-        <Chain name={name} size="2xs" className="max-sm:hidden" />
-        <Typography.Text size="sm">{name}</Typography.Text>
-      </div>
-    );
+  const iconName = CHAIN_ICON[name] ?? name;
   return (
-    <HoverCard>
-      <HoverCard.Trigger>
-        <div className="flex items-center gap-2">
-          <Chain size="2xs" name={name} className="max-sm:hidden" />
-          <div className="flex items-center gap-1">
-            <Typography.Text size="sm">{name}</Typography.Text>
-            <RiInformationFill className="w-3 h-3 text-actionInput" />
-          </div>
-        </div>
-      </HoverCard.Trigger>
-      <HoverCard.Content>Parachain within Polkadot ecosystem</HoverCard.Content>
-    </HoverCard>
+    <div className="flex items-center gap-2">
+      <Chain name={iconName} size="2xs" className="max-sm:hidden" />
+      <Typography.Text size="sm">{name}</Typography.Text>
+    </div>
   );
 };

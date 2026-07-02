@@ -1,6 +1,7 @@
 import { Drawer, Token, Typography } from "@polkadex/ux";
 import { Dispatch, SetStateAction, useMemo } from "react";
-import { GENESIS } from "@orderbook/core/index";
+
+import { ClaimRefundButton } from "./claimRefundButton";
 
 import { NetworkCard } from "./networkCard";
 import { LinkCard } from "./linkCard";
@@ -18,24 +19,22 @@ export const ResponsiveTable = ({
   onOpenChange: Dispatch<SetStateAction<boolean>>;
   data: Transaction | null;
 }) => {
-  const { asset, amount, status = "", from, to, timestamp, hash } = data ?? {};
-  const ready = useMemo(
-    () => ["CLAIMED", "APPROVED", "READY"].includes(status),
-    [status]
-  );
+  const {
+    symbol,
+    amount,
+    status = "",
+    sourceChain,
+    destinationChain,
+    timestamp,
+    transactionHash,
+  } = data ?? {};
 
-  const isFromPolkadotNetwork = useMemo(
-    () => from?.genesis?.includes(GENESIS[0]),
-    [from?.genesis]
-  );
+  const ready = status === "COMPLETED";
+  const timedOut = status === "TIMEDOUT";
 
-  const isToPolkadotNetwork = useMemo(
-    () => to?.genesis?.includes(GENESIS[0]),
-    [to?.genesis]
-  );
   const date = useMemo(
-    () => timestamp && formatedDate(new Date(timestamp), false),
-    [timestamp]
+    () => timestamp && formatedDate(new Date(Number(timestamp)), false),
+    [timestamp],
   );
 
   if (!data) return null;
@@ -52,33 +51,34 @@ export const ResponsiveTable = ({
         <ResponsiveCard label="Token">
           <div className="flex items-center gap-1">
             <Token
-              name={asset?.ticker ?? ""}
+              name={symbol ?? ""}
               className="bg-level-0 max-sm:hidden"
               rounded
               bordered
               size="xs"
             />
-            <Typography.Text>{asset?.ticker}</Typography.Text>
+            <Typography.Text>{symbol}</Typography.Text>
           </div>
         </ResponsiveCard>
         <ResponsiveCard label="Status">
-          <StatusCard status={ready ? "Completed" : "Pending"} />
-        </ResponsiveCard>
-        <ResponsiveCard label="Amount">{amount?.toFormat()}</ResponsiveCard>
-        <ResponsiveCard label="From">
-          <NetworkCard
-            name={from?.name}
-            isPolkadotEcosystem={isFromPolkadotNetwork}
+          <StatusCard
+            status={ready ? "Completed" : timedOut ? "Timed Out" : "Pending"}
           />
+        </ResponsiveCard>
+        {timedOut && data && (
+          <ResponsiveCard label="Refund">
+            <ClaimRefundButton transaction={data} />
+          </ResponsiveCard>
+        )}
+        <ResponsiveCard label="Amount">{amount}</ResponsiveCard>
+        <ResponsiveCard label="From">
+          <NetworkCard name={sourceChain} />
         </ResponsiveCard>
         <ResponsiveCard label="To">
-          <NetworkCard
-            name={to?.name}
-            isPolkadotEcosystem={isToPolkadotNetwork}
-          />
+          <NetworkCard name={destinationChain} />
         </ResponsiveCard>
         <ResponsiveCard label="Hash">
-          <LinkCard value={hash} />
+          <LinkCard value={transactionHash} sourceChain={sourceChain} />
         </ResponsiveCard>
         <ResponsiveCard label="Date">{date}</ResponsiveCard>
       </Drawer.Content>

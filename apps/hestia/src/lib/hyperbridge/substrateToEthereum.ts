@@ -22,6 +22,79 @@ async function getApi(): Promise<ApiPromise> {
   return apiInstance;
 }
 
+// Extracts the ISMP post request commitment from block events.
+//
+// pallet-ismp emits PostRequest { source_chain, dest_chain, request_nonce, commitment }
+// Section names vary between runtime versions (e.g. "ismp", "palletIsmp").
+// Tries every known field path; throws with a full event dump if not found.
+async function getPostRequestCommitment(
+  api: ApiPromise,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  blockHash: any,
+): Promise<string> {
+  const apiAt = await api.at(blockHash);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const events = await (apiAt.query.system.events as any)();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const { event } of events as any[]) {
+    const section: string = event.section.toLowerCase();
+    const method: string = event.method.toLowerCase();
+
+    // Match any ISMP / HFT pallet event that looks like a post-request dispatch
+    const isIsmpSection =
+      section.includes("ismp") ||
+      section.includes("hyperfungible") ||
+      section.includes("pallet_ismp");
+
+    const isRequestMethod =
+      method.includes("postrequest") ||
+      method.includes("request") ||
+      method.includes("dispatch") ||
+      method.includes("send");
+
+    if (!isIsmpSection && !isRequestMethod) continue;
+
+    console.log(
+      `Post Request Event [${event.section}.${event.method}]:`,
+      event.data.toHuman(),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json = event.data.toJSON() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const human = event.data.toHuman() as any;
+
+    // pallet-ismp v1/v2: { source_chain, dest_chain, request_nonce, commitment }
+    // Array form:         [source, dest, nonce, commitment]
+    const commitment =
+      json?.commitment ??
+      json?.[3] ??
+      json?.[0]?.commitment ??
+      human?.commitment ??
+      human?.[3] ??
+      human?.[0]?.commitment;
+
+    if (commitment && typeof commitment === "string" && commitment.startsWith("0x")) {
+      return commitment;
+    }
+  }
+
+  // Commitment not found — dump all event names so the developer can identify the right one
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allEvents = (events as any[]).map(
+    ({ event }: any) => `${event.section}.${event.method}`,
+  );
+  console.warn(
+    "⚠️ ISMP post request commitment not found. All events in block:",
+    allEvents,
+  );
+  throw new Error(
+    `ISMP post request commitment not found in block ${blockHash.toHex()}. ` +
+      `Events present: [${allEvents.join(", ")}]`,
+  );
+}
+
 export type SubstrateToEvmParams = {
   amount: number;
   recipient: string; // EVM 0x address on Sepolia
@@ -35,8 +108,14 @@ export type SubstrateToEvmParams = {
 // is api.tx.hyperFungibleToken.send(). Verify on-chain before going to mainnet.
 export async function transferSubstrateToEvm(
   params: SubstrateToEvmParams,
-): Promise<string> {
-  const { amount, recipient, senderAddress, decimals = 18, assetId = WETH_ASSET_ID } = params;
+): Promise<{ hash: string; commitment: string }> {
+  const {
+    amount,
+    recipient,
+    senderAddress,
+    decimals = 18,
+    assetId = WETH_ASSET_ID,
+  } = params;
 
   if (!recipient.startsWith("0x")) {
     throw new Error("Recipient must be an EVM address starting with 0x");
@@ -114,7 +193,14 @@ export async function transferSubstrateToEvm(
     callData: null,
   };
 
-  const txHash = await new Promise<string>((resolve, reject) => {
+  // Resolve with both hash and blockHash so we can query events for the
+  // commitment in step 6. The signAndSend callback must stay synchronous,
+  // so commitment extraction happens after the Promise resolves.
+  const { hash, blockHash } = await new Promise<{
+    hash: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    blockHash: any;
+  }>((resolve, reject) => {
     api.tx.hyperFungibleToken
       .send(sendParams)
       .signAndSend(senderAddress, { signer }, ({ status, dispatchError }) => {
@@ -133,9 +219,9 @@ export async function transferSubstrateToEvm(
         }
 
         if (status.isInBlock) {
-          const txHash = status.asInBlock.toHex();
-          console.log("Tx in block ✅ hash:", txHash);
-          resolve(txHash);
+          const hash = status.asInBlock.toHex();
+          console.log("Tx in block ✅ hash:", hash);
+          resolve({ hash, blockHash: status.asInBlock });
         }
 
         if (status.isFinalized) {
@@ -145,5 +231,22 @@ export async function transferSubstrateToEvm(
       .catch(reject);
   });
 
-  return txHash;
+  // ── Step 6: Extract post request commitment from block events ─────────────
+  // If the ISMP event cannot be parsed (e.g. unexpected pallet name / schema),
+  // fall back to the block hash so the commitment field is always a non-empty
+  // string in the mutation payload. The console warning above will show which
+  // events are present so the extraction logic can be updated.
+  let commitment: string;
+  try {
+    commitment = await getPostRequestCommitment(api, blockHash);
+    console.log("✅ Post Request Commitment:", commitment);
+  } catch {
+    commitment = hash;
+    console.warn(
+      "⚠️ Falling back to block hash as commitment placeholder.",
+      "Update getPostRequestCommitment once the correct ISMP event is identified.",
+    );
+  }
+
+  return { hash, commitment };
 }

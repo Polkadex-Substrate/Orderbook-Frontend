@@ -21,6 +21,7 @@ import {
   CrossChainError,
   THEA_AUTOSWAP,
   parseScientific,
+  recordCrossChainTransaction,
 } from "@orderbook/core/index";
 import { useBridgeProvider } from "./BridgeProvider";
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
@@ -60,6 +61,8 @@ export const ConfirmTransaction = ({
     selectedAssetIdPolkadex,
     isEvmSource,
     substrateAssetIds,
+    sourceChain,
+    destinationChain,
   } = useBridgeProvider();
   const { destinationFee, sourceFee, sourceFeeBalance, sourceFeeExistential } =
     transferConfig ?? {};
@@ -289,13 +292,27 @@ export const ConfirmTransaction = ({
                 onClick={async () => {
                   try {
                     setIsLoading(true);
+                    const timestamp = Date.now().toString();
 
                     if (isEvmSource) {
                       // EVM (Sepolia) → Substrate (Polkadex)
-                      await transferTokens({
+                      const { hash, commitment } = await transferTokens({
                         amount,
                         recipient: destinationAccount?.address,
                         token: selectedAsset,
+                      });
+                      void recordCrossChainTransaction({
+                        transactionHash: hash,
+                        commitment,
+                        assetId:
+                          selectedAsset?.chains.polkadex?.assetId ??
+                          selectedAsset?.ticker,
+                        symbol: selectedAsset?.ticker ?? "",
+                        amount: amount.toString(),
+                        sourceChain: sourceChain.name,
+                        destinationChain: destinationChain.name,
+                        timestamp,
+                        address: destinationAccount?.address ?? "",
                       });
                     } else {
                       // Substrate (Polkadex) → EVM (Sepolia)
@@ -312,12 +329,23 @@ export const ConfirmTransaction = ({
                             "Please wait a moment for the chain data to load and try again.",
                         );
                       }
-                      await transferSubstrateToEvm({
+                      const { hash, commitment } = await transferSubstrateToEvm({
                         amount,
                         recipient: destinationAccount?.address,
                         senderAddress: sourceAccount?.address,
                         decimals: selectedAsset?.decimals,
                         assetId: Number(resolvedAssetId),
+                      });
+                      void recordCrossChainTransaction({
+                        transactionHash: hash,
+                        commitment,
+                        assetId: resolvedAssetId,
+                        symbol: selectedAsset?.ticker ?? "",
+                        amount: amount.toString(),
+                        sourceChain: sourceChain.name,
+                        destinationChain: destinationChain.name,
+                        timestamp,
+                        address: sourceAccount?.address ?? "",
                       });
                     }
 

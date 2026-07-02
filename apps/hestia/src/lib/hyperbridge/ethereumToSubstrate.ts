@@ -95,7 +95,7 @@ export const getIndexer = singleton(() => {
       stateMachineId: Destination.chainId,
     }),
     SubstrateChain.connect({
-      wsUrl: indexerUrl.replace("https://", "wss://"),
+      wsUrl: process.env.NEXT_PUBLIC_HYPERBRIDGE_NODE_WS ?? "wss://gargantua.polytope.technology",
       consensusStateId: "PAS0",
       hasher: "Blake2",
       stateMachineId: "KUSAMA-4009",
@@ -179,7 +179,9 @@ async function getCommitment(helper: THelper, tx_hash: HexString) {
   return { ...request, commitment };
 }
 
-export async function transferTokens(params: BridgeTransferParams) {
+export async function transferTokens(
+  params: BridgeTransferParams,
+): Promise<{ hash: string; commitment: string }> {
   const { amount, recipient, token } = params;
 
   const hftAddress = (token.chains.sepolia?.hftAddress ?? "") as Address;
@@ -290,5 +292,5 @@ export async function transferTokens(params: BridgeTransferParams) {
   );
   console.log("✅ Post Request Commitment:", postRequest.commitment);
 
-  return hash;
+  return { hash, commitment: postRequest.commitment as string };
 }
