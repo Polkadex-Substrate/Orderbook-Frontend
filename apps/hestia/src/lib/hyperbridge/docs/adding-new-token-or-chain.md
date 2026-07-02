@@ -2,6 +2,12 @@
 
 This guide covers everything required to extend the Hyperbridge-backed bridge with a new token or a new chain. The bridge was designed so that nearly all additions require changes in **exactly one file** — `apps/hestia/src/config/bridge.ts` — with only a handful of narrow follow-up steps depending on the scenario.
 
+> **Scalability notice — read before adding anything**
+>
+> The current approach is **hardcoded**: `SEPOLIA_PDEX_TOKENS` (8 tokens) and `BRIDGE_CHAINS` (2 chains) are defined as static arrays/records in `apps/hestia/src/config/bridge.ts`. Every new token or chain requires a code change, a PR, and a deployment. This does not scale as the number of supported assets grows, and it puts the burden of updating on frontend engineers rather than on the backend/ops team.
+>
+> The planned solution is to replace the hardcoded lists with data served by the backend API. See [`api-driven-config-migration-plan.md`](./api-driven-config-migration-plan.md) for the full implementation plan. Until that migration is complete, continue to use this guide.
+
 ---
 
 ## Table of Contents
