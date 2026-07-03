@@ -254,12 +254,37 @@ export async function transferTokens(params: BridgeTransferParams) {
 
   // quote() may revert if the destination chain isn't configured yet in the
   // HFT contract. Treat that as 0 native fee (same behaviour as the SDK).
+  // The ABI marks quote() as nonpayable, but it's a pure read — use an inline
+  // view ABI so viem's readContract accepts it.
+  const QUOTE_ABI = [
+    {
+      type: "function",
+      name: "quote",
+      stateMutability: "view",
+      inputs: [
+        {
+          name: "params",
+          type: "tuple",
+          components: [
+            { name: "dest", type: "bytes" },
+            { name: "to", type: "bytes" },
+            { name: "amount", type: "uint256" },
+            { name: "timeout", type: "uint64" },
+            { name: "relayerFee", type: "uint256" },
+            { name: "data", type: "bytes" },
+          ],
+        },
+      ],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+  ] as const;
+
   let nativeValue = 0n;
   try {
     console.log("Quoting native cost...");
     nativeValue = (await publicClient.readContract({
       address: hftAddress,
-      abi: WrappedHyperFungibleTokenABI,
+      abi: QUOTE_ABI,
       functionName: "quote",
       args: [sendParams],
     })) as bigint;

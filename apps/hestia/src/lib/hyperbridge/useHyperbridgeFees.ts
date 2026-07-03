@@ -88,14 +88,39 @@ export function useHyperbridgeFees({
 
         // quote() may revert if the destination chain isn't configured yet.
         // Treat that as 0 native fee (same behaviour as the SDK).
+        // The SDK ABI marks quote() nonpayable; use an inline view ABI so
+        // viem's readContract accepts it.
+        const QUOTE_ABI = [
+          {
+            type: "function",
+            name: "quote",
+            stateMutability: "view",
+            inputs: [
+              {
+                name: "params",
+                type: "tuple",
+                components: [
+                  { name: "dest", type: "bytes" },
+                  { name: "to", type: "bytes" },
+                  { name: "amount", type: "uint256" },
+                  { name: "timeout", type: "uint64" },
+                  { name: "relayerFee", type: "uint256" },
+                  { name: "data", type: "bytes" },
+                ],
+              },
+            ],
+            outputs: [{ name: "", type: "uint256" }],
+          },
+        ] as const;
+
         let nativeValue = 0n;
         try {
-          nativeValue = await publicClient.readContract({
+          nativeValue = (await publicClient.readContract({
             address: hftAddress as `0x${string}`,
-            abi: WrappedHyperFungibleTokenABI,
+            abi: QUOTE_ABI,
             functionName: "quote",
             args: [sendParams],
-          }) as bigint;
+          })) as bigint;
         } catch {
           console.warn("quote() reverted — destination may not be configured yet in HFT contract.");
         }
