@@ -91,7 +91,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
                   label: "Community support",
                 },
                 {
-                  href: "https://docs.polkadex.ee/orderbookPolkadexFAQHowToTradeStep1",
+                  href: "https://polkadex.ee/testnet-guide",
                   label: "Orderbook guide",
                 },
                 {

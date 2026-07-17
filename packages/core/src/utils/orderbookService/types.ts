@@ -82,13 +82,13 @@ export interface PublicTrade {
 
 export type Ticker = {
   market: string;
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-  baseVolume: number;
-  quoteVolume: number;
-  currentPrice: number;
+  open: number | null;
+  close: number | null;
+  high: number | null;
+  low: number | null;
+  baseVolume: number | null;
+  quoteVolume: number | null;
+  currentPrice: number | null;
 };
 export type Balance = {
   asset: Asset;

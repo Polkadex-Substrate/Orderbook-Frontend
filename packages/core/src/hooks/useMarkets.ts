@@ -120,8 +120,11 @@ export function useMarkets(market?: string) {
       const ticker = allMarketTickers.find((val) => val.market === item.id);
       return {
         ...item,
-        last: (ticker || defaultTicker).close,
-        volume: (ticker || defaultTicker).quoteVolume,
+        // Display-only fallback: a market with no recent trades has a
+        // genuinely null price/volume — show 0 here rather than propagate
+        // null into this list's display-only consumers.
+        last: (ticker || defaultTicker).close ?? 0,
+        volume: (ticker || defaultTicker).quoteVolume ?? 0,
         price_change_percent: (
           ticker || defaultTicker
         ).priceChangePercent24Hr?.toString(),

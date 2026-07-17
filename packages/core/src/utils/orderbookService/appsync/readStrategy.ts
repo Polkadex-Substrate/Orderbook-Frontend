@@ -49,6 +49,7 @@ import {
   fetchBatchFromAppSync,
   fetchFullListFromAppSync,
   sendQueryToAppSync,
+  toNullableNumber,
 } from "./helpers";
 
 class AppsyncV1Reader implements OrderbookReadStrategy {
@@ -306,13 +307,13 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
     const tickerItem = tickersQueryResult?.data?.getMarketTickers?.items;
     return {
       market,
-      open: Number(tickerItem?.o) || 0,
-      close: Number(tickerItem?.c) || 0,
-      high: Number(tickerItem?.h) || 0,
-      low: Number(tickerItem?.l) || 0,
-      baseVolume: Number(tickerItem?.vb) || 0,
-      quoteVolume: Number(tickerItem?.vq) || 0,
-      currentPrice: Number(tickerItem?.c) || 0,
+      open: toNullableNumber(tickerItem?.o),
+      close: toNullableNumber(tickerItem?.c),
+      high: toNullableNumber(tickerItem?.h),
+      low: toNullableNumber(tickerItem?.l),
+      baseVolume: toNullableNumber(tickerItem?.vb),
+      quoteVolume: toNullableNumber(tickerItem?.vq),
+      currentPrice: toNullableNumber(tickerItem?.c),
     };
   }
 

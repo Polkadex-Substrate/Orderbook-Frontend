@@ -148,7 +148,7 @@ const data = [
       },
       {
         title: "Beginner's guide",
-        href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
+        href: "https://polkadex.ee/testnet-guide",
         target: "_blank",
       },
     ],

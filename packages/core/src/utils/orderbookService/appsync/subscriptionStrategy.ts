@@ -32,6 +32,7 @@ import {
 import {
   convertBookUpdatesToPriceLevels,
   filterUserSubscriptionType,
+  toNullableNumber,
 } from "./helpers";
 import {
   BalanceUpdateEvent,
@@ -310,13 +311,13 @@ class AppsyncV1Subscriptions implements OrderbookSubscriptionStrategy {
         ) as CandleStickUpdateEvent;
         return {
           market,
-          open: Number(item.o),
-          close: Number(item.c),
-          high: Number(item.h),
-          low: Number(item.l),
-          baseVolume: Number(item.vb),
-          quoteVolume: Number(item.vq),
-          currentPrice: Number(item.c),
+          open: toNullableNumber(item.o),
+          close: toNullableNumber(item.c),
+          high: toNullableNumber(item.h),
+          low: toNullableNumber(item.l),
+          baseVolume: toNullableNumber(item.vb),
+          quoteVolume: toNullableNumber(item.vq),
+          currentPrice: toNullableNumber(item.c),
         };
       });
     return observable.subscribe(onUpdate);
