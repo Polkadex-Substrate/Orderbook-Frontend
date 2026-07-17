@@ -153,6 +153,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
   const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({
     address: evmAddress as `0x${string}` | undefined,
+    chainId: evmChain.chainId,
   });
   const ethBalance = ethBalanceData
     ? Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals
@@ -194,10 +195,11 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     wsUrl: substrateChain.wsUrl,
   });
 
-  const { balance: pdexBalance } = useSubstrateNativeBalance(substrateAddress, {
-    wsUrl: substrateChain.wsUrl,
-    decimals: substrateChain.nativeCurrency.decimals,
-  });
+  const { balance: pdexBalance, isLoading: pdexBalanceLoading } =
+    useSubstrateNativeBalance(substrateAddress, {
+      wsUrl: substrateChain.wsUrl,
+      decimals: substrateChain.nativeCurrency.decimals,
+    });
 
   const selectedAssetBalance = useMemo(() => {
     if (isEvmSource) {
@@ -315,10 +317,14 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         supportedDestinationChains: allChains,
         onSwitchChain,
         selectedAssetIdPolkadex:
-          selectedAsset.chains.polkadex?.assetId ?? "weth-id",
+          selectedAsset.chains.polkadex?.assetId ??
+          substrateAssetIds.get(selectedAsset.ticker.toUpperCase()) ??
+          "weth-id",
         isDestinationPolkadex: isEvmSource,
-        destinationPDEXBalance: 0,
-        isDestinationPDEXBalanceLoading: false,
+        // substrateAccount is the destination account exactly when isEvmSource
+        // (evm-to-substrate direction), which is the only direction this is used.
+        destinationPDEXBalance: pdexBalance,
+        isDestinationPDEXBalanceLoading: pdexBalanceLoading,
         supportedAssets,
         sourceBalances,
         substrateAssetIds,
