@@ -17,14 +17,18 @@ import {
   RiInformationFill,
 } from "@remixicon/react";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { useSwitchChain } from "wagmi";
+import { getAccount, getWalletClient } from "wagmi/actions";
 import {
   CrossChainError,
   THEA_AUTOSWAP,
   parseScientific,
 } from "@orderbook/core/index";
-import { useBridgeProvider } from "./BridgeProvider";
-import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
+import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 
+import { useBridgeProvider } from "./BridgeProvider";
+
+import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 import { usePool } from "@/hooks";
 import {
   ErrorMessage,
@@ -33,7 +37,11 @@ import {
 } from "@/components/ui/ReadyToUse";
 import { formatAmount } from "@/helpers";
 import { transferSubstrateToEvm } from "@/lib/hyperbridge/substrateToEthereum";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { config as wagmiConfig } from "@/config/wagmi";
+import { BRIDGE_CHAINS } from "@/config/bridge";
+import type { EvmChainConfig } from "@/config/bridge";
+
+const SEPOLIA_CHAIN_ID = (BRIDGE_CHAINS.sepolia as EvmChainConfig).chainId;
 
 interface Props {
   openFeeModal: boolean;
@@ -65,10 +73,11 @@ export const ConfirmTransaction = ({
     transferConfig ?? {};
 
   const { onHandleAlert, onHandleError } = useSettingsProvider();
+  const { switchChainAsync } = useSwitchChain();
 
   const showAutoSwap = useMemo(
     () => isDestinationPolkadex && !destinationPDEXBalance,
-    [isDestinationPolkadex, destinationPDEXBalance],
+    [isDestinationPolkadex, destinationPDEXBalance]
   );
 
   const { swapPrice: swapPriceRaw = 0, swapLoading } = usePool({
@@ -79,12 +88,12 @@ export const ConfirmTransaction = ({
 
   const shortSourceAddress = useMemo(
     () => truncateString(sourceAccount?.address ?? "", 4),
-    [sourceAccount?.address],
+    [sourceAccount?.address]
   );
 
   const shortDestinationAddress = useMemo(
     () => truncateString(destinationAccount?.address ?? "", 4),
-    [destinationAccount?.address],
+    [destinationAccount?.address]
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -101,7 +110,7 @@ export const ConfirmTransaction = ({
     if (showAutoSwap && amount <= autoSwapAmount)
       return CrossChainError.AUTO_SWAP(
         autoSwapAmount.toFixed(4),
-        selectedAsset?.ticker as string,
+        selectedAsset?.ticker as string
       );
   }, [
     amount,
@@ -115,7 +124,7 @@ export const ConfirmTransaction = ({
 
   const disabled = useMemo(
     () => !!error || isLoading || !checked,
-    [error, isLoading, checked],
+    [error, isLoading, checked]
   );
 
   const [
@@ -275,41 +284,51 @@ export const ConfirmTransaction = ({
               <Interaction.Action
                 disabled={disabled}
                 appearance={disabled ? "secondary" : "primary"}
-                // onClick={async () => {
-                //   try {
-                //     setIsLoading(true);
-                //     await transferTokens({ amount, recipient: destinationAccount?.address });
-                //     onSuccess();
-                //   } catch (e) {
-                //     console.error("Bridge Error: ", e);
-                //   } finally {
-                //     setIsLoading(false);
-                //   }
-                // }}
                 onClick={async () => {
                   try {
                     setIsLoading(true);
 
                     if (isEvmSource) {
                       // EVM (Sepolia) → Substrate (Polkadex)
+                      const account = getAccount(wagmiConfig);
+                      if (!account.isConnected || !account.address) {
+                        throw new Error(
+                          "Connect an EVM wallet before submitting."
+                        );
+                      }
+
+                      try {
+                        await switchChainAsync({ chainId: SEPOLIA_CHAIN_ID });
+                      } catch {
+                        throw new Error(
+                          "Please switch your wallet's network to Sepolia and try again."
+                        );
+                      }
+
+                      const walletClient = await getWalletClient(wagmiConfig, {
+                        chainId: SEPOLIA_CHAIN_ID,
+                      });
+
                       await transferTokens({
                         amount,
                         recipient: destinationAccount?.address,
                         token: selectedAsset,
+                        walletClient,
+                        address: account.address,
                       });
                     } else {
                       // Substrate (Polkadex) → EVM (Sepolia)
                       // Prefer assetId discovered from chain metadata; fall back to
                       // static config (WETH hardcoded as "3") only if not yet loaded.
                       const discoveredId = substrateAssetIds.get(
-                        selectedAsset?.ticker?.toUpperCase() ?? "",
+                        selectedAsset?.ticker?.toUpperCase() ?? ""
                       );
                       const staticId = selectedAsset?.chains.polkadex?.assetId;
                       const resolvedAssetId = discoveredId ?? staticId;
                       if (!resolvedAssetId) {
                         throw new Error(
                           `Asset ID for ${selectedAsset?.ticker} on Polkadex is not yet known. ` +
-                            "Please wait a moment for the chain data to load and try again.",
+                            "Please wait a moment for the chain data to load and try again."
                         );
                       }
                       await transferSubstrateToEvm({
@@ -322,11 +341,15 @@ export const ConfirmTransaction = ({
                     }
 
                     onHandleAlert(
-                      "These tokens will reflect in your Funding wallet in 2-3 mins",
+                      "These tokens will reflect in your Funding wallet in 2-3 mins"
                     );
                     onSuccess();
                   } catch (e) {
-                    onHandleError("Failed to transfer tokens");
+                    onHandleError(
+                      e instanceof Error
+                        ? e.message
+                        : "Failed to transfer tokens"
+                    );
                     console.error("Bridge Error:", e);
                   } finally {
                     setIsLoading(false);
