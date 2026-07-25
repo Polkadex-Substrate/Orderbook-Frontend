@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Input,
-  Token,
-  TokenAppearance,
-  Typography,
-  AccountCombobox,
-} from "@mitra/ux";
+import { Button, Input, Token, TokenAppearance, Typography } from "@mitra/ux";
 import {
   RiArrowDownSLine,
   RiArrowLeftRightLine,
@@ -20,6 +13,7 @@ import { useFormik } from "formik";
 import classNames from "classnames";
 import { bridgeValidations } from "@orderbook/core/validations";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
+import { useExtensionAccounts } from "@mitra/react-providers";
 
 import { useBridgeProvider } from "../BridgeProvider";
 import { SelectAsset } from "../selectAsset";
@@ -40,7 +34,7 @@ export const Form = () => {
   const { open } = useWeb3Modal();
 
   const [openAsset, setOpenAsset] = useState(false);
-  const [openDestPicker, setOpenDestPicker] = useState(false);
+  const [openDestModal, setOpenDestModal] = useState(false);
   const [openFeeModal, setOpenFeeModal] = useState(false);
   const [openSourceModal, setOpenSourceModal] = useState(false);
 
@@ -71,6 +65,8 @@ export const Form = () => {
   } = useBridgeProvider();
 
   const { destinationFee, sourceFee, max, min } = transferConfig ?? {};
+  const { extensionAccounts } = useExtensionAccounts();
+  const hasSubstrateAccounts = (extensionAccounts?.length ?? 0) > 0;
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { push } = useRouter();
@@ -170,8 +166,10 @@ export const Form = () => {
     if (!destinationAccount)
       return isEvmSource
         ? {
-            label: "Choose a destination account",
-            onClick: () => setOpenDestPicker(true),
+            label: hasSubstrateAccounts
+              ? "Choose a destination account"
+              : `Connect ${destinationChain.name} wallet`,
+            onClick: () => setOpenDestModal(true),
           }
         : {
             label: `Connect ${destinationChain.name} wallet`,
@@ -201,6 +199,7 @@ export const Form = () => {
     errors.amount,
     isValid,
     displayTicker,
+    hasSubstrateAccounts,
     open,
   ]);
 
@@ -328,6 +327,11 @@ export const Form = () => {
         setAccount={setSourceAccount}
         evm={sourceChain?.type !== "Substrate"}
       />
+      <ConnectAccount
+        open={openDestModal}
+        onOpenChange={setOpenDestModal}
+        setAccount={setDestinationAccount}
+      />
 
       <form
         onSubmit={handleSubmit}
@@ -356,14 +360,44 @@ export const Form = () => {
                   </SelectNetwork>
                 </div>
                 {/* EVM source → WalletConnect | Substrate source → extension picker */}
+                {/* Substrate source: must be an account the user controls —
+                    they sign the send. Same owned-accounts-only modal as the
+                    destination; no pasted addresses. */}
                 {isEvmSource ? (
                   <EvmWalletRow account={sourceAccount} />
+                ) : sourceAccount ? (
+                  <WalletCard
+                    name={sourceAccount.name}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpenSourceModal(true);
+                    }}
+                  >
+                    {sourceAccount.address}
+                  </WalletCard>
                 ) : (
-                  <AccountCombobox
-                    account={sourceAccount}
-                    setAccount={(e) => e && setSourceAccount(e)}
-                    evm={false}
-                  />
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
+                      <Typography.Text>
+                        No source account selected
+                      </Typography.Text>
+                    </div>
+                    <Button.Solid
+                      appearance="secondary"
+                      size="xs"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setOpenSourceModal(true);
+                      }}
+                    >
+                      {hasSubstrateAccounts
+                        ? "Select account"
+                        : "Connect wallet"}
+                    </Button.Solid>
+                  </div>
                 )}
                 {/* Asset & amount live with the SOURCE: what you send is a
                           source-side fact — the destination receives the same token. */}
@@ -491,14 +525,45 @@ export const Form = () => {
                 </SelectNetwork>
               </div>
               {/* EVM destination → extension picker | Substrate destination → WalletConnect */}
+              {/* Destination = Polkadex: the account must be one the user
+                  controls — an address from the connected substrate wallet,
+                  chosen through the same connect/select modal the source
+                  side uses. No free-text/pasted addresses here. */}
               {isEvmSource ? (
-                <AccountCombobox
-                  account={destinationAccount}
-                  setAccount={(e) => e && setDestinationAccount(e)}
-                  evm={false}
-                  open={openDestPicker}
-                  onOpenChange={setOpenDestPicker}
-                />
+                destinationAccount ? (
+                  <WalletCard
+                    name={destinationAccount.name}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpenDestModal(true);
+                    }}
+                  >
+                    {destinationAccount.address}
+                  </WalletCard>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
+                      <Typography.Text>
+                        No destination account selected
+                      </Typography.Text>
+                    </div>
+                    <Button.Solid
+                      appearance="secondary"
+                      size="xs"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setOpenDestModal(true);
+                      }}
+                    >
+                      {hasSubstrateAccounts
+                        ? "Select account"
+                        : "Connect wallet"}
+                    </Button.Solid>
+                  </div>
+                )
               ) : (
                 <EvmWalletRow account={destinationAccount} />
               )}

@@ -1,10 +1,10 @@
-version: "3.8"
-
 services:
   orderbook-fe:
     build:
-      context: .
-      dockerfile: Dockerfile
+      # Parent dir: apps/hestia's @mitra/* deps are file: paths into
+      # ../mitra-ts, outside this repo. See the Dockerfile header.
+      context: ..
+      dockerfile: Polkadex-Orderbook-Frontend/Dockerfile
       args:
         - POLKADEX_CHAIN=${POLKADEX_CHAIN}
         - GOOGLE_ANALYTICS=${GOOGLE_ANALYTICS}
@@ -38,8 +38,25 @@ services:
         - DEFAULT_THEA_DESTINATION_CHAIN=${DEFAULT_THEA_DESTINATION_CHAIN}
         - DISABLED_THEA_CHAINS=${DISABLED_THEA_CHAINS}
         - NEXT_PUBLIC_HYPERBRIDGE_URL=${NEXT_PUBLIC_HYPERBRIDGE_URL}
+        # WalletConnect — app throws at boot without it
+        - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID}
+        # Chart
+        - NEXT_PUBLIC_NATIVE_CHART=${NEXT_PUBLIC_NATIVE_CHART}
+        - NEXT_PUBLIC_SERVER_BASE_URL=${NEXT_PUBLIC_SERVER_BASE_URL}
+        - NEXT_PUBLIC_GATEWAY_SECRET=${NEXT_PUBLIC_GATEWAY_SECRET}
+        - NEXT_PUBLIC_SUBQUERY_URL=${NEXT_PUBLIC_SUBQUERY_URL}
+        # Hyperbridge route
+        - NEXT_PUBLIC_BRIDGE_DESTINATION_RPC_URL=${NEXT_PUBLIC_BRIDGE_DESTINATION_RPC_URL}
+        - NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL=${NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL}
+        - NEXT_PUBLIC_BRIDGE_ISMP_HOST=${NEXT_PUBLIC_BRIDGE_ISMP_HOST}
+        - NEXT_PUBLIC_BRIDGE_INDEXER_URL=${NEXT_PUBLIC_BRIDGE_INDEXER_URL}
+        - NEXT_PUBLIC_POLKADEX_STATE_MACHINE=${NEXT_PUBLIC_POLKADEX_STATE_MACHINE}
+        # Faucet
+        - NEXT_PUBLIC_ENABLE_FAUCET=${NEXT_PUBLIC_ENABLE_FAUCET}
+        - NEXT_PUBLIC_FAUCET_URL=${NEXT_PUBLIC_FAUCET_URL}
+        - NEXT_PUBLIC_FAUCET_API_KEY=${NEXT_PUBLIC_FAUCET_API_KEY}
     env_file:
-      - .env
+      - apps/hestia/.env
     # You can set ECR_REGISTRY in your .env file
     # Example: ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
     image: 907213364062.dkr.ecr.ap-south-1.amazonaws.com/polkadex-orderbook-fe:latest

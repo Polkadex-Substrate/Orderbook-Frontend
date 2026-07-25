@@ -1,5 +1,5 @@
 import { GenericMessage, Table as PolkadexTable, Skeleton } from "@mitra/ux";
-import { Fragment, forwardRef, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {
   SortingState,

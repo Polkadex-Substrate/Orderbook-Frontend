@@ -1,6 +1,6 @@
 import { Table as PolkadexTable, GenericMessage } from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
-import { Fragment, forwardRef, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {
   SortingState,
@@ -18,10 +18,17 @@ import { ResponsiveTable } from "./responsiveTable";
 import { picoScale } from "@/helpers";
 const responsiveKeys = ["inOrders", "fundingAccount"];
 
-export const Table = forwardRef<
-  HTMLDivElement,
-  { maxHeight: string; data: AssetsProps[]; loading: boolean }
->(({ maxHeight, data, loading }) => {
+// Plain component: was forwardRef but ignored the ref and no caller
+// passed one — triggered React's forwardRef-arity warning on mount.
+export const Table = ({
+  maxHeight,
+  data,
+  loading,
+}: {
+  maxHeight: string;
+  data: AssetsProps[];
+  loading: boolean;
+}) => {
   const [responsiveState, setResponsiveState] = useState(false);
   const [responsiveData, setResponsiveData] = useState<AssetsProps | null>(
     null
@@ -167,5 +174,4 @@ export const Table = forwardRef<
       )}
     </Fragment>
   );
-});
-Table.displayName = "Table";
+};

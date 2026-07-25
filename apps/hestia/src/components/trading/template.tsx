@@ -22,7 +22,9 @@ import { Footer, Header } from "@/components/ui";
 import { useSizeObserver, useTour } from "@/hooks";
 
 export function Template({ id }: { id: string }) {
-  const [footerRef, footerHeight] = useSizeObserver();
+  // Height no longer needed: the footer renders in normal flow on this
+  // page (fixedPosition={false}), so nothing has to reserve space for it.
+  const [footerRef] = useSizeObserver();
   const [interactionRef, interactionHeight] = useSizeObserver();
   const { startTour } = useTour();
 
@@ -61,9 +63,6 @@ export function Template({ id }: { id: string }) {
           className="flex-1 h-full w-full max-w-[3440px] mx-auto"
           autoSaveId="persistence"
           vaul-drawer-wrapper=""
-          style={{
-            paddingBottom: `${footerHeight}px`,
-          }}
         >
           <Resizable.Panel
             ref={mainPanelRef}
@@ -182,7 +181,7 @@ export function Template({ id }: { id: string }) {
           market={currentMarket}
         />
       ) : (
-        <Footer marketsActive ref={footerRef} />
+        <Footer marketsActive fixedPosition={false} ref={footerRef} />
       )}
       <button
         onClick={startTour}

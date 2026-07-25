@@ -28,7 +28,6 @@ export function Template({ id }: { id: string }) {
   const tableTitlesRef = useRef<HTMLDivElement | null>(null);
   const overviewRef = useRef<HTMLDivElement | null>(null);
   const interactionRef = useRef<HTMLDivElement | null>(null);
-  const tableRowsRef = useRef<HTMLDivElement | null>(null);
 
   const { height: overviewHeight = 0 } = useResizeObserver({
     ref: overviewRef,
@@ -54,17 +53,15 @@ export function Template({ id }: { id: string }) {
     ref: interactionRef,
     box: "border-box",
   });
-  const { height: tableRowsHeight = 0 } = useResizeObserver({
-    ref: tableRowsRef,
-    box: "border-box",
-  });
 
+  // NB: a `tableRowsHeight` term used to be in this formula, fed by refs the
+  // table components silently ignored — it was always 0. Removed along with
+  // the dead refs; had it ever attached, subtracting the rows' own height
+  // from their max-height would have been a resize feedback loop.
   const maxHeight = useMemo(
     () =>
-      `calc(100vh - ${
-        overviewHeight + headerHeight + tableTitleHeight + tableRowsHeight + 25
-      }px)`,
-    [headerHeight, overviewHeight, tableTitleHeight, tableRowsHeight]
+      `calc(100vh - ${overviewHeight + headerHeight + tableTitleHeight + 25}px)`,
+    [headerHeight, overviewHeight, tableTitleHeight]
   );
 
   const mobileView = useMemo(() => width <= 640, [width]);
@@ -98,7 +95,6 @@ export function Template({ id }: { id: string }) {
                 </Typography.Heading>
               </div>
               <TableRewards
-                ref={tableRowsRef}
                 maxHeight={maxHeight}
                 market={currentMarket?.id as string}
               />
@@ -114,7 +110,6 @@ export function Template({ id }: { id: string }) {
               </div>
               <div className="h-full flex flex-col">
                 <TableLeaderboard
-                  ref={tableRowsRef}
                   maxHeight={maxHeight}
                   market={currentMarket?.id as string}
                 />
