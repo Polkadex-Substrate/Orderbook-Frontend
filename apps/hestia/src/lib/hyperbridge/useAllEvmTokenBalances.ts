@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { createPublicClient, http, formatUnits, isAddress } from "viem";
 import { sepolia } from "viem/chains";
+
 import { BRIDGE_CHAINS } from "@/config/bridge";
 import type { EvmChainConfig } from "@/config/bridge";
 
@@ -29,14 +30,14 @@ export type EvmTokenSpec = {
 export function useAllEvmTokenBalances(
   address?: string,
   tokens?: EvmTokenSpec[],
-  options?: { rpcUrl?: string },
+  options?: { rpcUrl?: string }
 ) {
   const rpcUrl = options?.rpcUrl ?? defaultEvmChain.rpcUrl;
   const tokensKey = tokens?.map((t) => t.ticker).join(",") ?? "";
 
   const publicClient = useMemo(
     () => createPublicClient({ chain: sepolia, transport: http(rpcUrl) }),
-    [rpcUrl],
+    [rpcUrl]
   );
 
   const [balances, setBalances] = useState<Map<string, number>>(new Map());
@@ -66,7 +67,7 @@ export function useAllEvmTokenBalances(
           } catch {
             result.set(ticker, 0);
           }
-        }),
+        })
       );
     } finally {
       setBalances(result);

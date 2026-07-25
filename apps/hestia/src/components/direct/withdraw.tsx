@@ -7,7 +7,7 @@ import {
   Button,
   Input,
   Tooltip,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { RiCheckLine, RiInformationFill } from "@remixicon/react";
 import classNames from "classnames";
 import { useMeasure } from "react-use";

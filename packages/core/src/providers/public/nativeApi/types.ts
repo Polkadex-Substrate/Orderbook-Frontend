@@ -1,6 +1,6 @@
 import { FC, PropsWithChildren } from "react";
 import { ApiPromise } from "@polkadot/api";
-import { LmpApi, SwapApi } from "@polkadex/polkadex-api";
+import { LmpApi, SwapApi } from "@mitra/polkadex-api";
 
 export interface NativeApiState {
   connected: boolean;

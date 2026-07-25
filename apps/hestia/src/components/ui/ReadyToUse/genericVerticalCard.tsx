@@ -1,7 +1,7 @@
 import classNames from "classnames";
 import { PropsWithChildren } from "react";
-import { Icon, Loading, Typography } from "@polkadex/ux";
-import type { IconsProps } from "@polkadex/ux";
+import { Icon, Loading, Typography } from "@mitra/ux";
+import type { IconsProps } from "@mitra/ux";
 
 export const GenericVerticalCard = ({
   title,

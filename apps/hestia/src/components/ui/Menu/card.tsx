@@ -1,5 +1,5 @@
 import * as Icons from "@remixicon/react";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import classNames from "classnames";
 import Link, { LinkProps } from "next/link";
 import { usePathname } from "next/navigation";

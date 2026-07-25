@@ -11,6 +11,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { createPublicClient, http, formatUnits, isAddress } from "viem";
 import { sepolia } from "viem/chains";
+
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig } from "@/config/bridge";
 
@@ -41,7 +42,7 @@ interface UseEvmTokenBalanceResult {
 
 export function useEvmTokenBalance(
   address?: string,
-  options?: UseEvmTokenBalanceOptions,
+  options?: UseEvmTokenBalanceOptions
 ): UseEvmTokenBalanceResult {
   const tokenAddress =
     options?.tokenAddress ??
@@ -55,7 +56,7 @@ export function useEvmTokenBalance(
         chain: sepolia,
         transport: http(rpcUrl),
       }),
-    [rpcUrl],
+    [rpcUrl]
   );
 
   const [balance, setBalance] = useState(0);
@@ -83,7 +84,8 @@ export function useEvmTokenBalance(
                 method: "eth_accounts",
               });
               const first = accounts?.[0];
-              if (first && isAddress(first)) evmAddress = first as `0x${string}`;
+              if (first && isAddress(first))
+                evmAddress = first as `0x${string}`;
             } catch {
               // Extension present but not authorised — ignore
             }
@@ -120,5 +122,4 @@ export function useEvmTokenBalance(
 }
 
 // Backwards-compatible alias — existing imports of useWethBalance continue to work
-export const useWethBalance = (address?: string) =>
-  useEvmTokenBalance(address);
+export const useWethBalance = (address?: string) => useEvmTokenBalance(address);

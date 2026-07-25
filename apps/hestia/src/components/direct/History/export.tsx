@@ -1,5 +1,5 @@
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
-import { Button, Tooltip, Typography } from "@polkadex/ux";
+import { Button, Tooltip, Typography } from "@mitra/ux";
 import { useState } from "react";
 import CSVLink from "react-csv-downloader";
 import { RiDownload2Line } from "@remixicon/react";

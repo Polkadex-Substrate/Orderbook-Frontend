@@ -3,7 +3,7 @@
 import classNames from "classnames";
 import { useOrderbookTable } from "@orderbook/core/hooks";
 import { useRef } from "react";
-import { GenericMessage, Typography } from "@polkadex/ux";
+import { GenericMessage, Typography } from "@mitra/ux";
 import { Decimal } from "@orderbook/core/utils";
 
 import { GenericAction } from "./columns";

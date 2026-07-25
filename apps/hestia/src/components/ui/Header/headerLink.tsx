@@ -1,7 +1,7 @@
 import { Url } from "next/dist/shared/lib/router/router";
 import Link from "next/link";
 import { ComponentProps, PropsWithChildren, ReactNode } from "react";
-import { Accordion, Dropdown, Typography } from "@polkadex/ux";
+import { Accordion, Dropdown, Typography } from "@mitra/ux";
 import classNames from "classnames";
 
 interface DropdownProps {

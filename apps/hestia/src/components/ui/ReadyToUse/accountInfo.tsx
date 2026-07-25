@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton, Typography, truncateString } from "@polkadex/ux";
+import { Skeleton, Typography, truncateString } from "@mitra/ux";
 import { PropsWithChildren } from "react";
 
 import { InlineAccountCard } from "./inlineAccountCard";

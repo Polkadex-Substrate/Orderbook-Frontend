@@ -1,5 +1,5 @@
 "use client";
-import { HoverCard, Typography } from "@polkadex/ux";
+import { HoverCard, Typography } from "@mitra/ux";
 import { useState } from "react";
 import { RiEyeOffLine, RiEyeLine } from "@remixicon/react";
 
@@ -47,10 +47,7 @@ export const Overview = () => {
         <OverviewCard icon="RiSkipDownLine" href="/bridge">
           Deposit
         </OverviewCard>
-        <OverviewCard
-          icon="RiSkipUpLine"
-          href="/bridge"
-        >
+        <OverviewCard icon="RiSkipUpLine" href="/bridge">
           Withdraw
         </OverviewCard>
         <OverviewCard icon="RiArrowLeftRightLine" href="/transfer">

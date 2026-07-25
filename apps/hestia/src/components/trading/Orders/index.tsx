@@ -8,7 +8,7 @@ import {
   RangeKeyDict,
   defaultStaticRanges,
 } from "react-date-range";
-import { Button, Tabs, Checkbox, Popover, ScrollArea } from "@polkadex/ux";
+import { Button, Tabs, Checkbox, Popover, ScrollArea } from "@mitra/ux";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useOpenOrders } from "@orderbook/core/hooks";
 import { Ifilters } from "@orderbook/core/providers/types";
@@ -95,7 +95,11 @@ export const Orders = () => {
   );
 
   return (
-    <Tabs data-tour="orders-panel" defaultValue="openOrders" className="flex-1 h-full">
+    <Tabs
+      data-tour="orders-panel"
+      defaultValue="openOrders"
+      className="flex-1 h-full"
+    >
       <div className="flex items-center justify-between border-b border-primary">
         <ScrollArea className=" overflow-hidden" style={{ maxWidth }}>
           <Tabs.List className="px-2 py-2.5 whitespace-nowrap">
@@ -171,7 +175,7 @@ export const Orders = () => {
                     </Button.Icon>
                   </Popover.Trigger>
                   <Popover.Content>
-                    {/* @ts-ignore */}
+                    {/* @ts-expect-error react-date-range ships incorrect prop types for DateRangePicker */}
                     <DateRangePicker
                       ranges={ranges}
                       onChange={onChangeDateRange}
@@ -194,7 +198,7 @@ export const Orders = () => {
           {connected ? (
             <OpenOrdersTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} />
+            <ConnectAccountWrapper funding={isFundingType} compact />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -204,7 +208,7 @@ export const Orders = () => {
           {connected ? (
             <OrderHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} />
+            <ConnectAccountWrapper funding={isFundingType} compact />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -214,7 +218,7 @@ export const Orders = () => {
           {connected ? (
             <TradeHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} />
+            <ConnectAccountWrapper funding={isFundingType} compact />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -224,7 +228,7 @@ export const Orders = () => {
           {mainAddress?.length > 0 ? (
             <BalancesTable height={height} />
           ) : (
-            <ConnectAccountWrapper funding />
+            <ConnectAccountWrapper funding compact />
           )}
         </Tabs.Content>
       </div>

@@ -1,7 +1,7 @@
-import { parseScientific } from "@polkadex/numericals";
+import { parseScientific } from "@mitra/numericals";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Copy, Tooltip, Typography, truncateString } from "@polkadex/ux";
+import { Copy, Tooltip, Typography, truncateString } from "@mitra/ux";
 import { RiFileCopyLine } from "@remixicon/react";
 
 import { filters } from "./filters";

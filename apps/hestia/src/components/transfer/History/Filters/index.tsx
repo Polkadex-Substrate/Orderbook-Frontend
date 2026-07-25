@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Icon, Popover, Typography } from "@polkadex/ux";
+import { Button, Icon, Popover, Typography } from "@mitra/ux";
 import { Table } from "@tanstack/react-table";
 import { useMemo } from "react";
 import { useWindowSize } from "usehooks-ts";

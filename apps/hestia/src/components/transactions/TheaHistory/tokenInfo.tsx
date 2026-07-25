@@ -1,4 +1,4 @@
-import { Typography, TokenAppearance, Token } from "@polkadex/ux";
+import { Typography, TokenAppearance, Token } from "@mitra/ux";
 import classNames from "classnames";
 
 export const TokenInfo = ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitra/ux";
 import {
   RiDropLine,
   RiFeedbackLine,

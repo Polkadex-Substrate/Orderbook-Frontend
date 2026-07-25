@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { Button, Input, Tooltip, Spinner } from "@polkadex/ux";
+import { Button, Input, Tooltip, Spinner } from "@mitra/ux";
 import classNames from "classnames";
 import { useFormik } from "formik";
 import { useLimitOrder } from "@orderbook/core/hooks";
@@ -12,6 +12,7 @@ import { Balance } from "../balance";
 import ConnectAccount from "../connectAccount";
 
 import { Range } from "@/components/ui/Temp/range";
+import { useFlashOnExternalChange } from "@/hooks/useFlashOnExternalChange";
 import { TradingFee } from "@/components/ui/ReadyToUse";
 
 const PRICE = "price";
@@ -98,6 +99,11 @@ export const SellOrder = ({
     else onChangeTotal(value);
   };
 
+  // Highlight fields when the orderbook click fills them (external change).
+  const priceFlash = useFlashOnExternalChange(values.price);
+  const amountFlash = useFlashOnExternalChange(values.amount);
+  const totalFlash = useFlashOnExternalChange(values.total);
+
   return (
     <form
       className="flex flex-auto flex-col gap-2"
@@ -111,10 +117,12 @@ export const SellOrder = ({
         <Tooltip.Trigger asChild>
           <div
             className={classNames(
-              "border",
+              "border transition-colors duration-300",
               !!errors.price && isSignedIn
                 ? "border-danger-base"
-                : "border-transparent"
+                : priceFlash
+                  ? "border-attention-base bg-attention-base/10"
+                  : "border-transparent"
             )}
           >
             <Input.Primary
@@ -156,10 +164,12 @@ export const SellOrder = ({
         <Tooltip.Trigger asChild>
           <div
             className={classNames(
-              "border",
+              "border transition-colors duration-300",
               !!errors.amount && isSignedIn
                 ? "border-danger-base"
-                : "border-transparent"
+                : amountFlash
+                  ? "border-attention-base bg-attention-base/10"
+                  : "border-transparent"
             )}
           >
             <Input.Primary
@@ -227,10 +237,12 @@ export const SellOrder = ({
         <Tooltip.Trigger asChild>
           <div
             className={classNames(
-              "border",
+              "border transition-colors duration-300",
               !!errors.total && isSignedIn
                 ? "border-danger-base"
-                : "border-transparent"
+                : totalFlash
+                  ? "border-attention-base bg-attention-base/10"
+                  : "border-transparent"
             )}
           >
             <Input.Primary

@@ -4,7 +4,7 @@ import {
   useOrderbook,
 } from "@orderbook/core/index";
 import classNames from "classnames";
-import { Skeleton, Typography } from "@polkadex/ux";
+import { Skeleton, Typography } from "@mitra/ux";
 
 import { Header } from "./header";
 import { LastPrice } from "./lastPrice";
@@ -31,7 +31,10 @@ export const Orderbook = ({ id }: { id: string }) => {
   } = useOrderbook(currentMarket?.id ?? "");
 
   return (
-    <div data-tour="orderbook" className="flex flex-col flex-1 h-full overflow-hidden">
+    <div
+      data-tour="orderbook"
+      className="flex flex-col flex-1 h-full overflow-hidden"
+    >
       <Header
         selectedDecimal={sizeState.size}
         decimalSizes={initialState}

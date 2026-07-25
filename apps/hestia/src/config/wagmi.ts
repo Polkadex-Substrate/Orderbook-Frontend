@@ -22,9 +22,9 @@ const WAGMI_CHAIN_MAP: Record<number, Chain> = {
   11155111: sepolia,
 };
 
-const chains = SUPPORTED_EVM_CHAIN_IDS.map(
-  (id) => WAGMI_CHAIN_MAP[id]
-).filter(Boolean) as [Chain, ...Chain[]];
+const chains = SUPPORTED_EVM_CHAIN_IDS.map((id) => WAGMI_CHAIN_MAP[id]).filter(
+  Boolean
+) as [Chain, ...Chain[]];
 
 export const config = defaultWagmiConfig({
   chains,

@@ -1,7 +1,7 @@
 import { LmpLeaderboard } from "@orderbook/core/index";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import { createColumnHelper } from "@tanstack/react-table";
-import { trimFloat, millify } from "@polkadex/numericals";
+import { trimFloat, millify } from "@mitra/numericals";
 
 import { AccountCard } from "./accountCard";
 

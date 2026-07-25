@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+
+import { getSubstrateApi } from "./substrateApiSingleton";
+
 import { BRIDGE_CHAINS } from "@/config/bridge";
 import type { SubstrateChainConfig } from "@/config/bridge";
-import { getSubstrateApi } from "./substrateApiSingleton";
 
 const defaultSubstrateChain = BRIDGE_CHAINS.polkadex as SubstrateChainConfig;
 
@@ -30,7 +32,7 @@ export type SubstrateTokenSpec = { ticker: string; decimals: number };
 export function useAllSubstrateBalances(
   address?: string,
   tokens?: SubstrateTokenSpec[],
-  options?: { wsUrl?: string },
+  options?: { wsUrl?: string }
 ) {
   const wsUrl = options?.wsUrl ?? defaultSubstrateChain.wsUrl;
   const tokensKey = tokens?.map((t) => t.ticker).join(",") ?? "";
@@ -69,7 +71,10 @@ export function useAllSubstrateBalances(
             if (sym) tickerToAssetId.set(sym.toUpperCase(), assetId);
           }
         } catch (err) {
-          console.warn("[useAllSubstrateBalances] metadata.entries() failed:", err);
+          console.warn(
+            "[useAllSubstrateBalances] metadata.entries() failed:",
+            err
+          );
         }
 
         // Fetch balance for each token using the discovered assetId
@@ -84,13 +89,18 @@ export function useAllSubstrateBalances(
             try {
               const res = await api.query.assets.account(assetId, address);
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const data = (res as any).toJSON() as Record<string, unknown> | null;
-              const raw = BigInt((data?.balance as string | number | null) ?? 0);
+              const data = (res as any).toJSON() as Record<
+                string,
+                unknown
+              > | null;
+              const raw = BigInt(
+                (data?.balance as string | number | null) ?? 0
+              );
               result.set(ticker, Number(raw) / Math.pow(10, decimals));
             } catch {
               result.set(ticker, 0);
             }
-          }),
+          })
         );
 
         if (!cancelled) {

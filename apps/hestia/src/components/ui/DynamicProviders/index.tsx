@@ -1,7 +1,11 @@
 "use client";
 
 import { Fragment, ReactNode } from "react";
-import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { Amplify } from "aws-amplify";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
@@ -26,24 +30,23 @@ const YbugUserIdentifier = dynamic(
 
 const TransactionManagerProvider = dynamic(
   () =>
-    import("@polkadex/react-providers").then(
+    import("@mitra/react-providers").then(
       (mod) => mod.TransactionManagerProvider
     ),
   { ssr: false }
 );
 const UserAccountsProvider = dynamic(
   () =>
-    import("@polkadex/react-providers").then((mod) => mod.UserAccountsProvider),
+    import("@mitra/react-providers").then((mod) => mod.UserAccountsProvider),
   { ssr: false }
 );
 const ExtensionsProvider = dynamic(
-  () =>
-    import("@polkadex/react-providers").then((mod) => mod.ExtensionsProvider),
+  () => import("@mitra/react-providers").then((mod) => mod.ExtensionsProvider),
   { ssr: false }
 );
 const ExtensionAccountsProvider = dynamic(
   () =>
-    import("@polkadex/react-providers").then(
+    import("@mitra/react-providers").then(
       (mod) => mod.ExtensionAccountsProvider
     ),
   { ssr: false }
@@ -92,10 +95,9 @@ const ConnectWalletProvider = dynamic(
   { ssr: false }
 );
 
-const Toaster = dynamic(
-  () => import("@polkadex/ux").then((mod) => mod.Toaster),
-  { ssr: false }
-);
+const Toaster = dynamic(() => import("@mitra/ux").then((mod) => mod.Toaster), {
+  ssr: false,
+});
 
 Amplify.configure(awsconfig);
 
@@ -125,53 +127,53 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
       <Toaster expand closeButton position="top-right" />
       <YbugProvider>
         <QueryClientProvider client={queryClient}>
-        <SettingProvider
-          defaultToast={{
-            onError: (title, description) => {
-              toast.error(title.toString(), { description });
-            },
-            onSuccess: (title, description) => {
-              toast.success(title.toString(), {
-                description,
-              });
-            },
-            onInfo: (title, description) => {
-              toast.info(title.toString(), { description });
-            },
-          }}
-        >
-          <ExtensionsProvider>
-            <ExtensionAccountsProvider
-              network={"polkadex"}
-              ss58={88}
-              dappName={"polkadex"}
-            >
-              <UserAccountsProvider>
-                <ProfileProvider>
-                  <NativeApiProvider>
-                    <OrderbookServiceProvider>
-                      <SessionProvider>
-                        <SubscriptionProvider
-                          marketId={(params.id as string) ?? "DOTUSDT"}
-                        >
-                          <TransactionManagerProvider>
-                            <ConnectWalletProvider>
-                              <Fragment>
-                                <YbugUserIdentifier />
-                                <Progress />
-                                {children}
-                              </Fragment>
-                            </ConnectWalletProvider>
-                          </TransactionManagerProvider>
-                        </SubscriptionProvider>
-                      </SessionProvider>
-                    </OrderbookServiceProvider>
-                  </NativeApiProvider>
-                </ProfileProvider>
-              </UserAccountsProvider>
-            </ExtensionAccountsProvider>
-          </ExtensionsProvider>
-        </SettingProvider>
+          <SettingProvider
+            defaultToast={{
+              onError: (title, description) => {
+                toast.error(title.toString(), { description });
+              },
+              onSuccess: (title, description) => {
+                toast.success(title.toString(), {
+                  description,
+                });
+              },
+              onInfo: (title, description) => {
+                toast.info(title.toString(), { description });
+              },
+            }}
+          >
+            <ExtensionsProvider>
+              <ExtensionAccountsProvider
+                network={"polkadex"}
+                ss58={88}
+                dappName={"polkadex"}
+              >
+                <UserAccountsProvider>
+                  <ProfileProvider>
+                    <NativeApiProvider>
+                      <OrderbookServiceProvider>
+                        <SessionProvider>
+                          <SubscriptionProvider
+                            marketId={(params.id as string) ?? "DOTUSDT"}
+                          >
+                            <TransactionManagerProvider>
+                              <ConnectWalletProvider>
+                                <Fragment>
+                                  <YbugUserIdentifier />
+                                  <Progress />
+                                  {children}
+                                </Fragment>
+                              </ConnectWalletProvider>
+                            </TransactionManagerProvider>
+                          </SubscriptionProvider>
+                        </SessionProvider>
+                      </OrderbookServiceProvider>
+                    </NativeApiProvider>
+                  </ProfileProvider>
+                </UserAccountsProvider>
+              </ExtensionAccountsProvider>
+            </ExtensionsProvider>
+          </SettingProvider>
         </QueryClientProvider>
       </YbugProvider>
     </Fragment>

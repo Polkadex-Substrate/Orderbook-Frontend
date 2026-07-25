@@ -1,13 +1,13 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import dynamic from "next/dynamic";
+import { defaultConfig } from "@/config";
 
-const Template = dynamic(
-  () => import("@/components/landing/template").then((mod) => mod.Template),
-  {
-    ssr: false,
-  }
-);
+/**
+ * Testnet: skip the marketing landing and go straight to the orderbook.
+ * The landing page still exists at /welcome (for mainnet, move it back
+ * here). Temporary redirect (307) on purpose — a permanentRedirect would
+ * be cached by browsers and make restoring the landing painful.
+ */
 export default function Page() {
-  return <Template />;
+  redirect(`/trading/${defaultConfig.landingPageMarket}`);
 }

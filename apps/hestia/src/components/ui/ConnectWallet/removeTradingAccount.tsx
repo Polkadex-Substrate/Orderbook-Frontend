@@ -1,8 +1,8 @@
 "use client";
 
 import { MouseEvent, useCallback, useMemo, useState } from "react";
-import { Interaction, Loading, Typography } from "@polkadex/ux";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { Interaction, Loading, Typography } from "@mitra/ux";
+import { ExtensionAccount } from "@mitra/react-providers";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import { useCall, useTransactionFeeModal } from "@orderbook/core/index";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";

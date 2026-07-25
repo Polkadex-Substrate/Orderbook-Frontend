@@ -97,7 +97,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [substrateAccount, setSubstrateAccount] = useState<any>(null);
   const [transferAmount, setTransferAmount] = useState(0);
-  const [selectedAsset, setSelectedAsset] = useState<BridgeTokenConfig>(WETH_ASSET);
+  const [selectedAsset, setSelectedAsset] =
+    useState<BridgeTokenConfig>(WETH_ASSET);
 
   const isEvmSource = direction === "evm-to-substrate";
 
@@ -112,7 +113,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const allChains = Object.values(BRIDGE_CHAINS);
   const supportedAssets = useMemo(
     () => getRouteSupportedTokens(SEPOLIA_CHAIN.id, POLKADEX_CHAIN.id),
-    [],
+    []
   );
 
   // sourceAccount / destinationAccount are aliases based on direction
@@ -169,21 +170,24 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
           tokenAddress: t.chains.sepolia!.address as `0x${string}`,
           decimals: t.decimals,
         })),
-    [supportedAssets],
+    [supportedAssets]
   );
 
   const {
     balances: evmAllTokenBalances,
     isLoading: evmAllTokensLoading,
     refetch: refetchEvmTokenBalance,
-  } = useAllEvmTokenBalances(evmAddress, evmTokenSpecs, { rpcUrl: evmChain.rpcUrl });
+  } = useAllEvmTokenBalances(evmAddress, evmTokenSpecs, {
+    rpcUrl: evmChain.rpcUrl,
+  });
 
   // ── Balances (Substrate side) ─────────────────────────────────────────────
   const substrateAddress = substrateAccount?.address;
 
   const substrateTokenSpecs = useMemo(
-    () => supportedAssets.map((t) => ({ ticker: t.ticker, decimals: t.decimals })),
-    [supportedAssets],
+    () =>
+      supportedAssets.map((t) => ({ ticker: t.ticker, decimals: t.decimals })),
+    [supportedAssets]
   );
 
   const {
@@ -219,7 +223,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
   const sourceBalancesLoading = useMemo(
     () => (isEvmSource ? evmAllTokensLoading : substrateBalancesLoading),
-    [isEvmSource, evmAllTokensLoading, substrateBalancesLoading],
+    [isEvmSource, evmAllTokensLoading, substrateBalancesLoading]
   );
 
   // All token balances for the token selector dropdown
@@ -233,7 +237,13 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             : (evmAllTokenBalances.get(t.ticker) ?? 0)
           : (substrateAllBalances.get(t.ticker) ?? 0),
       })),
-    [isEvmSource, supportedAssets, ethBalance, evmAllTokenBalances, substrateAllBalances],
+    [
+      isEvmSource,
+      supportedAssets,
+      ethBalance,
+      evmAllTokenBalances,
+      substrateAllBalances,
+    ]
   );
 
   // ── Fees ──────────────────────────────────────────────────────────────────
@@ -289,8 +299,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const onSelectAsset = (asset: BridgeTokenConfig) => setSelectedAsset(asset);
 
   const refetchSourceBalance = useCallback(() => {
-    void refetchEthBalance();
-    void refetchEvmTokenBalance();
+    refetchEthBalance();
+    refetchEvmTokenBalance();
     refetchSubstrateBalances();
   }, [refetchEthBalance, refetchEvmTokenBalance, refetchSubstrateBalances]);
 
@@ -316,10 +326,14 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         supportedSourceChains: allChains,
         supportedDestinationChains: allChains,
         onSwitchChain,
+        // Empty string when the on-chain assetId isn't known (yet) — usePool
+        // gates its quote query on `!!asset`, so this cleanly disables the
+        // auto-swap quote instead of sending a fake id ("weth-id") that the
+        // runtime rejects with: Could not parse 'AssetId'.
         selectedAssetIdPolkadex:
           selectedAsset.chains.polkadex?.assetId ??
           substrateAssetIds.get(selectedAsset.ticker.toUpperCase()) ??
-          "weth-id",
+          "",
         isDestinationPolkadex: isEvmSource,
         // substrateAccount is the destination account exactly when isEvmSource
         // (evm-to-substrate direction), which is the only direction this is used.

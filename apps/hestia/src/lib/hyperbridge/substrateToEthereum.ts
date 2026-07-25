@@ -1,6 +1,7 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { web3Enable, web3FromAddress } from "@polkadot/extension-dapp";
 import { parseUnits } from "viem";
+
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
 
@@ -34,9 +35,15 @@ export type SubstrateToEvmParams = {
 // confirms the exact call name. Based on pallet-hyper-fungible-token, the call
 // is api.tx.hyperFungibleToken.send(). Verify on-chain before going to mainnet.
 export async function transferSubstrateToEvm(
-  params: SubstrateToEvmParams,
+  params: SubstrateToEvmParams
 ): Promise<string> {
-  const { amount, recipient, senderAddress, decimals = 18, assetId = WETH_ASSET_ID } = params;
+  const {
+    amount,
+    recipient,
+    senderAddress,
+    decimals = 18,
+    assetId = WETH_ASSET_ID,
+  } = params;
 
   if (!recipient.startsWith("0x")) {
     throw new Error("Recipient must be an EVM address starting with 0x");
@@ -46,7 +53,7 @@ export async function transferSubstrateToEvm(
   const extensions = await web3Enable("Polkadex Bridge");
   if (extensions.length === 0) {
     throw new Error(
-      "No Polkadot extension found. Please install Polkadot.js, Talisman, or SubWallet.",
+      "No Polkadot extension found. Please install Polkadot.js, Talisman, or SubWallet."
     );
   }
 
@@ -57,14 +64,14 @@ export async function transferSubstrateToEvm(
   } catch {
     throw new Error(
       `Account "${senderAddress}" not found in any browser extension. ` +
-        `Make sure it is imported in Polkadot.js / Talisman / SubWallet.`,
+        `Make sure it is imported in Polkadot.js / Talisman / SubWallet.`
     );
   }
 
   const signer = injector.signer;
   if (!signer?.signPayload) {
     throw new Error(
-      "Extension signer does not support signPayload — please update your wallet extension.",
+      "Extension signer does not support signPayload — please update your wallet extension."
     );
   }
 
@@ -75,7 +82,7 @@ export async function transferSubstrateToEvm(
   if (!api.tx.hyperFungibleToken?.send) {
     throw new Error(
       "hyperFungibleToken.send extrinsic not found on this Polkadex node. " +
-        "The chain may not have deployed the HFT pallet yet.",
+        "The chain may not have deployed the HFT pallet yet."
     );
   }
 
@@ -123,8 +130,8 @@ export async function transferSubstrateToEvm(
             const decoded = api.registry.findMetaError(dispatchError.asModule);
             reject(
               new Error(
-                `${decoded.section}.${decoded.name}: ${decoded.docs.join(" ")}`,
-              ),
+                `${decoded.section}.${decoded.name}: ${decoded.docs.join(" ")}`
+              )
             );
           } else {
             reject(new Error(dispatchError.toString()));

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ApiPromise, WsProvider } from "@polkadot/api";
+
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { SubstrateChainConfig } from "@/config/bridge";
 
@@ -44,7 +45,7 @@ async function getApi(wsUrl: string): Promise<ApiPromise> {
 
 export function useSubstrateWethBalance(
   address?: string,
-  options?: UseSubstrateAssetBalanceOptions,
+  options?: UseSubstrateAssetBalanceOptions
 ) {
   const wsUrl = options?.wsUrl ?? defaultSubstrateChain.wsUrl;
   const assetId = options?.assetId;
@@ -87,7 +88,7 @@ export function useSubstrateWethBalance(
                   setBalance(0);
                 }
                 setIsLoading(false);
-              },
+              }
             );
             unsubRef.current = unsub as unknown as () => void;
           } else if (api.query.ormlTokens?.accounts) {
@@ -99,13 +100,13 @@ export function useSubstrateWethBalance(
                 const data = result.toJSON();
                 setBalance(Number(BigInt(data?.free ?? 0)) / divisor);
                 setIsLoading(false);
-              },
+              }
             );
             unsubRef.current = unsub as unknown as () => void;
           } else {
             const result = await (api.query as any).assets?.account?.(
               assetId,
-              address,
+              address
             );
             if (!cancelled) {
               const data = result?.toJSON();

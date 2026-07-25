@@ -8,7 +8,7 @@ import {
   Searchable,
   ScrollArea,
   TokenCard,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { Fragment, useState } from "react";
 import { RiArrowDownSLine } from "@remixicon/react";
 

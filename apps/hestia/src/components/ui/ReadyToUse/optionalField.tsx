@@ -1,5 +1,5 @@
 import { PropsWithChildren, useState } from "react";
-import { Switch, Typography } from "@polkadex/ux";
+import { Switch, Typography } from "@mitra/ux";
 
 export const OptionalField = ({
   defaultOpen,

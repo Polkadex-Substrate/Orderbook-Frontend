@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@polkadex/ux";
+import { Button } from "@mitra/ux";
 import { forwardRef } from "react";
 import { RiExternalLinkLine } from "@remixicon/react";
 import Link from "next/link";

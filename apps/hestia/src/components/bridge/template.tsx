@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useMemo } from "react";
 import { RiInformation2Line, RiToolsFill } from "@remixicon/react";
@@ -61,20 +61,16 @@ export function Template() {
               </Typography.Text>
             </div>
           ) : (
-          <div className="flex-1 flex flex-col">
-            <div className="flex flex-col flex-1">
+            <div className="flex-1 flex flex-col">
               <div className="flex items-center justify-between p-4 border-b border-secondary-base">
                 <Typography.Text bold size="lg">
                   Bridge
                 </Typography.Text>
                 <RiInformation2Line className="w-6 h-6 text-primary" />
               </div>
-              {/* <ConnectButton /> */}
-              {/* <WalletInfo /> */}
               <Form />
+              <Help />
             </div>
-            <Help />
-          </div>
           )}
         </main>
         {mobileView && (browserAccountPresent || extensionAccountPresent) && (

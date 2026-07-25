@@ -1,4 +1,4 @@
-import { truncateString, Typography } from "@polkadex/ux";
+import { truncateString, Typography } from "@mitra/ux";
 import { RiExternalLinkLine } from "@remixicon/react";
 import Link from "next/link";
 import React from "react";

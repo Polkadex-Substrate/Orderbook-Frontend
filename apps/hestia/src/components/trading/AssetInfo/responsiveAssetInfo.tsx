@@ -1,4 +1,4 @@
-import { Skeleton, Token, Typography, tokenAppearance } from "@polkadex/ux";
+import { Skeleton, Token, Typography, tokenAppearance } from "@mitra/ux";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Decimal } from "@orderbook/core/utils";
 import { hasOnlyZeros, isNegative } from "@orderbook/core/helpers";

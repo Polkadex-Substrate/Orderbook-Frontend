@@ -1,4 +1,4 @@
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitra/ux";
 import { RiNotification3Line } from "@remixicon/react";
 export const Banner = ({ open }: { open: boolean }) => {
   return open ? (

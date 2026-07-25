@@ -1,6 +1,6 @@
 "use client";
 
-import { FilterGroup, Typography } from "@polkadex/ux";
+import { FilterGroup, Typography } from "@mitra/ux";
 import { Column } from "@tanstack/react-table";
 import classNames from "classnames";
 
@@ -60,7 +60,7 @@ export const FacetedFilter = <TData, TValue>({
                 if (isSelected) selectedValues.delete(v);
                 else selectedValues.add(v);
                 column?.setFilterValue(
-                  selectedValues.size ? Array.from(selectedValues) : undefined,
+                  selectedValues.size ? Array.from(selectedValues) : undefined
                 );
               }}
             >

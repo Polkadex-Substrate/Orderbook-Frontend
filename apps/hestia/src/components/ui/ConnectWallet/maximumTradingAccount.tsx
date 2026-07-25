@@ -1,9 +1,4 @@
-import {
-  Accordion,
-  Typography,
-  Illustrations,
-  Interaction,
-} from "@polkadex/ux";
+import { Accordion, Typography, Illustrations, Interaction } from "@mitra/ux";
 import { MouseEvent } from "react";
 import { TradeAccount } from "@orderbook/core/providers/types";
 

@@ -1,6 +1,6 @@
 import { UseQueryResult, useMutation } from "@tanstack/react-query";
 import { KeyringPair } from "@polkadot/keyring/types";
-import { GDriveExternalAccountStore } from "@polkadex/local-wallets";
+import { GDriveExternalAccountStore } from "@mitra/local-wallets";
 import { Dispatch, SetStateAction } from "react";
 
 import { sleep } from "../helpers";

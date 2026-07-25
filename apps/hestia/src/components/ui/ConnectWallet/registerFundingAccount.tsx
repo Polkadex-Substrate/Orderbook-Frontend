@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@mitra/react-providers";
 import {
   AddProxyAccountArgs,
   useCall,

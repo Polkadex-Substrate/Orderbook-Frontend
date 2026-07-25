@@ -1,6 +1,6 @@
 "use client";
 
-import { Dropdown, Typography } from "@polkadex/ux";
+import { Dropdown, Typography } from "@mitra/ux";
 import { DecimalSize } from "@orderbook/core/hooks";
 import { parseScientific } from "@orderbook/core/helpers";
 

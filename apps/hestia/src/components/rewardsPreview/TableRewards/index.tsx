@@ -1,7 +1,7 @@
 "use client";
 
 import { RiFileCopyLine, RiHandCoinLine, RiSortAsc } from "@remixicon/react";
-import { Copy, Icon, Skeleton, Typography, truncateString } from "@polkadex/ux";
+import { Copy, Icon, Skeleton, Typography, truncateString } from "@mitra/ux";
 import { forwardRef, useMemo, useRef } from "react";
 import { useResizeObserver } from "usehooks-ts";
 import { useProfile } from "@orderbook/core/providers/user/profile";
@@ -11,7 +11,7 @@ import {
   useClaimableRewards,
   useTraderMetrics,
 } from "@orderbook/core/hooks";
-import { trimFloat, millify } from "@polkadex/numericals";
+import { trimFloat, millify } from "@mitra/numericals";
 
 import { RewardsSkeleton } from "./loading";
 import { ClaimReward } from "./claimReward";

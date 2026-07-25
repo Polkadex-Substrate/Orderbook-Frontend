@@ -2,7 +2,7 @@
 
 import classNames from "classnames";
 import { useFormik } from "formik";
-import { Button, Input, Spinner, Tooltip } from "@polkadex/ux";
+import { Button, Input, Spinner, Tooltip } from "@mitra/ux";
 import { Market, Ticker } from "@orderbook/core/utils/orderbookService/types";
 import { useMarketOrder } from "@orderbook/core/hooks";
 import { marketOrderValidations } from "@orderbook/core/validations";
@@ -12,6 +12,7 @@ import ConnectAccount from "../connectAccount";
 
 import { Range } from "@/components/ui/Temp/range";
 import { TradingFee } from "@/components/ui/ReadyToUse";
+import { useFlashOnExternalChange } from "@/hooks/useFlashOnExternalChange";
 
 const AMOUNT = "amount";
 
@@ -77,6 +78,9 @@ export const SellOrder = ({
     market,
   });
 
+  // Highlight when the orderbook click fills the amount (external change).
+  const amountFlash = useFlashOnExternalChange(values.amount);
+
   return (
     <form className="flex flex-auto flex-col gap-2" onSubmit={handleSubmit}>
       <Button.Solid
@@ -91,10 +95,12 @@ export const SellOrder = ({
         <Tooltip.Trigger asChild>
           <div
             className={classNames(
-              "border",
+              "border transition-colors duration-300",
               !!errors.amount && isSignedIn
                 ? "border-danger-base"
-                : "border-transparent"
+                : amountFlash
+                  ? "border-attention-base bg-attention-base/10"
+                  : "border-transparent"
             )}
           >
             <Input.Primary

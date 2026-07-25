@@ -20,7 +20,7 @@ import {
   Modal,
   Table as PolkadexTable,
   Spinner,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";

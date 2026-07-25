@@ -1,4 +1,4 @@
-import { Button, Typography, truncateString, Tooltip } from "@polkadex/ux";
+import { Button, Typography, truncateString, Tooltip } from "@mitra/ux";
 import { RiDeleteBin2Line } from "@remixicon/react";
 
 export const RemoveWalletCard = ({

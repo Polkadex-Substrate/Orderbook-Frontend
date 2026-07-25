@@ -1,4 +1,4 @@
-import { Typography, Separator, HoverCard } from "@polkadex/ux";
+import { Typography, Separator, HoverCard } from "@mitra/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { useState } from "react";
 

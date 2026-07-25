@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, MouseEvent, useCallback, useMemo } from "react";
-import { Interactable, useInteractableProvider } from "@polkadex/ux";
+import { Interactable, useInteractableProvider } from "@mitra/ux";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { TradeAccount } from "@orderbook/core/providers/types";

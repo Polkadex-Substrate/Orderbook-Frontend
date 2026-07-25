@@ -1,4 +1,4 @@
-import { Table as PolkadexTable, GenericMessage } from "@polkadex/ux";
+import { Table as PolkadexTable, GenericMessage } from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, forwardRef, useEffect, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
@@ -14,6 +14,7 @@ import classNames from "classnames";
 import { columns } from "./columns";
 import { Loading } from "./loading";
 import { ResponsiveTable } from "./responsiveTable";
+
 import { picoScale } from "@/helpers";
 const responsiveKeys = ["inOrders", "fundingAccount"];
 
@@ -32,7 +33,15 @@ export const Table = forwardRef<
 
   const { width } = useWindowSize();
 
-  const newData = useMemo(() => data.map((item) => item?.ticker === 'USDT' ? { ...item, onChainBalance: picoScale(item?.onChainBalance) } : { ...item }), [data]);
+  const newData = useMemo(
+    () =>
+      data.map((item) =>
+        item?.ticker === "USDT"
+          ? { ...item, onChainBalance: picoScale(item?.onChainBalance) }
+          : { ...item }
+      ),
+    [data]
+  );
 
   const table = useReactTable({
     data: newData,
@@ -41,7 +50,7 @@ export const Table = forwardRef<
     getSortedRowModel: getSortedRowModel(),
     columns,
     getCoreRowModel: getCoreRowModel(),
-  });  
+  });
 
   const responsiveView = useMemo(() => width <= 800, [width]);
 

@@ -1,6 +1,6 @@
 import classNames from "classnames";
 import { ComponentProps } from "react";
-import { Skeleton } from "@polkadex/ux";
+import { Skeleton } from "@mitra/ux";
 import { twMerge } from "tailwind-merge";
 
 interface SkeletonCollectionProps extends ComponentProps<typeof Skeleton> {

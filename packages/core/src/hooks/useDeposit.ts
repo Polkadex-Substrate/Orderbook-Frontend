@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import {
   ExtensionAccount,
   useTransactionManager,
-} from "@polkadex/react-providers";
+} from "@mitra/react-providers";
 import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import { useSettingsProvider } from "../providers/public/settings";

@@ -1,4 +1,4 @@
-import { Token, Tokens, Typography } from "@polkadex/ux";
+import { Token, Tokens, Typography } from "@mitra/ux";
 import classNames from "classnames";
 
 type Icon = keyof typeof Tokens;

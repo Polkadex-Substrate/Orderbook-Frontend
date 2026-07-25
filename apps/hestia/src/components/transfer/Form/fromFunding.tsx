@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { AccountInfo, InlineAccountCard } from "../../ui/ReadyToUse";
 
 import { Card } from "./card";
+
 import { picoScale } from "@/helpers";
 
 export const FromFunding = ({
@@ -33,8 +35,13 @@ export const FromFunding = ({
   localAccountBalance?: string;
   selectedAssetTicker?: string;
 }) => {
-
-  const formattedExtensionAccountBalance = selectedAssetTicker === 'USDT' ? useMemo(() => picoScale(extensionAccountBalance), [extensionAccountBalance]) : extensionAccountBalance;
+  const formattedExtensionAccountBalance = useMemo(
+    () =>
+      selectedAssetTicker === "USDT"
+        ? picoScale(extensionAccountBalance)
+        : extensionAccountBalance,
+    [selectedAssetTicker, extensionAccountBalance]
+  );
 
   return (
     <Card
@@ -47,7 +54,9 @@ export const FromFunding = ({
         address={fromFunding ? extensionAccountAddress : localAccountAddress}
         ticker={selectedAssetTicker}
         isBalanceFetching={isBalanceFetching}
-        balance={fromFunding ? formattedExtensionAccountBalance : localAccountBalance}
+        balance={
+          fromFunding ? formattedExtensionAccountBalance : localAccountBalance
+        }
       >
         {((fromFunding && !isExtensionAccountPresent) ||
           (!fromFunding && !isLocalAccountPresent)) && (

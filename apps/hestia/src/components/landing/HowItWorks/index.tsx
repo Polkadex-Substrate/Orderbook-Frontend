@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitra/ux";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { RiArrowRightLine } from "@remixicon/react";
 

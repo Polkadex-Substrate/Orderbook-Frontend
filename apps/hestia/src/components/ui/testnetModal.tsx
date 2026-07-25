@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Checkbox, Modal, Separator, Typography } from "@polkadex/ux";
+import { Button, Checkbox, Modal, Separator, Typography } from "@mitra/ux";
 import { RiFlaskLine } from "@remixicon/react";
 
 const SESSION_KEY = "testnet-notice-acknowledged";
@@ -35,7 +35,9 @@ export const TestnetModal = () => {
             <RiFlaskLine className="w-7 h-7 text-primary-hover" />
           </div>
           <div className="flex flex-col gap-1">
-            <Typography.Heading size="xl">Testnet Environment</Typography.Heading>
+            <Typography.Heading size="xl">
+              Testnet Environment
+            </Typography.Heading>
             <Typography.Text appearance="primary" size="sm">
               You are using a testnet version of Polkadex Orderbook
             </Typography.Text>
@@ -47,7 +49,9 @@ export const TestnetModal = () => {
         <div className="flex flex-col gap-3">
           <ul className="flex flex-col gap-2">
             <li className="flex gap-2">
-              <Typography.Text size="sm" className="shrink-0">⚠️</Typography.Text>
+              <Typography.Text size="sm" className="shrink-0">
+                ⚠️
+              </Typography.Text>
               <Typography.Text size="sm" appearance="primary">
                 All assets and transactions on this network are{" "}
                 <Typography.Text size="sm" appearance="base" bold>
@@ -57,7 +61,9 @@ export const TestnetModal = () => {
               </Typography.Text>
             </li>
             <li className="flex gap-2">
-              <Typography.Text size="sm" className="shrink-0">🚫</Typography.Text>
+              <Typography.Text size="sm" className="shrink-0">
+                🚫
+              </Typography.Text>
               <Typography.Text size="sm" appearance="primary">
                 Do not send real funds to any testnet address.
               </Typography.Text>

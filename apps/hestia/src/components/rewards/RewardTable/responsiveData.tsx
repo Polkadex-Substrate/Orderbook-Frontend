@@ -1,4 +1,4 @@
-import { Button, Drawer } from "@polkadex/ux";
+import { Button, Drawer } from "@mitra/ux";
 import { useRouter } from "next/navigation";
 
 import { ResponsiveCard } from "./responsiveCard";

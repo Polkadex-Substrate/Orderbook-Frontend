@@ -1,7 +1,7 @@
 "use client";
 
 import { createColumnHelper } from "@tanstack/react-table";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import { RiArrowRightLine } from "@remixicon/react";
 import { GENESIS } from "@orderbook/core/index";
 

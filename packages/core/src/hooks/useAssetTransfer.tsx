@@ -5,7 +5,7 @@ import { NOTIFICATIONS, UNIT_BN } from "@orderbook/core/constants";
 import {
   ExtensionAccount,
   useTransactionManager,
-} from "@polkadex/react-providers";
+} from "@mitra/react-providers";
 import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import { useSettingsProvider } from "../providers/public/settings";

@@ -27,14 +27,25 @@ const BASE_CONFIG: Omit<Config, "steps"> = {
 export function useTour() {
   const driverRef = useRef<Driver | null>(null);
 
-  const { extensionAccountPresent, mainProxiesAccounts, selectedTradingAccount } =
-    useConnectWalletProvider();
+  const {
+    extensionAccountPresent,
+    mainProxiesAccounts,
+    selectedTradingAccount,
+  } = useConnectWalletProvider();
 
   // Keep a ref to the latest state so the one-time auto-start effect
   // can read the current values when the delay fires.
-  const stateRef = useRef({ extensionAccountPresent, mainProxiesAccounts, selectedTradingAccount });
+  const stateRef = useRef({
+    extensionAccountPresent,
+    mainProxiesAccounts,
+    selectedTradingAccount,
+  });
   useEffect(() => {
-    stateRef.current = { extensionAccountPresent, mainProxiesAccounts, selectedTradingAccount };
+    stateRef.current = {
+      extensionAccountPresent,
+      mainProxiesAccounts,
+      selectedTradingAccount,
+    };
   }, [extensionAccountPresent, mainProxiesAccounts, selectedTradingAccount]);
 
   const launchTour = useCallback(async (steps: DriveStep[]) => {
@@ -70,8 +81,11 @@ export function useTour() {
     const timer = setTimeout(async () => {
       if (typeof window === "undefined") return;
 
-      const { extensionAccountPresent, mainProxiesAccounts, selectedTradingAccount } =
-        stateRef.current;
+      const {
+        extensionAccountPresent,
+        mainProxiesAccounts,
+        selectedTradingAccount,
+      } = stateRef.current;
 
       const hasProxyAccounts = mainProxiesAccounts.length > 0;
       const hasTradingAccount = !!selectedTradingAccount;

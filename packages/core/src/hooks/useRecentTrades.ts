@@ -9,12 +9,7 @@ import { QUERY_KEYS, RECENT_TRADES_LIMIT } from "../constants";
 import { getIsDecreasingArray } from "../helpers";
 
 export function useRecentTrades(market: string) {
-
-  const {
-    data: recentTradesList,
-    isLoading,
-    isFetching,
-  } = useQuery<PublicTrade[]>({
+  const { data: recentTradesList, isLoading } = useQuery<PublicTrade[]>({
     queryKey: QUERY_KEYS.recentTrades(market),
     enabled: Boolean(market?.length > 0),
     queryFn: async () =>
@@ -39,7 +34,10 @@ export function useRecentTrades(market: string) {
 
   return {
     list: recentTradesList ?? [],
-    loading: isLoading || isFetching,
+    // isLoading only: background refetches (isFetching) must not blank the
+    // list behind a skeleton — that's the "data disappears" flicker when
+    // hopping between markets.
+    loading: isLoading,
     isDecreasing,
     isPriceUp: currentTradePrice >= lastTradePrice,
   };

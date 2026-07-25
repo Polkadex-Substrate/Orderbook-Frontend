@@ -1,4 +1,4 @@
-import { Icons, Typography } from "@polkadex/ux";
+import { Icons, Typography } from "@mitra/ux";
 
 export const AccountCard = ({ address }: { address: string }) => {
   return (

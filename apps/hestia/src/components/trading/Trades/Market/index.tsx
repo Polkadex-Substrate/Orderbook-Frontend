@@ -11,7 +11,7 @@ import {
   Illustrations,
   GenericMessage,
   Table as PolkadexTable,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { useMemo, useState } from "react";
 
 import { ColumnSelector, columns } from "./columns";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Tabs, Carousel, HoverCard, Skeleton } from "@polkadex/ux";
+import { Typography, Tabs, Carousel, HoverCard, Skeleton } from "@mitra/ux";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {

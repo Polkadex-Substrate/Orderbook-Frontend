@@ -1,6 +1,6 @@
 "use client";
 
-import { Interactable, Modal, useInteractableProvider } from "@polkadex/ux";
+import { Interactable, Modal, useInteractableProvider } from "@mitra/ux";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { Fragment, useMemo } from "react";

@@ -4,12 +4,7 @@ import { ElementType, useEffect } from "react";
 import { getExtensionIcon } from "@polkadot-cloud/assets/extensions";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
-import {
-  Interaction,
-  InteractionProps,
-  Spinner,
-  Typography,
-} from "@polkadex/ux";
+import { Interaction, InteractionProps, Spinner, Typography } from "@mitra/ux";
 
 interface ProcessingTransactionProps extends InteractionProps {
   logo: string;

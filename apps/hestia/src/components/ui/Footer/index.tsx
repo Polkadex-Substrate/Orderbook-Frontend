@@ -1,5 +1,5 @@
 import { Fragment, forwardRef, useMemo } from "react";
-import { Dropdown, Typography } from "@polkadex/ux";
+import { Dropdown, Typography } from "@mitra/ux";
 import { useNativeApi } from "@orderbook/core/providers/public/nativeApi";
 import {
   useSettingsProvider,

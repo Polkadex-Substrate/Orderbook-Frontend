@@ -16,7 +16,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import classNames from "classnames";
-import { GenericMessage, Skeleton } from "@polkadex/ux";
+import { Skeleton, Typography } from "@mitra/ux";
 
 import { columns } from "./columns";
 
@@ -109,14 +109,13 @@ export const RecentTrades = ({ id }: { id: string }) => {
             </tbody>
           </table>
         ) : (
-          <GenericMessage
-            title="No data"
-            illustration="NoData"
-            className="bg-level-0 h-full"
-            imageProps={{
-              className: "w-10 self-center",
-            }}
-          />
+          /* Compact empty state: on a thin/new market this panel is empty
+             most of the time — a full illustration reads as broken. */
+          <div className="flex-1 h-full flex items-center justify-center bg-level-0 py-6">
+            <Typography.Text appearance="primary" size="xs">
+              No trades yet on this pair
+            </Typography.Text>
+          </div>
         )}
       </div>
     </Skeleton>

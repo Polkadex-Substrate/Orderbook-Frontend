@@ -1,4 +1,4 @@
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import classNames from "classnames";
 
 export type BadgeProps = React.HTMLAttributes<HTMLDivElement>;

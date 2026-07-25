@@ -1,13 +1,13 @@
 "use client";
 
-import { useExtensionAccounts, useExtensions } from "@polkadex/react-providers";
+import { useExtensionAccounts, useExtensions } from "@mitra/react-providers";
 import { Fragment, useCallback, useMemo } from "react";
 import {
   Interactable,
   useInteractableProvider,
   ExtensionAccounts,
   ConnectWallet,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { TradeAccount } from "@orderbook/core/providers/types";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";

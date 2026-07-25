@@ -1,4 +1,4 @@
-import { Button } from "@polkadex/ux";
+import { Button } from "@mitra/ux";
 
 interface RangeProps {
   ranges: {

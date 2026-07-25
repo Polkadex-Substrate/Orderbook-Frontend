@@ -4,7 +4,7 @@ import {
   getCurrentMarket,
   mergeDuplicateOrders,
 } from "@orderbook/core/helpers";
-import { trimFloat } from "@polkadex/numericals";
+import { trimFloat } from "@mitra/numericals";
 import { useQuery } from "@tanstack/react-query";
 import {
   MAX_DIGITS_AFTER_DECIMAL,

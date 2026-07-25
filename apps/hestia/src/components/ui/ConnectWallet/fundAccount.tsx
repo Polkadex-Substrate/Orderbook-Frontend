@@ -1,13 +1,13 @@
 "use client";
 
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@mitra/react-providers";
 import {
   Typography,
   AccountCard,
   Illustrations,
   Interaction,
   Accordion,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 
 export const FundAccount = ({

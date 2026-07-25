@@ -214,9 +214,8 @@ export const SEPOLIA_PDEX_TOKENS: BridgeTokenConfig[] = [
 
 // Derived lookup map — used by bridge functions that need to look up a token by id.
 // Do not modify this directly; add tokens to SEPOLIA_PDEX_TOKENS above.
-export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = Object.fromEntries(
-  SEPOLIA_PDEX_TOKENS.map((t) => [t.id, t]),
-);
+export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> =
+  Object.fromEntries(SEPOLIA_PDEX_TOKENS.map((t) => [t.id, t]));
 
 // ─── Route definitions ────────────────────────────────────────────────────────
 
@@ -250,12 +249,12 @@ export function getBridgeToken(id: string): BridgeTokenConfig {
 
 export function getRouteSupportedTokens(
   sourceChainId: string,
-  destinationChainId: string,
+  destinationChainId: string
 ): BridgeTokenConfig[] {
   const route = BRIDGE_ROUTES.find(
     (r) =>
       r.sourceChainId === sourceChainId &&
-      r.destinationChainId === destinationChainId,
+      r.destinationChainId === destinationChainId
   );
   if (!route) return [];
   return route.supportedTokenIds.map((id) => BRIDGE_TOKENS[id]).filter(Boolean);
@@ -263,12 +262,12 @@ export function getRouteSupportedTokens(
 
 export function getRouteConfig(
   sourceChainId: string,
-  destinationChainId: string,
+  destinationChainId: string
 ): BridgeRouteConfig | undefined {
   return BRIDGE_ROUTES.find(
     (r) =>
       r.sourceChainId === sourceChainId &&
-      r.destinationChainId === destinationChainId,
+      r.destinationChainId === destinationChainId
   );
 }
 

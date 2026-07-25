@@ -1,4 +1,4 @@
-import { Icon, Separator, Typography } from "@polkadex/ux";
+import { Icon, Separator, Typography } from "@mitra/ux";
 
 export const ConnectTradingAccountCard = ({
   onOpenInteraction,

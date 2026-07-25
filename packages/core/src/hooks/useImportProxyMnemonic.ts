@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useUserAccounts } from "@polkadex/react-providers";
+import { useUserAccounts } from "@mitra/react-providers";
 
 import { useProfile } from "../providers/user/profile";
 import { appsyncOrderbookService } from "../utils/orderbookService";

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { GDriveExternalAccountStore } from "@polkadex/local-wallets";
+import { GDriveExternalAccountStore } from "@mitra/local-wallets";
 import { Dispatch, SetStateAction } from "react";
 
 import { QUERY_KEYS } from "../constants";

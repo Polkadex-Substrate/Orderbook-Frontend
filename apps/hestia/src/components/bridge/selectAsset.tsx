@@ -1,15 +1,10 @@
 "use client";
 
-import {
-  Interaction,
-  Modal,
-  Searchable,
-  Skeleton,
-  TokenCard,
-} from "@polkadex/ux";
+import { Interaction, Modal, Searchable, Skeleton, TokenCard } from "@mitra/ux";
 import { SetStateAction, Dispatch, useCallback, ComponentProps } from "react";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
+
 import { useBridgeProvider } from "./BridgeProvider";
 
 import { formatAmount } from "@/helpers";

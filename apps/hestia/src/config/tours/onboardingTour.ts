@@ -131,7 +131,12 @@ export function getOnboardingSteps(
   if (!extensionAccountPresent) {
     // Phase A — Complete newcomer
     return appendInterfaceSteps(
-      [welcomeStep, connectWalletStep, createTradingAccountStep, fundConceptStep],
+      [
+        welcomeStep,
+        connectWalletStep,
+        createTradingAccountStep,
+        fundConceptStep,
+      ],
       width
     );
   }
@@ -145,8 +150,5 @@ export function getOnboardingSteps(
   }
 
   // Phase C — Trading accounts exist but none active in browser
-  return appendInterfaceSteps(
-    [reconnectTradingStep, transferFundsStep],
-    width
-  );
+  return appendInterfaceSteps([reconnectTradingStep, transferFundsStep], width);
 }

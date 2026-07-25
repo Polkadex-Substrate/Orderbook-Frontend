@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Table as PolkadexTable } from "@polkadex/ux";
+import { Button, Table as PolkadexTable } from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, forwardRef, useEffect, useMemo, useState } from "react";
 import { RiExpandUpDownLine } from "@remixicon/react";

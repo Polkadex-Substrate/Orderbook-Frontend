@@ -3,7 +3,7 @@
 import classNames from "classnames";
 import { getExtensionIcon } from "@polkadot-cloud/assets/extensions";
 import { ElementType } from "react";
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitra/ux";
 
 export const ProviderCard = ({
   title,

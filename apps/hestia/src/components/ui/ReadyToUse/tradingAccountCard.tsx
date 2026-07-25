@@ -8,9 +8,9 @@ import {
   Skeleton,
   Typography,
   truncateString,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import classNames from "classnames";
-import { useExtensionAccounts } from "@polkadex/react-providers";
+import { useExtensionAccounts } from "@mitra/react-providers";
 import { useExtensionAccountFromBrowserAccount } from "@orderbook/core/hooks";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { TradeAccount } from "@orderbook/core/providers/types";

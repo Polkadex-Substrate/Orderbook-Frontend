@@ -10,7 +10,7 @@ import {
   truncateString,
   ResponsiveCard,
   HoverInformation,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import {
   RiFileCopyLine,
   RiGasStationLine,

@@ -8,7 +8,7 @@ import {
   CancelOrderArgs,
   useCancelAllOrders,
 } from "@orderbook/core/hooks";
-import { GenericMessage, Loading, Modal, Table } from "@polkadex/ux";
+import { GenericMessage, Loading, Modal, Table } from "@mitra/ux";
 import {
   ColumnFiltersState,
   SortingState,

@@ -1,6 +1,6 @@
 // TODO: Refactor unlock - Remove unnecesary states
 import { MarketBase } from "@orderbook/core/utils/orderbookService";
-import { Dropdown, Modal, PopConfirm, Typography } from "@polkadex/ux";
+import { Dropdown, Modal, PopConfirm, Typography } from "@mitra/ux";
 import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 

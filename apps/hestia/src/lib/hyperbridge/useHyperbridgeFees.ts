@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
-import { WrappedHyperFungibleTokenABI } from "@hyperbridge/sdk";
 import { createPublicClient, http, parseEther, formatEther, toHex } from "viem";
 import { sepolia } from "viem/chains";
+
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
 
@@ -65,7 +65,7 @@ export function useHyperbridgeFees({
         if (!hftAddress) {
           throw new Error(
             `No HFT address configured for ${assetTicker}. ` +
-              "Obtain the WrappedHFT contract address from the Hyperbridge team.",
+              "Obtain the WrappedHFT contract address from the Hyperbridge team."
           );
         }
 
@@ -122,7 +122,9 @@ export function useHyperbridgeFees({
             args: [sendParams],
           })) as bigint;
         } catch {
-          console.warn("quote() reverted — destination may not be configured yet in HFT contract.");
+          console.warn(
+            "quote() reverted — destination may not be configured yet in HFT contract."
+          );
         }
 
         setFees({

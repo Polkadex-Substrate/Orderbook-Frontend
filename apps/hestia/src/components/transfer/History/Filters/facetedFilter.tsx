@@ -1,7 +1,7 @@
 // TODO: Fix FilterGroup - @polkadex/ux
 "use client";
 
-import { FilterGroup, Typography } from "@polkadex/ux";
+import { FilterGroup, Typography } from "@mitra/ux";
 import { Column } from "@tanstack/react-table";
 import classNames from "classnames";
 

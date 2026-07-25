@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 
 export const GenericInfoCard = ({
   label,

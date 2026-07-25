@@ -9,8 +9,13 @@
  * Enabled with NEXT_PUBLIC_NATIVE_CHART=true (see Graph/index.tsx).
  */
 import { useMemo, useState } from "react";
+import { useWindowSize } from "react-use";
 import { fetchCandles } from "@orderbook/core/helpers";
-import { useOpenOrders, useOrderbook, useTradeHistory } from "@orderbook/core/hooks";
+import {
+  useOpenOrders,
+  useOrderbook,
+  useTradeHistory,
+} from "@orderbook/core/hooks";
 import { useSubscription } from "@orderbook/core/providers/user/subscription";
 import { Market } from "@orderbook/core/utils/orderbookService";
 import {
@@ -40,6 +45,11 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
   const [showDepth, setShowDepth] = useState(false);
 
   const { onCandleSubscribe } = useSubscription();
+
+  // Ultrawide/4K: enough room to dock the depth chart beside the candles
+  // permanently instead of hiding it behind the toolbar toggle.
+  const { width } = useWindowSize();
+  const superWide = width >= 2200;
 
   /** Adapter: @orderbook/core primitives -> CandleFeed. */
   const feed = useMemo<CandleFeed>(
@@ -134,20 +144,33 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
         showDepth={showDepth}
         onToggleDepth={() => setShowDepth((v) => !v)}
       />
-      <div className="flex-1 min-h-[260px]">
-        <CandleChart
-          feed={feed}
-          market={marketId}
-          marketLabel={marketName}
-          resolution={resolution}
-          chartType={chartType}
-          indicators={indicators}
-          openOrders={orderMarks}
-          fills={fillMarks}
-          theme={DARK_THEME}
-        />
+      <div className="flex-1 min-h-[260px] flex min-w-0">
+        <div className="flex-1 min-w-0">
+          <CandleChart
+            feed={feed}
+            market={marketId}
+            marketLabel={marketName}
+            resolution={resolution}
+            chartType={chartType}
+            indicators={indicators}
+            openOrders={orderMarks}
+            fills={fillMarks}
+            theme={DARK_THEME}
+            // Surface candle-feed failures: CandleChart only flips to its
+            // "Chart data not available" overlay and otherwise swallows the
+            // error, which makes server/auth issues undiagnosable.
+            onError={(e) =>
+              console.error(`[GraphV2] getCandles failed for ${marketId}:`, e)
+            }
+          />
+        </div>
+        {superWide && (
+          <div className="w-[380px] shrink-0 border-l border-gray-800">
+            <DepthChart bids={depthBids} asks={depthAsks} fill />
+          </div>
+        )}
       </div>
-      {showDepth && (
+      {showDepth && !superWide && (
         <div className="border-t border-gray-800">
           <DepthChart bids={depthBids} asks={depthAsks} height={150} />
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Tabs } from "@polkadex/ux";
+import { Tabs } from "@mitra/ux";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
@@ -44,7 +44,11 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
   }, [selectedTradingAccount]);
 
   return (
-    <Tabs data-tour="place-order" defaultValue="limit" className="flex-1 flex h-full">
+    <Tabs
+      data-tour="place-order"
+      defaultValue="limit"
+      className="flex-1 flex h-full"
+    >
       <div className="flex items-center justify-between border-b border-primary">
         <Tabs.List className="px-2 py-2.5">
           <Tabs.Trigger value="limit">Limit</Tabs.Trigger>

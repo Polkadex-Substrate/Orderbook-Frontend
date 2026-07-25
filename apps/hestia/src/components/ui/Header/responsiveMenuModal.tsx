@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction } from "react";
-import { Button, Modal, Typography } from "@polkadex/ux";
+import { Button, Modal, Typography } from "@mitra/ux";
 import Image from "next/image";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { useWindowSize } from "usehooks-ts";
@@ -28,8 +28,7 @@ export const ResponsiveMenuModal = ({
 }) => {
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
-  const isFaucetDisabled =
-    process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
+  const isFaucetDisabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
   const lastUsedMarketUrl = getMarketUrl();
   const { width } = useWindowSize();
   return (

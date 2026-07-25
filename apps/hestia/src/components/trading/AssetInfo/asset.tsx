@@ -1,9 +1,4 @@
-import {
-  Typography,
-  Skeleton,
-  Token,
-  tokenAppearance,
-} from "@polkadex/ux";
+import { Typography, Skeleton, Token, tokenAppearance } from "@mitra/ux";
 import classNames from "classnames";
 import Link from "next/link";
 
@@ -41,30 +36,30 @@ export const Asset = ({
           invalid HTML and caused a hydration error. Dropped the inert wrapper
           and kept the trigger's layout classes here. */}
       <div className="flex h-full flex-1">
-          <div
-            className={classNames(
-              "flex flex-row-reverse gap-0.5 flex-1 h-full",
-              inlineView
-                ? "items-center justify-between"
-                : "flex-col justify-center"
-            )}
-          >
-            <Skeleton loading={loading} className="h-4 max-h-4 max-w-12">
-              <div className="flex items-center gap-1 cursor-default">
-                <Typography.Text size="xs" appearance="primary">
-                  {tokenName}
-                </Typography.Text>
-              </div>
-            </Skeleton>
-            <Skeleton
-              loading={!baseTicker || !quoteTicker}
-              className="h-4 max-h-4 max-w-8 "
-            >
-              <Typography.Text size="md" bold className="leading-none">
-                {baseTicker}/{quoteTicker}
+        <div
+          className={classNames(
+            "flex flex-row-reverse gap-0.5 flex-1 h-full",
+            inlineView
+              ? "items-center justify-between"
+              : "flex-col justify-center"
+          )}
+        >
+          <Skeleton loading={loading} className="h-4 max-h-4 max-w-12">
+            <div className="flex items-center gap-1 cursor-default">
+              <Typography.Text size="xs" appearance="primary">
+                {tokenName}
               </Typography.Text>
-            </Skeleton>
-          </div>
+            </div>
+          </Skeleton>
+          <Skeleton
+            loading={!baseTicker || !quoteTicker}
+            className="h-4 max-h-4 max-w-8 "
+          >
+            <Typography.Text size="md" bold className="leading-none">
+              {baseTicker}/{quoteTicker}
+            </Typography.Text>
+          </Skeleton>
+        </div>
       </div>
     </Link>
   );

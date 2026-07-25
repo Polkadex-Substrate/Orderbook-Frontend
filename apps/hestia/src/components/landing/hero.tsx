@@ -1,4 +1,4 @@
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitra/ux";
 import Image from "next/image";
 import { useWindowSize } from "usehooks-ts";
 import Link from "next/link";

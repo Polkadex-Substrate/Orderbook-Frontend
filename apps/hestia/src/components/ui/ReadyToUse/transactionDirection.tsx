@@ -1,4 +1,4 @@
-import { Tooltip, Typography } from "@polkadex/ux";
+import { Tooltip, Typography } from "@mitra/ux";
 import { RiArrowRightLine } from "@remixicon/react";
 import React from "react";
 

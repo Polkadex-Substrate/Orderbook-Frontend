@@ -5,26 +5,23 @@ import {
   Input,
   Token,
   TokenAppearance,
-  Tooltip,
   Typography,
-  ResponsiveCard,
-  HoverInformation,
   AccountCombobox,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import {
   RiArrowDownSLine,
   RiArrowLeftRightLine,
-  RiInformationFill,
   RiLoader2Line,
   RiWalletLine,
 } from "@remixicon/react";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { useBridgeProvider } from "../BridgeProvider";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useFormik } from "formik";
 import classNames from "classnames";
 import { bridgeValidations } from "@orderbook/core/validations";
+import { useWeb3Modal } from "@web3modal/wagmi/react";
 
+import { useBridgeProvider } from "../BridgeProvider";
 import { SelectAsset } from "../selectAsset";
 import { ConnectAccount } from "../connectAccount";
 import { ConfirmTransaction } from "../confirmTransaction";
@@ -34,7 +31,6 @@ import { SelectNetwork } from "./selectNetwork";
 
 import { createQueryString, formatAmount } from "@/helpers";
 import { useQueryPools } from "@/hooks";
-import { useWeb3Modal } from "@web3modal/wagmi/react";
 
 const initialValues = {
   amount: "",
@@ -120,6 +116,7 @@ export const Form = () => {
   const {
     handleSubmit,
     errors,
+    touched,
     getFieldProps,
     isValid,
     dirty,
@@ -134,7 +131,7 @@ export const Form = () => {
       destinationPDEXBalance,
       selectedAssetBalance,
       isDestinationPolkadex,
-      poolReserve?.reserve || 0,
+      poolReserve?.reserve || 0
     ),
     onSubmit: () => setOpenFeeModal(true),
   });
@@ -144,24 +141,64 @@ export const Form = () => {
     setTransferAmount(isNaN(parsed) ? 0 : parsed);
   }, [values.amount, setTransferAmount]);
 
-  const disabled = useMemo(
-    () =>
-      !selectedAsset ||
-      !sourceAccount ||
-      !sourceChain ||
-      !destinationAccount ||
-      !destinationChain ||
-      !(isValid && dirty),
-    [
-      selectedAsset,
-      sourceAccount,
-      sourceChain,
-      destinationAccount,
-      destinationChain,
-      dirty,
-      isValid,
-    ],
-  );
+  const parsedAmount = useMemo(() => {
+    const v = parseFloat(values.amount);
+    return isNaN(v) ? 0 : v;
+  }, [values.amount]);
+
+  const displayTicker =
+    selectedAsset?.ticker === "WETH" ? "ETH" : selectedAsset?.ticker;
+
+  /** The primary button always states the next required step instead of
+   *  sitting there disabled and gray with no explanation. Where the step is
+   *  actionable (connect wallet, pick token), clicking performs it. */
+  const primaryAction = useMemo(():
+    | { label: string; onClick?: () => void; submit?: boolean }
+    | { label: string; blocked: true } => {
+    if (!sourceChain || !destinationChain)
+      return { label: "Select networks", blocked: true };
+    if (!sourceAccount)
+      return isEvmSource
+        ? { label: `Connect ${sourceChain.name} wallet`, onClick: () => open() }
+        : {
+            label: `Connect ${sourceChain.name} account`,
+            onClick: () => setOpenSourceModal(true),
+          };
+    if (!selectedAsset)
+      return { label: "Select a token", onClick: () => setOpenAsset(true) };
+    if (!destinationAccount)
+      return isEvmSource
+        ? { label: "Choose a destination account above", blocked: true }
+        : {
+            label: `Connect ${destinationChain.name} wallet`,
+            onClick: () => open(),
+          };
+    if (!dirty || !parsedAmount)
+      return { label: "Enter an amount", blocked: true };
+    if (errors.amount || !isValid) {
+      const msg = errors.amount ?? "";
+      return {
+        label: /exceed|insufficient/i.test(msg)
+          ? `Insufficient ${displayTicker} balance`
+          : msg || "Check the amount",
+        blocked: true,
+      };
+    }
+    return { label: "Transfer", submit: true };
+  }, [
+    sourceChain,
+    destinationChain,
+    sourceAccount,
+    destinationAccount,
+    selectedAsset,
+    isEvmSource,
+    dirty,
+    parsedAmount,
+    errors.amount,
+    isValid,
+    displayTicker,
+    open,
+  ]);
 
   const onChangeMax = () => {
     const formattedAmount = formatAmount(max?.amount ?? 0);
@@ -170,8 +207,25 @@ export const Form = () => {
 
   const balanceAmount = useMemo(
     () => formatAmount(selectedAssetBalance),
-    [selectedAssetBalance],
+    [selectedAssetBalance]
   );
+
+  /** Errors only render once a wallet is connected (an empty balance is not
+   *  the user's mistake) and the field has been visited. */
+  const showAmountError = !!(sourceAccount && errors.amount && touched.amount);
+
+  const estimatedReceive = useMemo(() => {
+    const destFee =
+      destinationFee?.ticker === selectedAsset?.ticker
+        ? (destinationFee?.amount ?? 0)
+        : 0;
+    return Math.max(parsedAmount - destFee, 0);
+  }, [
+    parsedAmount,
+    destinationFee?.amount,
+    destinationFee?.ticker,
+    selectedAsset?.ticker,
+  ]);
 
   const [
     destinationFeeAmount,
@@ -211,7 +265,11 @@ export const Form = () => {
   ]);
 
   // ── Reusable EVM wallet connect row ───────────────────────────────────────
-  const EvmWalletRow = ({ account }: { account: any }) => {
+  const EvmWalletRow = ({
+    account,
+  }: {
+    account?: { name?: string; address: string } | null;
+  }) => {
     if (account) {
       return (
         <WalletCard
@@ -230,7 +288,7 @@ export const Form = () => {
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
           <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
-          <Typography.Text>Account not present</Typography.Text>
+          <Typography.Text>No wallet connected</Typography.Text>
         </div>
         <Button.Solid
           appearance="secondary"
@@ -269,12 +327,12 @@ export const Form = () => {
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 flex-1 max-w-[900px] mx-auto py-8 w-full px-2"
+        className="flex flex-col gap-5 max-w-[640px] mx-auto py-8 w-full px-4"
       >
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6 border border-primary rounded-md bg-level-0 p-6 max-sm:p-4">
           <div className="flex flex-col gap-3">
             <Typography.Heading>Networks</Typography.Heading>
-            <div className="flex max-lg:flex-col gap-2">
+            <div className="flex flex-col gap-2">
               {/* ── FROM ───────────────────────────────────────────────── */}
               <div className="flex flex-col gap-2 flex-1">
                 <div className="flex flex-col gap-2">
@@ -305,15 +363,20 @@ export const Form = () => {
                 )}
               </div>
 
-              {/* ── SWAP BUTTON ────────────────────────────────────────── */}
-              <Button.Icon
-                type="button"
-                variant="outline"
-                className="lg:mt-9 h-10 w-10 p-3 max-lg:self-center max-lg:rotate-90"
-                onClick={onSwitchChain}
-              >
-                <RiArrowLeftRightLine className="w-full h-full" />
-              </Button.Icon>
+              {/* ── SWAP DIRECTION ─────────────────────────────────────── */}
+              <div className="flex items-center gap-3 py-1">
+                <div className="flex-1 border-t border-primary" />
+                <Button.Icon
+                  type="button"
+                  variant="outline"
+                  className="h-10 w-10 p-2.5 rotate-90 rounded-full border border-primary bg-level-1 hover:bg-level-2 transition-colors"
+                  onClick={onSwitchChain}
+                  aria-label="Swap transfer direction"
+                >
+                  <RiArrowLeftRightLine className="w-full h-full" />
+                </Button.Icon>
+                <div className="flex-1 border-t border-primary" />
+              </div>
 
               {/* ── TO ─────────────────────────────────────────────────── */}
               <div className="flex flex-col gap-2 flex-1">
@@ -352,71 +415,45 @@ export const Form = () => {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <Typography.Text appearance="primary">Amount</Typography.Text>
-                <HoverInformation>
-                  <HoverInformation.Trigger
-                    loading={sourceBalancesLoading}
-                    className="min-w-20"
+                {sourceAccount && selectedAsset && (
+                  <button
+                    type="button"
+                    className="text-xs opacity-80 hover:opacity-100 hover:underline disabled:no-underline"
+                    onClick={onChangeMax}
+                    disabled={!max?.amount || loading}
+                    title="Use maximum transferable amount"
                   >
-                    <RiInformationFill className="w-3 h-3 text-actionInput" />
-                    <Typography.Text size="xs" appearance="primary">
-                      Available: {balanceAmount}{" "}
-                      {selectedAsset?.ticker === "WETH"
-                        ? "ETH"
-                        : selectedAsset?.ticker}
-                    </Typography.Text>
-                  </HoverInformation.Trigger>
-                  <HoverInformation.Content
-                    className={classNames(!loading && "hidden")}
-                  >
-                    <ResponsiveCard label="Source fee" loading={loading}>
-                      {sourceFeeAmount} {sourceFeeTicker}
-                    </ResponsiveCard>
-                    <ResponsiveCard label="Destination fee" loading={loading}>
-                      {destinationFeeAmount} {destinationFeeTicker}
-                    </ResponsiveCard>
-                    <ResponsiveCard label="Available" loading={loading}>
-                      {balanceAmount}{" "}
-                      {selectedAsset?.ticker === "WETH"
-                        ? "ETH"
-                        : selectedAsset?.ticker}
-                    </ResponsiveCard>
-                  </HoverInformation.Content>
-                </HoverInformation>
+                    Available: {balanceAmount} {displayTicker}
+                  </button>
+                )}
               </div>
-              <div className="flex item-center border border-primary rounded-sm">
-                <Tooltip open={!!errors.amount}>
-                  <Tooltip.Trigger asChild>
-                    <div
-                      className={classNames(
-                        "w-full pr-4",
-                        errors.amount && "border-danger-base border",
-                      )}
-                    >
-                      <Input.Vertical
-                        type="text"
-                        autoComplete="off"
-                        placeholder="Enter an amount"
-                        {...getFieldProps("amount")}
-                        className="max-sm:focus:text-[16px] w-full pl-4 py-4"
+              <div
+                className={classNames(
+                  "flex item-center border rounded-sm",
+                  showAmountError ? "border-danger-base" : "border-primary"
+                )}
+              >
+                <div className="w-full pr-4">
+                  <Input.Vertical
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Enter an amount"
+                    {...getFieldProps("amount")}
+                    className="max-sm:focus:text-[16px] w-full pl-4 py-4"
+                  >
+                    {sourceAccount && max?.amount && !loading && (
+                      <Input.Action
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onChangeMax();
+                        }}
                       >
-                        {sourceAccount && max?.amount && !loading && (
-                          <Input.Action
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              onChangeMax();
-                            }}
-                          >
-                            MAX
-                          </Input.Action>
-                        )}
-                      </Input.Vertical>
-                    </div>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content className="bg-level-5 z-[2] p-1">
-                    {errors.amount}
-                  </Tooltip.Content>
-                </Tooltip>
+                        MAX
+                      </Input.Action>
+                    )}
+                  </Input.Vertical>
+                </div>
                 <Button.Outline
                   type="button"
                   appearance="secondary"
@@ -427,7 +464,11 @@ export const Form = () => {
                   <div className="flex items-center gap-2">
                     {selectedAsset ? (
                       <Token
-                        name={selectedAsset.ticker === "WETH" ? "ETH" : selectedAsset.ticker}
+                        name={
+                          selectedAsset.ticker === "WETH"
+                            ? "ETH"
+                            : selectedAsset.ticker
+                        }
                         size="md"
                         appearance={selectedAsset.logo as TokenAppearance}
                         className="rounded-full border border-primary"
@@ -446,8 +487,55 @@ export const Form = () => {
                   <RiArrowDownSLine className="w-4 h-4" />
                 </Button.Outline>
               </div>
+              {showAmountError && (
+                <Typography.Text size="xs" className="text-danger-base">
+                  {errors.amount}
+                </Typography.Text>
+              )}
             </div>
           </div>
+
+          {/* ── SUMMARY — what actually happens if you press Transfer ──── */}
+          {sourceAccount &&
+            destinationAccount &&
+            selectedAsset &&
+            parsedAmount > 0 &&
+            !errors.amount && (
+              <div className="flex flex-col gap-2 border border-primary rounded-sm bg-level-1 p-4">
+                <div className="flex items-center justify-between">
+                  <Typography.Text size="xs" appearance="primary">
+                    You&apos;ll receive (est.)
+                  </Typography.Text>
+                  <Typography.Text size="xs" bold>
+                    {formatAmount(estimatedReceive)} {displayTicker}
+                  </Typography.Text>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Typography.Text size="xs" appearance="primary">
+                    Source fee
+                  </Typography.Text>
+                  <Typography.Text size="xs">
+                    {sourceFeeAmount} {sourceFeeTicker}
+                  </Typography.Text>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Typography.Text size="xs" appearance="primary">
+                    Destination fee
+                  </Typography.Text>
+                  <Typography.Text size="xs">
+                    {destinationFeeAmount} {destinationFeeTicker}
+                  </Typography.Text>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Typography.Text size="xs" appearance="primary">
+                    Estimated arrival
+                  </Typography.Text>
+                  <Typography.Text size="xs">
+                    ~10–30 min (Hyperbridge relay)
+                  </Typography.Text>
+                </div>
+              </div>
+            )}
         </div>
 
         {loading ? (
@@ -457,11 +545,29 @@ export const Form = () => {
             disabled
           >
             <RiLoader2Line className="w-5 h-5 animate-spin" />
-            Connecting...
+            Loading balances...
+          </Button.Solid>
+        ) : "submit" in primaryAction && primaryAction.submit ? (
+          <Button.Solid type="submit" className="w-full py-5" size="md">
+            {primaryAction.label}
+          </Button.Solid>
+        ) : "onClick" in primaryAction && primaryAction.onClick ? (
+          <Button.Solid
+            type="button"
+            className="w-full py-5"
+            size="md"
+            onClick={primaryAction.onClick}
+          >
+            {primaryAction.label}
           </Button.Solid>
         ) : (
-          <Button.Solid className="w-full py-5" size="md" disabled={disabled}>
-            Transfer
+          <Button.Solid
+            type="button"
+            className="w-full py-5"
+            size="md"
+            disabled
+          >
+            {primaryAction.label}
           </Button.Solid>
         )}
       </form>

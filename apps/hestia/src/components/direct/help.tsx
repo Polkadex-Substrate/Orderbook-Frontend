@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import { forwardRef } from "react";
 import { RiExternalLinkLine } from "@remixicon/react";
 import Link from "next/link";

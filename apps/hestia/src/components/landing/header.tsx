@@ -1,5 +1,5 @@
 import { getMarketUrl } from "@orderbook/core/helpers";
-import { Button, Logo, Typography } from "@polkadex/ux";
+import { Button, Logo, Typography } from "@mitra/ux";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useWindowSize } from "usehooks-ts";

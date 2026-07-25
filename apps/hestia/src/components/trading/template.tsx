@@ -5,7 +5,7 @@ import { useMarkets } from "@orderbook/core/hooks";
 import { getCurrentMarket } from "@orderbook/core/helpers";
 import { useWindowSize } from "react-use";
 import classNames from "classnames";
-import { Resizable, ImperativePanelHandle } from "@polkadex/ux";
+import { Resizable, ImperativePanelHandle } from "@mitra/ux";
 
 import { AssetInfo } from "./AssetInfo";
 import { Orderbook } from "./Orderbook";
@@ -35,6 +35,9 @@ export function Template({ id }: { id: string }) {
 
   const mobileView = useMemo(() => width <= 954, [width]);
   const desktopView = useMemo(() => width >= 1280, [width]);
+  // Ultrawide/4K: show Markets and Recent Trades simultaneously instead of
+  // tabs, and cap the grid so panels stop stretching into emptiness.
+  const superWideView = useMemo(() => width >= 2200, [width]);
   const tabletView = useMemo(() => width >= 954 && width <= 1280, [width]);
 
   return (
@@ -55,7 +58,7 @@ export function Template({ id }: { id: string }) {
       ) : (
         <Resizable
           direction="vertical"
-          className="flex-1 h-full"
+          className="flex-1 h-full w-full max-w-[3440px] mx-auto"
           autoSaveId="persistence"
           vaul-drawer-wrapper=""
           style={{
@@ -76,8 +79,7 @@ export function Template({ id }: { id: string }) {
               <Resizable.Panel minSize={40}>
                 <div className="flex flex-col flex-grow h-full w-full">
                   <AssetInfo currentMarket={currentMarket} />
-                  {/* @ts-ignore */}
-                  <Graph id={id} currentMarket={currentMarket} />
+                  <Graph currentMarket={currentMarket} />
                 </div>
               </Resizable.Panel>
               <Resizable.Handle />
@@ -101,7 +103,7 @@ export function Template({ id }: { id: string }) {
                     collapsible
                     collapsedSize={0}
                   >
-                    <Trades id={id} />
+                    <Trades id={id} stacked={superWideView} />
                   </Resizable.Panel>
                 </Fragment>
               )}

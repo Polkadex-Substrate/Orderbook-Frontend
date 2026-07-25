@@ -1,4 +1,4 @@
-import { Button, Icon, Popover, Typography } from "@polkadex/ux";
+import { Button, Icon, Popover, Typography } from "@mitra/ux";
 import { Table } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useMemo } from "react";
@@ -50,7 +50,7 @@ export const Filters = <TData,>({
       <div
         className={classNames(
           "flex items-center gap-4 flex-1",
-          responsiveFilter && "justify-",
+          responsiveFilter && "justify-"
         )}
       >
         {responsiveFilter ? (

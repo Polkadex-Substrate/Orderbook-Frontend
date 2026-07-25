@@ -1,4 +1,4 @@
-import { HoverCard, Icons, Typography } from "@polkadex/ux";
+import { HoverCard, Icons, Typography } from "@mitra/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import classNames from "classnames";
 

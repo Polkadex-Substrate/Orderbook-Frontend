@@ -1,6 +1,6 @@
 "use client";
 
-import { Table, GenericMessage } from "@polkadex/ux";
+import { Table, GenericMessage } from "@mitra/ux";
 import {
   forwardRef,
   Fragment,
@@ -23,7 +23,7 @@ import {
 import classNames from "classnames";
 import { useWindowSize } from "usehooks-ts";
 import { useProfile } from "@orderbook/core/providers/user/profile";
-import { toUnit } from "@polkadex/numericals";
+import { toUnit } from "@mitra/numericals";
 
 import { columns } from "./columns";
 import { Filters } from "./filters";

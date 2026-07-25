@@ -3,7 +3,7 @@
 import { Fragment, forwardRef, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
-import { Logo } from "@polkadex/ux";
+import { Logo } from "@mitra/ux";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { defaultConfig } from "@orderbook/core/config";
 import {
@@ -36,8 +36,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const lastUsedMarketUrl = getMarketUrl();
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
-  const isFaucetDisabled =
-    process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
+  const isFaucetDisabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
 
   const unreadNotifications = useMemo(() => {
     return allNotifications.filter((e) => e.active).length;
@@ -72,10 +71,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             <HeaderLink.Single href={lastUsedMarketUrl}>
               Trade
             </HeaderLink.Single>
-            <HeaderLink.Single
-              href="/bridge"
-              disabled={isBridgeDisabled}
-            >
+            <HeaderLink.Single href="/bridge" disabled={isBridgeDisabled}>
               Bridge
             </HeaderLink.Single>
             <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">

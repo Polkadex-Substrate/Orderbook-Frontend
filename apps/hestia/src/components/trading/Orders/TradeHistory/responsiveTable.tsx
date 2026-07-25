@@ -1,4 +1,4 @@
-import { Copy, Drawer, Typography, truncateString } from "@polkadex/ux";
+import { Copy, Drawer, Typography, truncateString } from "@mitra/ux";
 import { Dispatch, SetStateAction } from "react";
 import { Trade } from "@orderbook/core/utils/orderbookService/types";
 import { RiFileCopyLine } from "@remixicon/react";

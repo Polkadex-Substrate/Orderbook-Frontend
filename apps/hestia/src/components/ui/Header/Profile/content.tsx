@@ -1,6 +1,6 @@
 "use client";
 
-import { Multistep } from "@polkadex/ux";
+import { Multistep } from "@mitra/ux";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useMemo } from "react";
@@ -8,7 +8,7 @@ import {
   ExtensionAccount,
   useExtensionAccounts,
   useExtensions,
-} from "@polkadex/react-providers";
+} from "@mitra/react-providers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { TradeAccount } from "@orderbook/core/providers/types";

@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-table";
 import classNames from "classnames";
 import { AssetsProps, useAssets } from "@orderbook/core/hooks";
-import { GenericMessage, Table as PolkadexTable } from "@polkadex/ux";
+import { GenericMessage, Table as PolkadexTable } from "@mitra/ux";
 
 import { Loading } from "../loading";
 

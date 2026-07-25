@@ -1,4 +1,4 @@
-import { Logo, Typography } from "@polkadex/ux";
+import { Logo, Typography } from "@mitra/ux";
 import Link from "next/link";
 import React from "react";
 

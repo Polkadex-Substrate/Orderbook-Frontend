@@ -1,6 +1,6 @@
 "use client";
 
-import { HoverCard, Popover, Typography, Checkbox, Input } from "@polkadex/ux";
+import { HoverCard, Popover, Typography, Checkbox, Input } from "@mitra/ux";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 import { useMemo, useRef } from "react";
 import { RiMore2Line, RiInformation2Line } from "@remixicon/react";

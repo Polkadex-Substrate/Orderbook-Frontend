@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Button, Logo, Typography } from "@polkadex/ux";
+import { Button, Logo, Typography } from "@mitra/ux";
 import Image from "next/image";
 import { RiTelegramFill, RiTwitterFill, RiMailFill } from "@remixicon/react";
 

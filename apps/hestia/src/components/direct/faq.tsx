@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import Link from "next/link";
 import React from "react";
 

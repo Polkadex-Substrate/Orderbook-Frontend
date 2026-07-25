@@ -1,4 +1,4 @@
-import { Button, Icon, Typography } from "@polkadex/ux";
+import { Button, Icon, Typography } from "@mitra/ux";
 import Link from "next/link";
 import {
   RiArrowLeftRightLine,

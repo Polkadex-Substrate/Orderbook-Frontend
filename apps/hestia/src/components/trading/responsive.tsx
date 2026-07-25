@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs } from "@polkadex/ux";
+import { Tabs } from "@mitra/ux";
 import { Market } from "@orderbook/core/utils/orderbookService";
 
 import { Graph } from "./Graph";
@@ -27,8 +27,7 @@ export function Responsive({
         <Tabs.Trigger value="recentTrades">Recent trades</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="graph" className="flex-1 flex-col flex h-full">
-        {/* @ts-ignore */}
-        <Graph id={id} currentMarket={currentMarket} />
+        <Graph currentMarket={currentMarket} />
       </Tabs.Content>
       <Tabs.Content
         value="orderbook"

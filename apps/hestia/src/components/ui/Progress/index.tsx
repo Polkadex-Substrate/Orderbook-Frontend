@@ -1,8 +1,8 @@
 "use client";
 
 import { Fragment } from "react";
-import { useTransactionManager } from "@polkadex/react-providers";
-import { ProgressBar } from "@polkadex/ux";
+import { useTransactionManager } from "@mitra/react-providers";
+import { ProgressBar } from "@mitra/ux";
 
 const messages = {
   broadcasted: "Transmitted over the network but not yet confirmed.",

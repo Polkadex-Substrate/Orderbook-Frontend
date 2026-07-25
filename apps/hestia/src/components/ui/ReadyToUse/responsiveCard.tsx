@@ -1,4 +1,4 @@
-import { Typography, typeofChildren } from "@polkadex/ux";
+import { Typography, typeofChildren } from "@mitra/ux";
 import { PropsWithChildren } from "react";
 
 export const ResponsiveCard = ({

@@ -2,7 +2,7 @@
 // Real implementation is commented out below. Do not delete.
 
 // Noop stub — TheaHistory/index.tsx shows "Coming Soon" and does not render Filters.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
 export const Filters = (_props: any) => null;
 
 export const filters = {
@@ -11,13 +11,13 @@ export const filters = {
 
 // ─── Original implementation (reference for HyperbridgeHistory) ──────────────
 /*
-import { Button, Icon, Popover, Typography } from "@polkadex/ux";
+import { Button, Icon, Popover, Typography } from "@mitra/ux";
 import { Table } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useMemo } from "react";
 import { useWindowSize } from "usehooks-ts";
 import { RiMore2Line, RiCloseLine, RiRefreshLine } from "@remixicon/react";
-import { Asset, Chain } from "@polkadex/thea";
+import { Asset, Chain } from "@mitra/thea";
 
 import { FacetedFilter } from "../facetedFilters";
 

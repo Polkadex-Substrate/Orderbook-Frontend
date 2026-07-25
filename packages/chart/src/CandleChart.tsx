@@ -1,11 +1,5 @@
 "use client";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ColorType,
   CrosshairMode,
@@ -52,6 +46,27 @@ export type CandleChartProps = {
   onReady?: () => void;
   onError?: (e: Error) => void;
 };
+
+/** AppSync/Amplify rejects with plain objects ({ errors: [{ message }] }),
+ *  which String() renders as "[object Object]". Extract something readable. */
+function toError(e: unknown): Error {
+  if (e instanceof Error) return e;
+  const anyE = e as { errors?: { message?: string }[]; message?: string };
+  const msg =
+    anyE?.errors
+      ?.map((x) => x?.message)
+      .filter(Boolean)
+      .join("; ") ||
+    anyE?.message ||
+    (() => {
+      try {
+        return JSON.stringify(e);
+      } catch {
+        return String(e);
+      }
+    })();
+  return new Error(msg);
+}
 
 export function CandleChart({
   feed,
@@ -130,7 +145,9 @@ export function CandleChart({
       priceFormat: { type: "volume" },
       priceScaleId: "",
     });
-    volume.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    volume
+      .priceScale()
+      .applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
     volSeriesRef.current = volume;
 
     return () => {
@@ -170,8 +187,22 @@ export function CandleChart({
       lineWidth: 2,
       priceLineVisible: false,
     });
-    line.createPriceLine({ price: 70, color: theme.down, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: "" });
-    line.createPriceLine({ price: 30, color: theme.up, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: "" });
+    line.createPriceLine({
+      price: 70,
+      color: theme.down,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: false,
+      title: "",
+    });
+    line.createPriceLine({
+      price: 30,
+      color: theme.up,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: false,
+      title: "",
+    });
     rsiSeriesRef.current = line;
 
     // Two-way time-scale sync (guard against feedback loops).
@@ -191,7 +222,10 @@ export function CandleChart({
     // Seed with current data.
     if (candlesRef.current.length) {
       line.setData(
-        rsi(candlesRef.current).map((p) => ({ time: sec(p.time), value: p.value }))
+        rsi(candlesRef.current).map((p) => ({
+          time: sec(p.time),
+          value: p.value,
+        }))
       );
       mainToPane();
     }
@@ -230,7 +264,9 @@ export function CandleChart({
               wickDownColor: theme.down,
               borderVisible: false,
             });
-    mainSeriesRef.current = series as ISeriesApi<"Candlestick" | "Bar" | "Area">;
+    mainSeriesRef.current = series as ISeriesApi<
+      "Candlestick" | "Bar" | "Area"
+    >;
     applyCandles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartType, theme]);
@@ -350,7 +386,8 @@ export function CandleChart({
       .sort((a, b) => a.time - b.time)
       .map((f) => ({
         time: sec(f.time),
-        position: f.side === "Bid" ? ("belowBar" as const) : ("aboveBar" as const),
+        position:
+          f.side === "Bid" ? ("belowBar" as const) : ("aboveBar" as const),
         shape: f.side === "Bid" ? ("arrowUp" as const) : ("arrowDown" as const),
         color: f.side === "Bid" ? theme.up : theme.down,
         text: `${f.side === "Bid" ? "B" : "S"} ${f.qty} @ ${f.price}`,
@@ -390,7 +427,7 @@ export function CandleChart({
         if (cancelled) return;
         setLoading(false);
         setFailed(true);
-        onError?.(e instanceof Error ? e : new Error(String(e)));
+        onError?.(toError(e));
       });
 
     const unsubscribe = feed.subscribe({
@@ -472,7 +509,8 @@ export function CandleChart({
         });
     };
     chart.timeScale().subscribeVisibleLogicalRangeChange(onRange);
-    return () => chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRange);
+    return () =>
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [market, resolution, feed, applyCandles]);
 

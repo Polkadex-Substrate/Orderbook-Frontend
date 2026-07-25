@@ -8,7 +8,7 @@ import {
   HoverCard,
   Separator,
   Skeleton,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { useState } from "react";
 import { getChainFromTicker } from "@orderbook/core/index";

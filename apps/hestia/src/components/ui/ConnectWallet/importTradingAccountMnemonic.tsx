@@ -7,7 +7,7 @@ import {
   Button,
   Typography,
   Passcode,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { useFormik } from "formik";
 import { generateUsername } from "friendly-username-generator";
 import { importAccountValidations } from "@orderbook/core/validations";

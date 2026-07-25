@@ -1,4 +1,4 @@
-import { Accordion, Typography } from "@polkadex/ux";
+import { Accordion, Typography } from "@mitra/ux";
 import Link from "next/link";
 import { RiExternalLinkLine } from "@remixicon/react";
 

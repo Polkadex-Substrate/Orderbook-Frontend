@@ -4,7 +4,7 @@ import {
   ExtensionAccount,
   useExtensionAccounts,
   useUserAccounts,
-} from "@polkadex/react-providers";
+} from "@mitra/react-providers";
 import { KeyringPair$Json, KeyringPair } from "@polkadot/keyring/types";
 import FileSaver from "file-saver";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
@@ -20,9 +20,9 @@ import { UseMutationResult } from "@tanstack/react-query";
 import {
   GDriveExternalAccountStore,
   GOOGLE_LOCAL_STORAGE_KEY,
-} from "@polkadex/local-wallets";
+} from "@mitra/local-wallets";
 import { defaultConfig } from "@orderbook/core/config";
-import { localStorageOrDefault } from "@polkadex/utils";
+import { localStorageOrDefault } from "@mitra/utils";
 import { enabledFeatures } from "@orderbook/core/helpers";
 
 import { POLKADEX_ASSET } from "../../../constants";

@@ -1,12 +1,12 @@
 "use client";
 
-import { Token, Typography, tokenAppearance } from "@polkadex/ux";
+import { Token, Typography, tokenAppearance } from "@mitra/ux";
 import Link from "next/link";
 import { forwardRef } from "react";
 import { RiArrowLeftLine } from "@remixicon/react";
 import { Market } from "@orderbook/core/utils/orderbookService";
 import { useTraderMetrics } from "@orderbook/core/hooks";
-import { trimFloat } from "@polkadex/numericals";
+import { trimFloat } from "@mitra/numericals";
 
 import { OverviewCard } from "./overviewCard";
 import { MarketSkeleton } from "./loading";

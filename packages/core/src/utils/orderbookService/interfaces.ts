@@ -1,7 +1,7 @@
 import { ApiPromise } from "@polkadot/api";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@mitra/react-providers";
 import { SignatureEnumSr25519 } from "@orderbook/core/helpers";
-import { LmpApi } from "@polkadex/polkadex-api";
+import { LmpApi } from "@mitra/polkadex-api";
 import { Signer } from "@polkadot/types/types";
 import { SubmittableExtrinsic } from "@polkadot/api/types";
 

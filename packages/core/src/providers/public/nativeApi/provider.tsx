@@ -8,7 +8,7 @@ import {
   statics,
 } from "@orderbook/core/providers/public/nativeApi/statics";
 // TODO: wrong @polkadex/polkadex-api polkadot api version
-import { LmpApi, SwapApi } from "@polkadex/polkadex-api";
+import { LmpApi, SwapApi } from "@mitra/polkadex-api";
 
 import { Provider } from "./context";
 import { nativeApiReducer, initialState } from "./reducer";

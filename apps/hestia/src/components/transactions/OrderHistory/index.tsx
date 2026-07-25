@@ -11,7 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useOrderHistory } from "@orderbook/core/hooks";
 import { forwardRef, useEffect, useMemo, useState } from "react";
-import { GenericMessage, Loading, Table } from "@polkadex/ux";
+import { GenericMessage, Loading, Table } from "@mitra/ux";
 import classNames from "classnames";
 import { useWindowSize } from "usehooks-ts";
 import { Order } from "@orderbook/core/utils/orderbookService/types";

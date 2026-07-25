@@ -4,7 +4,7 @@
 // Real implementation is commented out below. Do not delete.
 
 import { forwardRef } from "react";
-import { GenericMessage } from "@polkadex/ux";
+import { GenericMessage } from "@mitra/ux";
 
 export const TheaHistory = forwardRef<
   HTMLDivElement,
@@ -26,7 +26,7 @@ TheaHistory.displayName = "TheaHistory";
 /*
 "use client";
 
-import { Table, GenericMessage } from "@polkadex/ux";
+import { Table, GenericMessage } from "@mitra/ux";
 import {
   forwardRef,
   Fragment,
@@ -48,7 +48,7 @@ import {
 } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useWindowSize } from "usehooks-ts";
-import { getChainConnector, Thea } from "@polkadex/thea";
+import { getChainConnector, Thea } from "@mitra/thea";
 import { GENESIS } from "@orderbook/core/constants";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 

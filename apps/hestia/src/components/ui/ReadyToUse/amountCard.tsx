@@ -1,4 +1,4 @@
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import { ComponentProps } from "react";
 import { twMerge } from "tailwind-merge";
 

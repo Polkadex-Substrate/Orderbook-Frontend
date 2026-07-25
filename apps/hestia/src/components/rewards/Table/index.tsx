@@ -1,4 +1,4 @@
-import { Table as PolkadexTable, GenericMessage } from "@polkadex/ux";
+import { Table as PolkadexTable, GenericMessage } from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, forwardRef, useEffect, useMemo, useState } from "react";
 import { LmpMarketConfig, useLmpMarkets } from "@orderbook/core/hooks";

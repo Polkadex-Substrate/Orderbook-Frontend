@@ -1,5 +1,5 @@
 import { parseScientific } from "@orderbook/core/helpers";
-import { trimFloat } from "@polkadex/numericals";
+import { trimFloat } from "@mitra/numericals";
 // NAN with 2,804
 export const formatAmount = (amount: number) => {
   const trimmedBalance = trimFloat({

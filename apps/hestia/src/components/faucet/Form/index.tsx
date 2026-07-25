@@ -1,14 +1,16 @@
 "use client";
 
-import { Button, Input, Tooltip, Typography } from "@polkadex/ux";
+import { Button, Input, Typography } from "@mitra/ux";
 import { RiLoader2Line } from "@remixicon/react";
 import { useEffect, useMemo, useState } from "react";
 import { useFormik } from "formik";
+import { useAccount } from "wagmi";
 import classNames from "classnames";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 
 import { faucetRegister, faucetDrip, faucetDripSepolia } from "../api";
+
 import { SelectToken, type FaucetToken } from "./selectToken";
 import { SelectNetwork, type FaucetNetwork } from "./selectNetwork";
 
@@ -49,11 +51,14 @@ export const Form = () => {
   const [selectedToken, setSelectedToken] = useState<FaucetToken | undefined>();
   const { onHandleAlert, onHandleError } = useSettingsProvider();
   const { selectedAddresses } = useProfile();
+  // Connected EVM wallet (wagmi) — lets Sepolia requests autofill the same
+  // way Polkadex requests already autofill from the profile address.
+  const { address: evmAddress } = useAccount();
 
   const availableTokens = useMemo(
     () =>
       selectedNetwork?.id === "sepolia" ? SEPOLIA_TOKENS : POLKADEX_TOKENS,
-    [selectedNetwork?.id],
+    [selectedNetwork?.id]
   );
 
   const addressPlaceholder =
@@ -108,13 +113,13 @@ export const Form = () => {
           const result = await faucetDrip(address, ticker);
           onHandleAlert(
             "Tokens Sent!",
-            `${result.amount} has been sent to your wallet`,
+            `${result.amount} has been sent to your wallet`
           );
         } else {
           const result = await faucetDripSepolia(address, ticker);
           onHandleAlert(
             "Tokens Sent!",
-            `${result.amount} ${result.token} has been sent to your wallet`,
+            `${result.amount} ${result.token} has been sent to your wallet`
           );
         }
         resetForm();
@@ -125,20 +130,25 @@ export const Form = () => {
           "Request Failed",
           error instanceof Error
             ? error.message
-            : "Something went wrong. Please try again.",
+            : "Something went wrong. Please try again."
         );
       }
     },
   });
 
   useEffect(() => {
-    if (
-      selectedNetwork?.id === "polkadex" &&
-      selectedAddresses.mainAddress
-    ) {
+    if (selectedNetwork?.id === "polkadex" && selectedAddresses.mainAddress) {
       setFieldValue("walletAddress", selectedAddresses.mainAddress);
     }
-  }, [selectedNetwork?.id, selectedAddresses.mainAddress, setFieldValue]);
+    if (selectedNetwork?.id === "sepolia" && evmAddress) {
+      setFieldValue("walletAddress", evmAddress);
+    }
+  }, [
+    selectedNetwork?.id,
+    selectedAddresses.mainAddress,
+    evmAddress,
+    setFieldValue,
+  ]);
 
   const handleNetworkSelect = (network: FaucetNetwork) => {
     setSelectedNetwork(network);
@@ -148,7 +158,9 @@ export const Form = () => {
     const autoAddress =
       network.id === "polkadex" && selectedAddresses.mainAddress
         ? selectedAddresses.mainAddress
-        : "";
+        : network.id === "sepolia" && evmAddress
+          ? evmAddress
+          : "";
     setFieldValue("walletAddress", autoAddress);
   };
 
@@ -157,14 +169,25 @@ export const Form = () => {
     setFieldValue("tokenId", token.id);
   };
 
+  /** Primary button states the next required step (same pattern as the
+   *  bridge form) instead of a mute disabled state. */
+  const primaryLabel = !selectedNetwork
+    ? "Select a network"
+    : !selectedToken
+      ? "Select a token"
+      : errors.walletAddress === "Wallet address is required"
+        ? "Enter a wallet address"
+        : errors.walletAddress
+          ? errors.walletAddress
+          : "Request Tokens";
   const disabled = !isValid || !dirty || isSubmitting;
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-8 flex-1 max-w-[900px] mx-auto py-8 w-full px-2"
+      className="flex flex-col gap-5 max-w-[640px] mx-auto py-8 w-full px-4"
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 border border-primary rounded-md bg-level-0 p-6 max-sm:p-4">
         {/* Network + Token — equal width side by side */}
         <div className="flex flex-col gap-3">
           <Typography.Heading>Network & Token</Typography.Heading>
@@ -204,29 +227,37 @@ export const Form = () => {
               <Typography.Text appearance="primary">
                 {addressLabel}
               </Typography.Text>
-              <Tooltip open={!!(touched.walletAddress && errors.walletAddress)}>
-                <Tooltip.Trigger asChild>
-                  <div
-                    className={classNames(
-                      "flex items-center border border-primary rounded-sm",
-                      touched.walletAddress &&
-                        errors.walletAddress &&
-                        "border-danger-base",
-                    )}
-                  >
-                    <Input.Vertical
-                      type="text"
-                      autoComplete="off"
-                      placeholder={addressPlaceholder}
-                      {...getFieldProps("walletAddress")}
-                      className="max-sm:focus:text-[16px] w-full pl-4 py-4"
-                    />
-                  </div>
-                </Tooltip.Trigger>
-                <Tooltip.Content className="bg-level-5 z-[2] p-1">
+              <div
+                className={classNames(
+                  "flex items-center border rounded-sm",
+                  touched.walletAddress && errors.walletAddress
+                    ? "border-danger-base"
+                    : "border-primary"
+                )}
+              >
+                <Input.Vertical
+                  type="text"
+                  autoComplete="off"
+                  placeholder={addressPlaceholder}
+                  {...getFieldProps("walletAddress")}
+                  className="max-sm:focus:text-[16px] w-full pl-4 py-4"
+                />
+              </div>
+              {touched.walletAddress && errors.walletAddress && (
+                <Typography.Text size="xs" className="text-danger-base">
                   {errors.walletAddress}
-                </Tooltip.Content>
-              </Tooltip>
+                </Typography.Text>
+              )}
+              {selectedNetwork?.id === "sepolia" && evmAddress && (
+                <button
+                  type="button"
+                  className="self-start text-xs opacity-80 hover:opacity-100 hover:underline"
+                  onClick={() => setFieldValue("walletAddress", evmAddress)}
+                >
+                  Use connected wallet ({evmAddress.slice(0, 6)}…
+                  {evmAddress.slice(-4)})
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -248,7 +279,7 @@ export const Form = () => {
           disabled={disabled}
           type="submit"
         >
-          Request Tokens
+          {primaryLabel}
         </Button.Solid>
       )}
     </form>

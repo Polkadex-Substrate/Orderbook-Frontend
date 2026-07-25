@@ -101,5 +101,11 @@ export function getTradingSteps(width: number): DriveStep[] {
     ];
   }
 
-  return [headerStep, marketSelectorStep, chartStep, placeOrderStep, ordersStep];
+  return [
+    headerStep,
+    marketSelectorStep,
+    chartStep,
+    placeOrderStep,
+    ordersStep,
+  ];
 }

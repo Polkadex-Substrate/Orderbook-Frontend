@@ -1,6 +1,12 @@
 "use client";
 
-import { Typography, Token, TokenAppearance, Button, Dropdown } from "@polkadex/ux";
+import {
+  Typography,
+  Token,
+  TokenAppearance,
+  Button,
+  Dropdown,
+} from "@mitra/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { PropsWithChildren } from "react";
 import { useMeasure } from "react-use";

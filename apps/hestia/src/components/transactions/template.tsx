@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Input, Tabs, Tooltip, ScrollArea } from "@polkadex/ux";
+import { Typography, Input, Tabs, Tooltip, ScrollArea } from "@mitra/ux";
 import { useMemo, useRef, useState } from "react";
 import { RiInformation2Line } from "@remixicon/react";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";

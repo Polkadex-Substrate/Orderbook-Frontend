@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Transaction } from "@orderbook/core/utils/orderbookService";
-import { Tokens, Typography, truncateString } from "@polkadex/ux";
+import { Tokens, Typography, truncateString } from "@mitra/ux";
 import { intlFormat } from "date-fns";
 import Link from "next/link";
 import { getChainFromTicker } from "@orderbook/core/helpers";
@@ -19,8 +19,10 @@ import {
 const formatAccount = (value: string, replaceValue = "Account") =>
   value.replace(replaceValue, "").trim();
 
-export interface DepositData
-  extends Omit<Transaction, "asset" | "timestamp" | "txType" | "stid"> {
+export interface DepositData extends Omit<
+  Transaction,
+  "asset" | "timestamp" | "txType" | "stid"
+> {
   timestamp: Date;
   token: {
     name: string;

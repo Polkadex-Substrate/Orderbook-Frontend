@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from "react";
-import { Drawer, Token, Typography, truncateString } from "@polkadex/ux";
+import { Drawer, Token, Typography, truncateString } from "@mitra/ux";
 import { intlFormat } from "date-fns";
 import Link from "next/link";
 import { RiExternalLinkLine } from "@remixicon/react";

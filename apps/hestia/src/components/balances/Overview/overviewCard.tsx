@@ -1,5 +1,5 @@
 import * as Icons from "@remixicon/react";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitra/ux";
 import Link, { LinkProps } from "next/link";
 import React, { HTMLAttributeAnchorTarget, PropsWithChildren } from "react";
 interface Props extends LinkProps {

@@ -1,4 +1,4 @@
-import { GenericMessage, Table as PolkadexTable, Skeleton } from "@polkadex/ux";
+import { GenericMessage, Table as PolkadexTable, Skeleton } from "@mitra/ux";
 import { Fragment, forwardRef, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {
@@ -29,7 +29,15 @@ export const Table = forwardRef<
     { desc: true, id: "fundingAccount" },
   ]);
 
-  const newData = useMemo(() => data.map((item) => item?.ticker === 'USDT' ? { ...item, onChainBalance: picoScale(item?.onChainBalance) } : { ...item }), [data]);
+  const newData = useMemo(
+    () =>
+      data.map((item) =>
+        item?.ticker === "USDT"
+          ? { ...item, onChainBalance: picoScale(item?.onChainBalance) }
+          : { ...item }
+      ),
+    [data]
+  );
 
   const table = useReactTable({
     data: newData,

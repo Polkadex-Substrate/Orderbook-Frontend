@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  GenericMessage,
-  Accordion,
-  Tokens,
-  Button,
-  Spinner,
-} from "@polkadex/ux";
+import { GenericMessage, Accordion, Tokens, Button, Spinner } from "@mitra/ux";
 import { forwardRef, useMemo } from "react";
 import {
   useCall,

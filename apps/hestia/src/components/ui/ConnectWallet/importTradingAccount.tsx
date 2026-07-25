@@ -7,15 +7,12 @@ import {
   Passcode,
   Typography,
   truncateString,
-} from "@polkadex/ux";
+} from "@mitra/ux";
 import { useFormik } from "formik";
 import { useDropzone } from "react-dropzone";
 import classNames from "classnames";
 import { useExtensionAccountFromBrowserAccount } from "@orderbook/core/hooks";
-import {
-  useExtensionAccounts,
-  useUserAccounts,
-} from "@polkadex/react-providers";
+import { useExtensionAccounts, useUserAccounts } from "@mitra/react-providers";
 import {
   EncryptedJsonEncoding,
   EncryptedJsonVersion,

@@ -1,6 +1,6 @@
 import { ClaimRewardArgs } from "@orderbook/core/hooks";
 import { GenericStatus } from "@orderbook/core/providers/user/connectWalletProvider";
-import { Button, Spinner, Typography } from "@polkadex/ux";
+import { Button, Spinner, Typography } from "@mitra/ux";
 import classNames from "classnames";
 
 type Props = {

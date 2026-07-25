@@ -1,4 +1,4 @@
-import { Token, Tokens, Typography, tokenAppearance } from "@polkadex/ux";
+import { Token, Tokens, Typography, tokenAppearance } from "@mitra/ux";
 export const MarketCard = ({
   icon,
   marketName,

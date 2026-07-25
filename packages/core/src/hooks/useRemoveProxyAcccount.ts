@@ -4,7 +4,7 @@ import {
   ExtensionAccount,
   useTransactionManager,
   useUserAccounts,
-} from "@polkadex/react-providers";
+} from "@mitra/react-providers";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useMutation } from "@tanstack/react-query";
 import { handleTransaction, removeFromStorage } from "@orderbook/core/helpers";

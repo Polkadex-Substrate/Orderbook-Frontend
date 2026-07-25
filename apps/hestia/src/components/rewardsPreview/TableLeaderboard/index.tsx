@@ -1,6 +1,6 @@
 "use client";
 
-import { GenericMessage, Skeleton, Table as PolkadexTable } from "@polkadex/ux";
+import { GenericMessage, Skeleton, Table as PolkadexTable } from "@mitra/ux";
 import { useWindowSize } from "usehooks-ts";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { LmpLeaderboard, useLeaderBoard } from "@orderbook/core/hooks";

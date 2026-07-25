@@ -6,7 +6,7 @@
 export type Transaction = Record<string, any>;
 export type Transactions = Transaction[];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
 export const useTheaTransactions = (_params: any) =>
   [
     {
@@ -27,9 +27,9 @@ export const useTheaTransactions = (_params: any) =>
 /*
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { PolkadexChainQuery } from "@polkadex/subscan";
-import { toUnit } from "@polkadex/numericals";
-import { Asset, Chain } from "@polkadex/thea";
+import { PolkadexChainQuery } from "@mitra/subscan";
+import { toUnit } from "@mitra/numericals";
+import { Asset, Chain } from "@mitra/thea";
 import { GENESIS, QUERY_KEYS } from "@orderbook/core/constants";
 import { defaultConfig } from "@orderbook/core/config";
 

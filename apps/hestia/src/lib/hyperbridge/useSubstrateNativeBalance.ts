@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ApiPromise, WsProvider } from "@polkadot/api";
+
 import { BRIDGE_CHAINS } from "@/config/bridge";
 import type { SubstrateChainConfig } from "@/config/bridge";
 
@@ -42,10 +43,11 @@ async function getApi(wsUrl: string): Promise<ApiPromise> {
 
 export function useSubstrateNativeBalance(
   address?: string,
-  options?: UseSubstrateNativeBalanceOptions,
+  options?: UseSubstrateNativeBalanceOptions
 ) {
   const wsUrl = options?.wsUrl ?? defaultSubstrateChain.wsUrl;
-  const decimals = options?.decimals ?? defaultSubstrateChain.nativeCurrency.decimals;
+  const decimals =
+    options?.decimals ?? defaultSubstrateChain.nativeCurrency.decimals;
   const divisor = Math.pow(10, decimals);
 
   const [balance, setBalance] = useState(0);
@@ -79,22 +81,31 @@ export function useSubstrateNativeBalance(
               const raw = BigInt(data?.data?.free ?? 0);
               setBalance(Number(raw) / divisor);
               setIsLoading(false);
-            },
+            }
           );
           unsubRef.current = unsub as unknown as () => void;
         } catch (err) {
           console.error("Failed to fetch native balance:", err);
-          if (!cancelled) { setBalance(0); setIsLoading(false); }
+          if (!cancelled) {
+            setBalance(0);
+            setIsLoading(false);
+          }
         }
       })
       .catch((err) => {
         console.error("Failed to connect to Substrate node:", err);
-        if (!cancelled) { setBalance(0); setIsLoading(false); }
+        if (!cancelled) {
+          setBalance(0);
+          setIsLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
-      if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
     };
   }, [address, wsUrl, divisor]);
 

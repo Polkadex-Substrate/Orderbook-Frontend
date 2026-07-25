@@ -52,7 +52,8 @@
     "@mitra/utils": "file:../mitra-ts/packages/utils",
     "@mitra/api-wrapper": "file:../mitra-ts/packages/api-wrapper",
     "@mitra/blockchain-api": "file:../mitra-ts/packages/blockchain-api",
-    "@mitra/subscan": "file:../mitra-ts/packages/subscan"
+    "@mitra/subscan": "file:../mitra-ts/packages/subscan",
+    "@tanstack/react-query": "5.101.4"
   },
   "dependencies": {
     "driver.js": "^1.6.0",

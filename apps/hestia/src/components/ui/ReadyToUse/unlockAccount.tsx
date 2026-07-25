@@ -1,4 +1,4 @@
-import { Interaction, Typography, Passcode } from "@polkadex/ux";
+import { Interaction, Typography, Passcode } from "@mitra/ux";
 import { useFormik } from "formik";
 import { useEffect, useMemo, useState } from "react";
 import { unLockAccountValidations } from "@orderbook/core/validations";

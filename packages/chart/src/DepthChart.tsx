@@ -9,6 +9,8 @@ export type DepthChartProps = {
   asks: DepthLevel[];
   theme?: ChartTheme;
   height?: number;
+  /** Fill the parent's height instead of using the fixed `height`. */
+  fill?: boolean;
 };
 
 /** Classic cumulative depth chart on a PRICE x-axis (lightweight-charts is
@@ -18,6 +20,7 @@ export function DepthChart({
   asks,
   theme = DARK_THEME,
   height = 160,
+  fill = false,
 }: DepthChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -30,8 +33,8 @@ export function DepthChart({
     const draw = () => {
       const dpr = window.devicePixelRatio || 1;
       const w = wrap.clientWidth;
-      const h = height;
-      if (w === 0) return;
+      const h = fill ? wrap.clientHeight : height;
+      if (w === 0 || h === 0) return;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       canvas.style.width = `${w}px`;
@@ -128,10 +131,14 @@ export function DepthChart({
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [bids, asks, theme, height]);
+  }, [bids, asks, theme, height, fill]);
 
   return (
-    <div ref={wrapRef} className="w-full" style={{ height }}>
+    <div
+      ref={wrapRef}
+      className="w-full"
+      style={fill ? { height: "100%" } : { height }}
+    >
       <canvas ref={canvasRef} />
     </div>
   );
