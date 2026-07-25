@@ -40,6 +40,7 @@ export const Form = () => {
   const { open } = useWeb3Modal();
 
   const [openAsset, setOpenAsset] = useState(false);
+  const [openDestPicker, setOpenDestPicker] = useState(false);
   const [openFeeModal, setOpenFeeModal] = useState(false);
   const [openSourceModal, setOpenSourceModal] = useState(false);
 
@@ -168,7 +169,10 @@ export const Form = () => {
       return { label: "Select a token", onClick: () => setOpenAsset(true) };
     if (!destinationAccount)
       return isEvmSource
-        ? { label: "Choose a destination account above", blocked: true }
+        ? {
+            label: "Choose a destination account",
+            onClick: () => setOpenDestPicker(true),
+          }
         : {
             label: `Connect ${destinationChain.name} wallet`,
             onClick: () => open(),
@@ -361,136 +365,142 @@ export const Form = () => {
                     evm={false}
                   />
                 )}
-              </div>
-
-              {/* ── SWAP DIRECTION ─────────────────────────────────────── */}
-              <div className="flex items-center gap-3 py-1">
-                <div className="flex-1 border-t border-primary" />
-                <Button.Icon
-                  type="button"
-                  variant="outline"
-                  className="h-10 w-10 p-2.5 rotate-90 rounded-full border border-primary bg-level-1 hover:bg-level-2 transition-colors"
-                  onClick={onSwitchChain}
-                  aria-label="Swap transfer direction"
-                >
-                  <RiArrowLeftRightLine className="w-full h-full" />
-                </Button.Icon>
-                <div className="flex-1 border-t border-primary" />
-              </div>
-
-              {/* ── TO ─────────────────────────────────────────────────── */}
-              <div className="flex flex-col gap-2 flex-1">
-                <div className="flex flex-col gap-2">
-                  <Typography.Text appearance="primary">To</Typography.Text>
-                  <SelectNetwork
-                    name={destinationChain?.name}
-                    icon={destinationChain?.logo}
-                  >
-                    {supportedDestinationChains.map((e) => (
-                      <SelectNetwork.Card
-                        key={e.id}
-                        icon={e.logo}
-                        value={e.name}
-                        onSelect={() => onSelectDestinationChain(e)}
-                      />
-                    ))}
-                  </SelectNetwork>
+                {/* Asset & amount live with the SOURCE: what you send is a
+                          source-side fact — the destination receives the same token. */}
+                <div className="flex flex-col gap-2 mt-1">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Typography.Text appearance="primary">
+                        Amount
+                      </Typography.Text>
+                      {sourceAccount && selectedAsset && (
+                        <button
+                          type="button"
+                          className="text-xs opacity-80 hover:opacity-100 hover:underline disabled:no-underline"
+                          onClick={onChangeMax}
+                          disabled={!max?.amount || loading}
+                          title="Use maximum transferable amount"
+                        >
+                          Available: {balanceAmount} {displayTicker}
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className={classNames(
+                        "flex item-center border rounded-sm",
+                        showAmountError
+                          ? "border-danger-base"
+                          : "border-primary"
+                      )}
+                    >
+                      <div className="w-full pr-4">
+                        <Input.Vertical
+                          type="text"
+                          autoComplete="off"
+                          placeholder="Enter an amount"
+                          {...getFieldProps("amount")}
+                          className="max-sm:focus:text-[16px] w-full pl-4 py-4"
+                        >
+                          {sourceAccount && max?.amount && !loading && (
+                            <Input.Action
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                onChangeMax();
+                              }}
+                            >
+                              MAX
+                            </Input.Action>
+                          )}
+                        </Input.Vertical>
+                      </div>
+                      <Button.Outline
+                        type="button"
+                        appearance="secondary"
+                        className="gap-1 px-2 justify-between h-full"
+                        onClick={() => setOpenAsset(true)}
+                        disabled={!sourceChain || !destinationChain}
+                      >
+                        <div className="flex items-center gap-2">
+                          {selectedAsset ? (
+                            <Token
+                              name={
+                                selectedAsset.ticker === "WETH"
+                                  ? "ETH"
+                                  : selectedAsset.ticker
+                              }
+                              size="md"
+                              appearance={selectedAsset.logo as TokenAppearance}
+                              className="rounded-full border border-primary"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-level-5" />
+                          )}
+                          <Typography.Text size="md">
+                            {selectedAsset
+                              ? selectedAsset.ticker === "WETH"
+                                ? "ETH"
+                                : selectedAsset.ticker
+                              : "Select token"}
+                          </Typography.Text>
+                        </div>
+                        <RiArrowDownSLine className="w-4 h-4" />
+                      </Button.Outline>
+                    </div>
+                    {showAmountError && (
+                      <Typography.Text size="xs" className="text-danger-base">
+                        {errors.amount}
+                      </Typography.Text>
+                    )}
+                  </div>
                 </div>
-                {/* EVM destination → extension picker | Substrate destination → WalletConnect */}
-                {isEvmSource ? (
-                  <AccountCombobox
-                    account={destinationAccount}
-                    setAccount={(e) => e && setDestinationAccount(e)}
-                    evm={false}
-                  />
-                ) : (
-                  <EvmWalletRow account={destinationAccount} />
-                )}
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-3">
-            <Typography.Heading>Asset</Typography.Heading>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <Typography.Text appearance="primary">Amount</Typography.Text>
-                {sourceAccount && selectedAsset && (
-                  <button
-                    type="button"
-                    className="text-xs opacity-80 hover:opacity-100 hover:underline disabled:no-underline"
-                    onClick={onChangeMax}
-                    disabled={!max?.amount || loading}
-                    title="Use maximum transferable amount"
-                  >
-                    Available: {balanceAmount} {displayTicker}
-                  </button>
-                )}
-              </div>
-              <div
-                className={classNames(
-                  "flex item-center border rounded-sm",
-                  showAmountError ? "border-danger-base" : "border-primary"
-                )}
+            {/* ── SWAP DIRECTION ─────────────────────────────────────── */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 border-t border-primary" />
+              <Button.Icon
+                type="button"
+                variant="outline"
+                className="h-10 w-10 p-2.5 rotate-90 rounded-full border border-primary bg-level-1 hover:bg-level-2 transition-colors"
+                onClick={onSwitchChain}
+                aria-label="Swap transfer direction"
               >
-                <div className="w-full pr-4">
-                  <Input.Vertical
-                    type="text"
-                    autoComplete="off"
-                    placeholder="Enter an amount"
-                    {...getFieldProps("amount")}
-                    className="max-sm:focus:text-[16px] w-full pl-4 py-4"
-                  >
-                    {sourceAccount && max?.amount && !loading && (
-                      <Input.Action
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          onChangeMax();
-                        }}
-                      >
-                        MAX
-                      </Input.Action>
-                    )}
-                  </Input.Vertical>
-                </div>
-                <Button.Outline
-                  type="button"
-                  appearance="secondary"
-                  className="gap-1 px-2 justify-between h-full"
-                  onClick={() => setOpenAsset(true)}
-                  disabled={!sourceChain || !destinationChain}
+                <RiArrowLeftRightLine className="w-full h-full" />
+              </Button.Icon>
+              <div className="flex-1 border-t border-primary" />
+            </div>
+
+            {/* ── TO ─────────────────────────────────────────────────── */}
+            <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col gap-2">
+                <Typography.Text appearance="primary">To</Typography.Text>
+                <SelectNetwork
+                  name={destinationChain?.name}
+                  icon={destinationChain?.logo}
                 >
-                  <div className="flex items-center gap-2">
-                    {selectedAsset ? (
-                      <Token
-                        name={
-                          selectedAsset.ticker === "WETH"
-                            ? "ETH"
-                            : selectedAsset.ticker
-                        }
-                        size="md"
-                        appearance={selectedAsset.logo as TokenAppearance}
-                        className="rounded-full border border-primary"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-level-5" />
-                    )}
-                    <Typography.Text size="md">
-                      {selectedAsset
-                        ? selectedAsset.ticker === "WETH"
-                          ? "ETH"
-                          : selectedAsset.ticker
-                        : "Select token"}
-                    </Typography.Text>
-                  </div>
-                  <RiArrowDownSLine className="w-4 h-4" />
-                </Button.Outline>
+                  {supportedDestinationChains.map((e) => (
+                    <SelectNetwork.Card
+                      key={e.id}
+                      icon={e.logo}
+                      value={e.name}
+                      onSelect={() => onSelectDestinationChain(e)}
+                    />
+                  ))}
+                </SelectNetwork>
               </div>
-              {showAmountError && (
-                <Typography.Text size="xs" className="text-danger-base">
-                  {errors.amount}
-                </Typography.Text>
+              {/* EVM destination → extension picker | Substrate destination → WalletConnect */}
+              {isEvmSource ? (
+                <AccountCombobox
+                  account={destinationAccount}
+                  setAccount={(e) => e && setDestinationAccount(e)}
+                  evm={false}
+                  open={openDestPicker}
+                  onOpenChange={setOpenDestPicker}
+                />
+              ) : (
+                <EvmWalletRow account={destinationAccount} />
               )}
             </div>
           </div>

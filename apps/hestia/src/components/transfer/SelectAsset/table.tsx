@@ -15,16 +15,22 @@ import { columns } from "./columns";
 import { FilteredAssetProps } from "@/hooks";
 import { picoScale } from "@/helpers";
 
-export const Table = forwardRef<
-  HTMLDivElement,
-  {
-    maxHeight?: string;
-    data: AssetsProps[];
-    loading: boolean;
-    selectedAssetId: string;
-    onChangeAsset: (e: FilteredAssetProps) => void;
-  }
->(({ maxHeight, data, loading, selectedAssetId, onChangeAsset }) => {
+// Plain component: this was wrapped in forwardRef but ignored the ref (no
+// caller ever passed one), which triggered React's "render functions accept
+// exactly two parameters" warning on every mount.
+export const Table = ({
+  maxHeight,
+  data,
+  loading,
+  selectedAssetId,
+  onChangeAsset,
+}: {
+  maxHeight?: string;
+  data: AssetsProps[];
+  loading: boolean;
+  selectedAssetId: string;
+  onChangeAsset: (e: FilteredAssetProps) => void;
+}) => {
   const [sorting, setSorting] = useState<SortingState>([
     { desc: true, id: "fundingAccount" },
   ]);
@@ -155,5 +161,4 @@ export const Table = forwardRef<
       )}
     </Fragment>
   );
-});
-Table.displayName = "Table";
+};

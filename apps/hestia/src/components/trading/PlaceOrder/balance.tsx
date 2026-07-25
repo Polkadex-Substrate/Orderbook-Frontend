@@ -12,15 +12,24 @@ export const Balance = ({
   const chainName = getChainFromTicker(baseTicker);
   return (
     <div className=" self-end flex items-center gap-1">
-      <Typography.Text size="xs">
-        {children} {baseTicker}
-      </Typography.Text>
-      <Typography.Text size="xs" appearance="primary">
-        Available
-      </Typography.Text>
+      {/* The balance itself links to the transfer page — moving funds between
+          funding and trading accounts was only reachable through the tiny
+          dropdown icon (whose onClick was a leftover window.alert("...")). */}
+      <Link
+        href={`/transfer/${baseTicker}`}
+        className="flex items-center gap-1 hover:underline"
+        title="Transfer between funding and trading account"
+      >
+        <Typography.Text size="xs">
+          {children} {baseTicker}
+        </Typography.Text>
+        <Typography.Text size="xs" appearance="primary">
+          Available
+        </Typography.Text>
+      </Link>
       <Dropdown>
         <Dropdown.Trigger asChild>
-          <Button.Icon size="2xs" onClick={() => window.alert("...")}>
+          <Button.Icon size="xs" title="Deposit, withdraw or transfer">
             <Icons.Exchange />
           </Button.Icon>
         </Dropdown.Trigger>

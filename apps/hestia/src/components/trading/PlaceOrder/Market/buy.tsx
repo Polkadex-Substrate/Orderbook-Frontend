@@ -2,7 +2,7 @@
 
 import classNames from "classnames";
 import { useFormik } from "formik";
-import { Button, Input, Spinner, Tooltip } from "@mitra/ux";
+import { Button, Input, Spinner, Typography } from "@mitra/ux";
 import { Market, Ticker } from "@orderbook/core/utils/orderbookService/types";
 import { useMarketOrder } from "@orderbook/core/hooks";
 import { marketOrderValidations } from "@orderbook/core/validations";
@@ -13,6 +13,7 @@ import ConnectAccount from "../connectAccount";
 import { Range } from "@/components/ui/Temp/range";
 import { TradingFee } from "@/components/ui/ReadyToUse";
 import { useFlashOnExternalChange } from "@/hooks/useFlashOnExternalChange";
+import { useMoveAndTrade } from "@/hooks/useMoveAndTrade";
 
 const AMOUNT = "amount";
 
@@ -24,11 +25,11 @@ export const BuyOrder = ({
   market,
   ticker,
   availableQuoteAmount,
-  isResponsive = false,
 }: {
   market?: Market;
   ticker: Ticker;
   availableQuoteAmount: number;
+  /** Legacy prop (was tooltip placement); accepted but unused. */
   isResponsive?: boolean;
 }) => {
   const {
@@ -78,6 +79,14 @@ export const BuyOrder = ({
   });
 
   // Highlight when the orderbook click fills the amount (external change).
+  // Market buy spends the quote asset; `amount` is the quote total.
+  const requiredQuote = Number(values.amount) || 0;
+  const { canMoveAndTrade, moveAmount, phase, moveAndTrade } = useMoveAndTrade({
+    assetId: market?.quoteAsset?.id,
+    required: requiredQuote,
+    available: availableQuoteAmount,
+  });
+
   const amountFlash = useFlashOnExternalChange(values.amount);
 
   return (
@@ -90,49 +99,38 @@ export const BuyOrder = ({
         Best Market Price
       </Button.Solid>
 
-      <Tooltip open={!!errors.amount && !!touched.amount && isSignedIn}>
-        <Tooltip.Trigger asChild>
-          <div
-            className={classNames(
-              "border transition-colors duration-300",
-              !!errors.amount && isSignedIn
-                ? "border-danger-base"
-                : amountFlash
-                  ? "border-attention-base bg-attention-base/10"
-                  : "border-transparent"
-            )}
-          >
-            <Input.Primary
-              type="text"
-              placeholder="0.0000000000"
-              autoComplete="off"
-              name={AMOUNT}
-              value={values.amount}
-              onChange={(e) => onChangeAmount(e.target.value)}
-              onFocus={handleBlur}
-              onBlur={() => setFieldTouched(AMOUNT, false)}
-              className="max-sm:focus:text-[16px]"
-            >
-              <Input.Label className="w-[50px]">Amount</Input.Label>
-              <Input.Ticker>{market?.quoteAsset?.ticker}</Input.Ticker>
-              <Input.Button variant="increase" onClick={onIncreaseAmount} />
-              <Input.Button variant="decrease" onClick={onDecreaseAmount} />
-            </Input.Primary>
-          </div>
-        </Tooltip.Trigger>
-        <Tooltip.Content
-          side={isResponsive ? "top" : "left"}
-          align={isResponsive ? "start" : "center"}
-          sideOffset={isResponsive ? 6 : 12}
-          alignOffset={isResponsive ? 50 : 0}
-          className={classNames(
-            "bg-level-5 z-[2] p-1",
-            isResponsive && "text-sm z-[51]"
-          )}
+      <div
+        className={classNames(
+          "border transition-colors duration-300",
+          !!errors.amount && isSignedIn
+            ? "border-danger-base"
+            : amountFlash
+              ? "border-attention-base bg-attention-base/10"
+              : "border-transparent"
+        )}
+      >
+        <Input.Primary
+          type="text"
+          placeholder="0.0000000000"
+          autoComplete="off"
+          name={AMOUNT}
+          value={values.amount}
+          onChange={(e) => onChangeAmount(e.target.value)}
+          onFocus={handleBlur}
+          onBlur={() => setFieldTouched(AMOUNT, false)}
+          className="max-sm:focus:text-[16px]"
         >
+          <Input.Label className="w-[50px]">Amount</Input.Label>
+          <Input.Ticker>{market?.quoteAsset?.ticker}</Input.Ticker>
+          <Input.Button variant="increase" onClick={onIncreaseAmount} />
+          <Input.Button variant="decrease" onClick={onDecreaseAmount} />
+        </Input.Primary>
+      </div>
+      {!!errors.amount && !!touched.amount && isSignedIn && (
+        <Typography.Text size="xs" className="text-danger-base px-1">
           {errors.amount}
-        </Tooltip.Content>
-      </Tooltip>
+        </Typography.Text>
+      )}
       <div className="flex items-center gap-2 justify-between">
         <TradingFee ticker={market?.baseAsset?.ticker || ""} />
         <Balance baseTicker={market?.quoteAsset?.ticker || ""}>
@@ -162,17 +160,41 @@ export const BuyOrder = ({
         />
       </div>
       {isSignedIn ? (
-        <Button.Solid
-          type="submit"
-          disabled={!(isValid && dirty) || isSubmitting}
-          appearance="success"
-        >
-          {isSubmitting ? (
-            <Spinner.Keyboard className="h-6 w-6" />
-          ) : (
-            <>Buy {market?.baseAsset?.ticker}</>
-          )}
-        </Button.Solid>
+        dirty && requiredQuote > availableQuoteAmount && canMoveAndTrade ? (
+          <Button.Solid
+            appearance="success"
+            type="button"
+            disabled={phase !== "idle" || isSubmitting}
+            onClick={() =>
+              moveAndTrade(async () => {
+                await onExecuteOrder(values.amount);
+                resetForm();
+              })
+            }
+          >
+            {phase === "depositing" ? (
+              <Spinner.Keyboard className="h-6 w-6" />
+            ) : phase === "crediting" ? (
+              <>Crediting balance...</>
+            ) : (
+              <>
+                Move {moveAmount.toFixed(4)} {market?.quoteAsset?.ticker} & Buy
+              </>
+            )}
+          </Button.Solid>
+        ) : (
+          <Button.Solid
+            type="submit"
+            disabled={!(isValid && dirty) || isSubmitting}
+            appearance="success"
+          >
+            {isSubmitting ? (
+              <Spinner.Keyboard className="h-6 w-6" />
+            ) : (
+              <>Buy {market?.baseAsset?.ticker}</>
+            )}
+          </Button.Solid>
+        )
       ) : (
         <ConnectAccount />
       )}

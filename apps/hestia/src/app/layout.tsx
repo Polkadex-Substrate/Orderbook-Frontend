@@ -45,10 +45,9 @@ export default async function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon.png" />
 
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
+        {/* No maximum-scale/user-scalable lock: blocking pinch-zoom is an
+            accessibility failure (WCAG 1.4.4) and iOS ignores it anyway. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body
         className={classNames(

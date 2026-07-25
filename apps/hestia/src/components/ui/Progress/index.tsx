@@ -30,7 +30,7 @@ export const Progress = () => {
             <ProgressBar.Title messages={messages} />
             <ProgressBar.Status>
               <ProgressBar.Card vertical status="broadcasted">
-                Broadcasted
+                Broadcast
               </ProgressBar.Card>
               <ProgressBar.Card vertical status="inblock">
                 In block
@@ -41,9 +41,7 @@ export const Progress = () => {
             </ProgressBar.Status>
           </ProgressBar.Maximized>
           <ProgressBar.Minimized>
-            <ProgressBar.Card status="broadcasted">
-              Broadcasted
-            </ProgressBar.Card>
+            <ProgressBar.Card status="broadcasted">Broadcast</ProgressBar.Card>
             <ProgressBar.Card status="inblock">In block</ProgressBar.Card>
             <ProgressBar.Card status="finalized">Finalized</ProgressBar.Card>
           </ProgressBar.Minimized>

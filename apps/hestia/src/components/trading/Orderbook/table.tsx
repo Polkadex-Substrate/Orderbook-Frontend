@@ -51,8 +51,11 @@ export const Table = ({
   const onChangeTotal: GenericAction = (selectedIndex) =>
     changeMarketAmountSumClick(selectedIndex);
 
+  // Row click loads the PRICE only (standard exchange behavior): the size on
+  // a level is someone else's order, not a suggestion for yours — prefilling
+  // it put users with a smaller balance straight into an error state.
+  // Clicking the amount or total cell explicitly still copies those values.
   const onChangeAllValues: GenericAction = (selectedIndex) => {
-    changeMarketAmount(selectedIndex, isSell ? "asks" : "bids");
     changeMarketPrice(selectedIndex, isSell ? "asks" : "bids");
   };
 
