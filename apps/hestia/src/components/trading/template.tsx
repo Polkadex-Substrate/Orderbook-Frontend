@@ -49,7 +49,7 @@ export function Template({ id }: { id: string }) {
           }}
         >
           <ResponsiveAssetInfo currentMarket={currentMarket} />
-          <Responsive id={id} />
+          <Responsive id={id} currentMarket={currentMarket} />
           <Orders />
         </div>
       ) : (

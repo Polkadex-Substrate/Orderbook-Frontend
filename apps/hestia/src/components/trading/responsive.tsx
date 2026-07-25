@@ -1,13 +1,20 @@
 "use client";
 
 import { Tabs } from "@polkadex/ux";
+import { Market } from "@orderbook/core/utils/orderbookService";
 
 import { Graph } from "./Graph";
 import { Orderbook } from "./Orderbook";
 import { Markets } from "./Trades/Market";
 import { RecentTrades } from "./Trades/RecentTrades";
 
-export function Responsive({ id }: { id: string }) {
+export function Responsive({
+  id,
+  currentMarket,
+}: {
+  id: string;
+  currentMarket?: Market;
+}) {
   return (
     <Tabs
       defaultValue="graph"
@@ -21,7 +28,7 @@ export function Responsive({ id }: { id: string }) {
       </Tabs.List>
       <Tabs.Content value="graph" className="flex-1 flex-col flex h-full">
         {/* @ts-ignore */}
-        <Graph id={id} />
+        <Graph id={id} currentMarket={currentMarket} />
       </Tabs.Content>
       <Tabs.Content
         value="orderbook"

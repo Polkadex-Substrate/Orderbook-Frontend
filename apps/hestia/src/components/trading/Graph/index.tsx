@@ -68,7 +68,13 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
   const secondAsset = currentMarket?.name?.split('/')[1];
 
   // State
-  const [selectedPair, setSelectedPair] = useState(firstAsset + '-' + secondAsset);
+  // NOTE: on the very first page load `currentMarket` is still undefined
+  // (markets list resolves async), so this initializer must not bake in
+  // "undefined-undefined". The sync effect below (after the refs) completes
+  // initialization once the market arrives, and follows market switches.
+  const [selectedPair, setSelectedPair] = useState(
+    firstAsset && secondAsset ? `${firstAsset}-${secondAsset}` : ""
+  );
   const [statusBadge, setStatusBadge] = useState({
     text: 'Checking Server Status...',
     className: 'px-3 py-1 rounded-full text-xs font-medium bg-blue-900 text-blue-300'
@@ -101,6 +107,17 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
   const volumeSeriesRef = useRef<any>(null);
   const tickerIntervalRef = useRef<any>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  // Keep selectedPair in sync with the market coming from the URL/markets
+  // list. Fixes: chart blank on initial page load (state initialized before
+  // currentMarket resolved) — previously only a remount (switching pairs and
+  // back) repaired it.
+  useEffect(() => {
+    if (firstAsset && secondAsset) {
+      setSelectedPair(`${firstAsset}-${secondAsset}`);
+      setIsChartError(false);
+    }
+  }, [firstAsset, secondAsset]);
 
   // Initialize Chart
   useEffect(() => {
@@ -399,6 +416,7 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
 
     try {
       setIsLoading(true);
+      setIsChartError(false);
       setStatusBadge({
         text: 'Connecting...',
         className: 'px-3 py-1 rounded-full text-xs font-medium bg-blue-900 text-blue-300'
@@ -471,7 +489,7 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
 
   // Fetch data when pair changes and chart is ready
   useEffect(() => {
-    if (isChartReady && chartRef.current) {
+    if (isChartReady && chartRef.current && selectedPair) {
       fetchChartData(selectedPair);
       
       // Reset and set new ticker interval
@@ -556,15 +574,19 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
         </div>
 
         {/* Chart Container */}
-         {isChartError ? (
-            <div className="flex items-center justify-center h-full w-full">
-              <p className="text-red-500">Chart data not available</p>
-            </div>
-            ) : (
+         {/* The chart container must stay mounted even in the error state —
+             unmounting it destroys the lightweight-charts canvas, making any
+             retry (e.g. after the market resolves) impossible without a full
+             remount. The error message is an overlay instead. */}
               <div className="flex-1 w-full h-full min-h-[300px] bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl relative">
                 {isLoading && (
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+                {isChartError && (
+                  <div className="absolute inset-0 z-30 flex items-center justify-center bg-gray-900/80">
+                    <p className="text-red-500">Chart data not available</p>
                   </div>
                 )}
                 {/* Legend overlay */}
@@ -577,7 +599,6 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
                 </div>
                   <div ref={chartContainerRef} className="absolute inset-0"></div>
               </div>
-            )}
 
         {/* Meta Info */}
         <footer className="hidden mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
