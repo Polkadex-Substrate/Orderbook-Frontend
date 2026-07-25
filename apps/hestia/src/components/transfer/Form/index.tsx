@@ -104,7 +104,7 @@ export const Form = ({
   const { mutateAsync: onFetchWithdraws, loading: withdrawLoading } =
     useWithdraw();
 
-  const { mutateAsync, isLoading: transferLoading } = useAssetTransfer(refetch);
+  const { mutateAsync, isPending: transferLoading } = useAssetTransfer(refetch);
   const { loading: fundLoading, onChangeChainBalance } = useFunds();
 
   const { onToogleConnectTrading, onToogleConnectExtension } =

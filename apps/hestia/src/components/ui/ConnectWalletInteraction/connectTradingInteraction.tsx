@@ -124,7 +124,7 @@ const CardsCompontent = ({ onClose }: { onClose: () => void }) => {
             e.stopPropagation();
             onReset();
           }}
-          loading={importFromFileStatus === "loading"}
+          loading={importFromFileStatus === "pending"}
           whitelistBrowserAccounts={
             Object.keys(selectedWallet ?? {}).length
               ? mainProxiesAccounts
@@ -139,7 +139,7 @@ const CardsCompontent = ({ onClose }: { onClose: () => void }) => {
             onReset();
           }}
           onCancel={onReset}
-          loading={importFromMnemonicStatus === "loading"}
+          loading={importFromMnemonicStatus === "pending"}
           errorMessage={
             (importFromMnemonicError as Error)?.message ??
             importFromMnemonicError

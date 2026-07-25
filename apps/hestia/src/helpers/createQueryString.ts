@@ -13,7 +13,16 @@ export const createQueryString = ({
   searchParams,
   push,
 }: Props) => {
-  const params = new URLSearchParams(searchParams.toString());
+  const current = searchParams.toString();
+  const params = new URLSearchParams(current);
   data.forEach(({ name, value = "" }) => params.set(name, value));
-  push(pathname + "?" + params.toString());
+  const next = params.toString();
+
+  // Bail out when nothing actually changed. Callers run this from an effect
+  // that depends on `searchParams`, so pushing unconditionally navigates ->
+  // yields a new searchParams object -> re-runs the effect -> pushes again,
+  // an infinite navigation loop.
+  if (next === current) return;
+
+  push(pathname + "?" + next);
 };

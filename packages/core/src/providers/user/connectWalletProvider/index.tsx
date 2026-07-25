@@ -49,7 +49,9 @@ import {
 import { useSettingsProvider } from "../../public/settings";
 const { googleDriveStore } = enabledFeatures;
 
-export type GenericStatus = "error" | "idle" | "success" | "loading";
+// Mirrors react-query's status union. v5 renamed the in-flight state from
+// "loading" to "pending" (for both queries and mutations).
+export type GenericStatus = "error" | "idle" | "success" | "pending";
 
 export { useConnectWalletProvider } from "./useConnectWallet";
 export type ExportTradeAccountProps = {
@@ -96,7 +98,7 @@ type ConnectWalletState = {
   ) => Promise<void>;
 
   onImportFromGoogle: (value: ImportFromGoogleAccount) => Promise<void>;
-  importFromGoogleLoading: UseMutationResult["isLoading"];
+  importFromGoogleLoading: UseMutationResult["isPending"];
   importFromGoogleSuccess: UseMutationResult["isSuccess"];
   // TODO: all the below must be moved into local state of ConnectWalletInteraction
   onExportTradeAccount: (value: ExportTradeAccountProps) => void;
@@ -134,15 +136,15 @@ type ConnectWalletState = {
   hasAccount: boolean;
 
   onBackupGoogleDrive: (value: ExportTradeAccountProps) => Promise<void>;
-  backupGoogleDriveLoading: UseMutationResult["isLoading"];
+  backupGoogleDriveLoading: UseMutationResult["isPending"];
   backupGoogleDriveSuccess: UseMutationResult["isSuccess"];
 
   onConnectGoogleDrive: () => Promise<void>;
-  connectGoogleDriveLoading: UseMutationResult["isLoading"];
+  connectGoogleDriveLoading: UseMutationResult["isPending"];
   connectGoogleDriveSuccess: UseMutationResult["isSuccess"];
 
   onRemoveGoogleDrive: (value: string) => Promise<void>;
-  removeGoogleDriveLoading: UseMutationResult["isLoading"];
+  removeGoogleDriveLoading: UseMutationResult["isPending"];
   removeGoogleDriveSuccess: UseMutationResult["isSuccess"];
 
   gDriveReady: boolean;
@@ -348,7 +350,7 @@ export const ConnectWalletProvider = ({
 
   const {
     mutateAsync: onBackupGoogleDrive,
-    isLoading: backupGoogleDriveLoading,
+    isPending: backupGoogleDriveLoading,
     isSuccess: backupGoogleDriveSuccess,
   } = useBackupTradingAccount({
     GoogleDrive,
@@ -376,7 +378,7 @@ export const ConnectWalletProvider = ({
 
   const {
     mutateAsync: onRemoveGoogleDrive,
-    isLoading: removeGoogleDriveLoading,
+    isPending: removeGoogleDriveLoading,
     isSuccess: removeGoogleDriveSuccess,
   } = useRemoveGoogleTradingAccount({
     GoogleDrive,

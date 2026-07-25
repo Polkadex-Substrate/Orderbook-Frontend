@@ -13,7 +13,6 @@ import {
 import { useRecentTrades, useTickers } from "@orderbook/core/hooks";
 
 import { useOrderbookService } from "../providers/public/orderbookServiceProvider/useOrderbookService";
-import { useSettingsProvider } from "../providers/public/settings";
 import { appsyncOrderbookService } from "../utils/orderbookService";
 
 export type DecimalSize = { size: number; length: number };
@@ -32,7 +31,6 @@ export function useOrderbook(defaultMarket: string) {
   const [sizeState, setSizeState] = useState(initialState[1]);
 
   const { markets: list } = useOrderbookService();
-  const { onHandleError } = useSettingsProvider();
   const currentMarket = getCurrentMarket(list, defaultMarket);
 
   const {
@@ -60,11 +58,6 @@ export function useOrderbook(defaultMarket: string) {
       return { bids, asks };
     },
     enabled: Boolean(defaultMarket?.length > 0),
-    onError: (error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : (error as string);
-      onHandleError(errorMessage);
-    },
     refetchOnMount: false,
     refetchOnWindowFocus: true,
     refetchInterval: 30 * 1000, // 30s

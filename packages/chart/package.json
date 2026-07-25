@@ -1,0 +1,13 @@
+{
+  "name": "@orderbook/chart",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orderbook-native trading chart: lightweight-charts candles + volume, EMA/VWAP/RSI, open orders & fills on-chart, canvas depth chart. Fed by the exchange's own kline feed — no external datafeed gateway.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "peerDependencies": {
+    "lightweight-charts": ">=4.1.0 <5",
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}

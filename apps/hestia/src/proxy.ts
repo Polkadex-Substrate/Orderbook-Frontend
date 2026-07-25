@@ -1,11 +1,15 @@
+/**
+ * Next 16 renamed the `middleware` file convention to `proxy`.
+ * (Was `src/middleware.ts` exporting `middleware`.)
+ * Behaviour and matcher config are unchanged.
+ */
 import { defaultConfig } from "@orderbook/core/config";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { enableLmp: isRewardsActive, maintenanceMode } = defaultConfig;
-  const isFaucetEnabled =
-    process.env.NEXT_PUBLIC_ENABLE_FAUCET === "true";
+  const isFaucetEnabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET === "true";
 
   if (maintenanceMode) {
     return NextResponse.redirect(new URL("/maintenance", req.url));

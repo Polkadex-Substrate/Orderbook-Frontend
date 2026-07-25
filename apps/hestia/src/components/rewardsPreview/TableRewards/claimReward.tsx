@@ -24,7 +24,7 @@ export const ClaimReward = ({
   loadingEpochs,
 }: Props) => {
   const disabled =
-    claimRewardStatus === "loading" && !loadingEpochs.includes(value.epoch);
+    claimRewardStatus === "pending" && !loadingEpochs.includes(value.epoch);
   const loading = loadingEpochs.includes(value.epoch);
 
   const hasClaimed = value.isClaimed;

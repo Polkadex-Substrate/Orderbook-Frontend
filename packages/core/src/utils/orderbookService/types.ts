@@ -138,7 +138,11 @@ export interface Subscription {
   unsubscribe: () => void;
 }
 
-export interface UserHistoryProps<T = null> {
+// `pageParams` is forwarded to the GraphQL query as `nextToken`, i.e. a
+// pagination cursor: a string on subsequent pages, null on the first one.
+// (It previously defaulted to `null`, which no call site could satisfy once
+// react-query v5 started inferring the page-param type from initialPageParam.)
+export interface UserHistoryProps<T = string | null> {
   address: string;
   from: string;
   to: string;

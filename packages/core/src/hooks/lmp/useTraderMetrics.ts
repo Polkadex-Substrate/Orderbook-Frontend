@@ -51,5 +51,5 @@ export const useTraderMetrics = (market: string) => {
     enabled,
   });
 
-  return { userMetrics: data, isLoading: status === "loading" };
+  return { userMetrics: data, isLoading: status === "pending" };
 };

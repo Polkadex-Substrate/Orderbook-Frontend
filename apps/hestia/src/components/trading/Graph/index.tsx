@@ -59,7 +59,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType } from 'lightweight-charts';
 import { Market } from "@orderbook/core/utils/orderbookService";
 
+import { GraphV2 } from "./GraphV2";
+
+// Orderbook-native chart (own klines feed, no external gateway). Flip the
+// flag to fall back to the gateway-based chart below.
+const USE_NATIVE_CHART = process.env.NEXT_PUBLIC_NATIVE_CHART === "true";
+
 export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
+  if (USE_NATIVE_CHART) return <GraphV2 currentMarket={currentMarket} />;
+  return <GraphV1 currentMarket={currentMarket} />;
+};
+
+const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
   // Configuration
   const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
   const GATEWAY_SECRET = process.env.NEXT_PUBLIC_GATEWAY_SECRET;
@@ -294,8 +305,16 @@ export const Graph = ({ currentMarket }: { currentMarket?: Market }) => {
 
     try {
       const url = `${SERVER_BASE_URL}/gateway/ticker?symbols=${symbol.toUpperCase()}&vs_currency=${quote}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Ticker fetch failed');
+      // Same auth header as fetchChartData — the gateway rejects unauthenticated
+      // calls, and this fetch previously sent none.
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Gateway-Secret': GATEWAY_SECRET || ''
+        }
+      });
+      if (!response.ok)
+        throw new Error(`Ticker fetch failed (HTTP ${response.status} from ${url})`);
 
       const { data } = await response.json();
       if (!data || data.length === 0) {

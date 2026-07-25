@@ -16,7 +16,7 @@ export const useImportGoogleAccount = ({
 }) => {
   const { wallet } = useUserAccounts();
 
-  const { mutateAsync, status, error, isLoading, isSuccess } = useMutation({
+  const { mutateAsync, status, error, isPending, isSuccess } = useMutation({
     mutationFn: async ({ account, password }: ImportFromGoogleAccount) => {
       wallet.add(account, password);
       await sleep(2000);
@@ -29,7 +29,7 @@ export const useImportGoogleAccount = ({
     mutateAsync,
     status,
     error,
-    isLoading,
+    isLoading: isPending,
     isSuccess,
   };
 };

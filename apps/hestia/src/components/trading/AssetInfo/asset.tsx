@@ -1,15 +1,12 @@
 import {
   Typography,
-  HoverCard,
   Skeleton,
   Token,
   tokenAppearance,
 } from "@polkadex/ux";
-import { useState } from "react";
 import classNames from "classnames";
 import Link from "next/link";
 
-import { TokenInfo } from "./tokenInfo";
 export const Asset = ({
   baseTicker,
   quoteTicker,
@@ -23,7 +20,6 @@ export const Asset = ({
   loading: boolean;
   inlineView?: boolean;
 }) => {
-  const [state, setState] = useState(false);
   return (
     <Link
       className={classNames(
@@ -40,8 +36,11 @@ export const Asset = ({
           className="rounded-full border border-primary"
         />
       </Skeleton>
-      <HoverCard open={false} onOpenChange={setState}>
-        <HoverCard.Trigger className="flex h-full flex-1">
+      {/* Was a HoverCard hardcoded to `open={false}` — it could never open, and
+          its Radix trigger rendered an <a> inside this <Link>'s <a>, which is
+          invalid HTML and caused a hydration error. Dropped the inert wrapper
+          and kept the trigger's layout classes here. */}
+      <div className="flex h-full flex-1">
           <div
             className={classNames(
               "flex flex-row-reverse gap-0.5 flex-1 h-full",
@@ -66,11 +65,7 @@ export const Asset = ({
               </Typography.Text>
             </Skeleton>
           </div>
-        </HoverCard.Trigger>
-        <HoverCard.Content>
-          <TokenInfo baseTicker={baseTicker} tokenName={tokenName} />
-        </HoverCard.Content>
-      </HoverCard>
+      </div>
     </Link>
   );
 };

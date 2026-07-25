@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { sortOrdersDescendingTime } from "../helpers";
-import { useSettingsProvider } from "../providers/public/settings";
 import { useProfile } from "../providers/user/profile";
 import { appsyncOrderbookService } from "../utils/orderbookService";
 import { QUERY_KEYS } from "../constants";
@@ -12,7 +11,6 @@ export const useOpenOrders = (
   filters?: Ifilters,
   basedOnFundingAccount?: boolean
 ) => {
-  const { onHandleError } = useSettingsProvider();
   const {
     selectedAddresses: { tradeAddress, mainAddress },
   } = useProfile();
@@ -38,10 +36,6 @@ export const useOpenOrders = (
       });
     },
     initialData: [],
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : "";
-      onHandleError(errorMessage);
-    },
   });
 
   const filteredOpenOrders = useMemo(() => {

@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChangeEvent, useMemo, useState } from "react";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useNativeApi } from "@orderbook/core/providers/public/nativeApi";
 
@@ -14,7 +13,6 @@ import { useOnChainBalances } from "./useOnChainBalances";
 export function useFunds() {
   const queryClient = useQueryClient();
   const { isReady, assets: assetsList } = useOrderbookService();
-  const { onHandleError } = useSettingsProvider();
   const {
     selectedAddresses: { mainAddress },
   } = useProfile();
@@ -38,11 +36,6 @@ export function useFunds() {
     queryFn: async () =>
       await appsyncOrderbookService.query.getBalance(mainAddress),
     enabled: shouldFetchTradingBalance,
-    onError: (error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : (error as string);
-      onHandleError(errorMessage);
-    },
   });
 
   const { onChainBalances, isOnChainBalanceLoading, isOnChainBalanceSuccess } =

@@ -32,7 +32,10 @@ export const config = defaultWagmiConfig({
   metadata,
   ssr: true,
   storage: createStorage({ storage: cookieStorage }),
-  enableWalletConnect: true,
+  // WalletConnect's core probes indexedDB at construction — only exists in the
+  // browser. Server-side (build "Collecting page data" / prerender) skips the
+  // connector; cookieToInitialState in layout.tsx doesn't depend on connectors.
+  enableWalletConnect: typeof window !== "undefined",
   enableInjected: true,
   enableEIP6963: true,
   enableCoinbase: true,

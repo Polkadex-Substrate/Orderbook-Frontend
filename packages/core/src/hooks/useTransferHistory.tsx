@@ -13,7 +13,7 @@ export const useTransferHistory = (
       address,
       PER_PAGE_LIMIT ?? SUBSCAN_PER_PAGE_LIMIT
     ),
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async ({ pageParam }) => {
       const data = await INDEXER_GETTERS.fetchTransfers(
         subqueryUrl,
         address,
@@ -23,12 +23,13 @@ export const useTransferHistory = (
       return data;
     },
     enabled: shouldFetch,
+    initialPageParam: 0,
     getNextPageParam: (lastPage, pages) => {
       // If the last page contains less than required results, don't fetch the next page
       if (
         lastPage?.transfers?.length < (PER_PAGE_LIMIT ?? SUBSCAN_PER_PAGE_LIMIT)
       ) {
-        return false;
+        return undefined;
       }
       // Otherwise, determine the next page number based on the length of allPages
       return pages?.length;

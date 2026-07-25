@@ -77,7 +77,7 @@ const CardsComponent = () => {
       <Interactable.Card pageName="NewTradingAccount">
         <NewTradingAccount
           onCreateAccount={onRegisterTradeAccount}
-          loading={registerStatus === "loading"}
+          loading={registerStatus === "pending"}
           fundWalletPresent={!!Object.keys(selectedWallet ?? {})?.length}
           errorTitle="Error"
           errorMessage={(registerError as Error)?.message ?? registerError}

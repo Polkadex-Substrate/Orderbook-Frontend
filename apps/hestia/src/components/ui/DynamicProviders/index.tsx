@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Amplify } from "aws-amplify";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
@@ -105,6 +105,17 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
     },
   },
+  // react-query v5 removed the per-query `onError` callback (it only remains on
+  // useMutation). The hooks that used it all did the same thing — surface the
+  // message as an error toast — so that behaviour now lives here, once, for
+  // every query. Mirrors SettingProvider's defaultToast.onError below.
+  queryCache: new QueryCache({
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : String(error ?? "");
+      if (message) toast.error(message);
+    },
+  }),
 });
 
 export const DynamicProviders = ({ children }: { children: ReactNode }) => {

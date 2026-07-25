@@ -50,7 +50,8 @@ export const useDeposit = () => {
     },
 
     onError: (error) => {
-      const errorMessage = (error as Error).message ?? (error as string);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error ?? "");
       onHandleError(errorMessage);
     },
     onSuccess: () =>
@@ -59,5 +60,5 @@ export const useDeposit = () => {
       ),
   });
 
-  return { mutateAsync, loading: status === "loading" };
+  return { mutateAsync, loading: status === "pending" };
 };

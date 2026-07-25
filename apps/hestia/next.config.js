@@ -35,7 +35,15 @@ const nextConfig = {
     return config;
   },
   output: "standalone",
-  transpilePackages: ["@orderbook/core"],
+  transpilePackages: ["@orderbook/core", "@orderbook/chart"],
+  experimental: {
+    // @remixicon/react is a barrel file re-exporting ~3,200 icon components.
+    // Webpack pulled the ENTIRE set into one 2.45 MB chunk even though the app
+    // imports only ~69 named icons (which also pushed that chunk past the
+    // service worker's precache size limit). This rewrites barrel imports to
+    // direct per-icon module paths at build time.
+    optimizePackageImports: ["@remixicon/react"],
+  },
   reactStrictMode: false,
   generateBuildId: async () => {
     try {
@@ -45,9 +53,8 @@ const nextConfig = {
       return "orderbookDefaultId";
     }
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // NOTE: Next 16 removed the `eslint` config key (and `next lint`). Linting is
+  // no longer part of `next build` at all — run `yarn lint` (eslint directly).
   env: {
     POLKADEX_CHAIN: process.env.POLKADEX_CHAIN,
     GOOGLE_ANALYTICS: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
@@ -93,6 +100,12 @@ const sentryWebpackPluginOptions = {
 
   // An auth token is required for uploading source maps.
   authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Don't serve source maps to users: Sentry gets them during upload (when an
+  // auth token is configured), then they're removed from the build output.
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
 
   silent: true, // Suppresses all logs
 

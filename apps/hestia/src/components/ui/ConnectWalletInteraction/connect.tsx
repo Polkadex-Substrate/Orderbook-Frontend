@@ -224,7 +224,7 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
             e.stopPropagation();
             setPage("ConnectTradingAccount");
           }}
-          loading={importFromFileStatus === "loading"}
+          loading={importFromFileStatus === "pending"}
         />
       </Interactable.Card>
 
@@ -239,7 +239,7 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
             e.stopPropagation();
             setPage("ConnectTradingAccount");
           }}
-          loading={importFromMnemonicStatus === "loading"}
+          loading={importFromMnemonicStatus === "pending"}
           errorMessage={
             (importFromMnemonicError as Error)?.message ??
             importFromMnemonicError

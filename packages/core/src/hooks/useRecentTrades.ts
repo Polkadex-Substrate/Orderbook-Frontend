@@ -4,13 +4,11 @@ import {
   PublicTrade,
   appsyncOrderbookService,
 } from "@orderbook/core/utils/orderbookService";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 
 import { QUERY_KEYS, RECENT_TRADES_LIMIT } from "../constants";
 import { getIsDecreasingArray } from "../helpers";
 
 export function useRecentTrades(market: string) {
-  const { onHandleError } = useSettingsProvider();
 
   const {
     data: recentTradesList,
@@ -24,11 +22,6 @@ export function useRecentTrades(market: string) {
         market,
         limit: RECENT_TRADES_LIMIT,
       }),
-    onError: (error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : (error as string);
-      onHandleError(errorMessage);
-    },
     refetchOnMount: false,
   });
 

@@ -7,11 +7,18 @@ import { State, WagmiProvider } from 'wagmi'
 
 if (!projectId) throw new Error('Project ID is not defined')
 
-createWeb3Modal({
-  wagmiConfig: config,
-  projectId,
-  enableAnalytics: true, // optional
-})
+// "use client" modules still EXECUTE on the server during prerender/SSG.
+// createWeb3Modal boots the WalletConnect core, whose key-value storage
+// probes indexedDB — undefined in Node, which spams the build with
+// "ReferenceError: indexedDB is not defined". The modal is browser-only,
+// so only initialize it there.
+if (typeof window !== 'undefined') {
+  createWeb3Modal({
+    wagmiConfig: config,
+    projectId,
+    enableAnalytics: true, // optional
+  })
+}
 
 export default function Web3ModalProvider({
   children,
