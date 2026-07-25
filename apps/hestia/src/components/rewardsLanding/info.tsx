@@ -1,4 +1,4 @@
-import { Button, Icon, Typography } from "@mitra/ux";
+import { Button, Icon, Typography } from "@mitrabook/ux";
 import Link from "next/link";
 import {
   RiArrowLeftRightLine,

@@ -6,7 +6,7 @@ import {
   Popover,
   Searchable,
   ScrollArea,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { useMeasure } from "react-use";

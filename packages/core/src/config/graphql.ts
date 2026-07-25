@@ -1,6 +1,6 @@
 /**
  * GraphQL Configuration Module
- * 
+ *
  * Manages GraphQL endpoint configuration with support for:
  * - Feature flag to toggle between AppSync and Rust backend
  * - Environment-based endpoint selection
@@ -18,23 +18,23 @@ export interface GraphQLConfig {
  * Get GraphQL configuration based on environment variables
  */
 export const getGraphQLConfig = (): GraphQLConfig => {
-  const useNewBackend = process.env.USE_NEW_BACKEND === 'true';
-  
+  const useNewBackend = process.env.USE_NEW_BACKEND === "true";
+
   if (useNewBackend) {
     // New Rust GraphQL backend
     return {
-      httpEndpoint: process.env.GRAPHQL_URL || 'http://localhost:8080/graphql',
-      wsEndpoint: process.env.GRAPHQL_WS_URL || 'ws://localhost:8080/ws',
+      httpEndpoint: process.env.GRAPHQL_URL || "http://localhost:8080/graphql",
+      wsEndpoint: process.env.GRAPHQL_WS_URL || "ws://localhost:8080/ws",
       useNewBackend: true,
-      readOnlyToken: process.env.READ_ONLY_TOKEN || 'READ_ONLY',
+      readOnlyToken: process.env.READ_ONLY_TOKEN || "READ_ONLY",
     };
   } else {
     // Legacy AppSync backend
     return {
-      httpEndpoint: process.env.GRAPHQL_URL || '',
-      wsEndpoint: '', // AppSync uses MQTT, not standard WebSocket
+      httpEndpoint: process.env.GRAPHQL_URL || "",
+      wsEndpoint: "", // AppSync uses MQTT, not standard WebSocket
       useNewBackend: false,
-      readOnlyToken: process.env.READ_ONLY_TOKEN || 'READ_ONLY',
+      readOnlyToken: process.env.READ_ONLY_TOKEN || "READ_ONLY",
     };
   }
 };
@@ -43,7 +43,7 @@ export const getGraphQLConfig = (): GraphQLConfig => {
  * Check if new backend is enabled
  */
 export const isNewBackendEnabled = (): boolean => {
-  return process.env.USE_NEW_BACKEND === 'true';
+  return process.env.USE_NEW_BACKEND === "true";
 };
 
 /**

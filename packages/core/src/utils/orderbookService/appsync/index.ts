@@ -1,14 +1,7 @@
-import { appsyncOperations } from "./writeStrategy";
-export * from "./readStrategy";
-export * from "./writeStrategy";
-export * from "./constants";
-
-// Export both subscription strategies
-export { appsyncSubscriptions } from "./subscriptionStrategy";
-export { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
-
-// Export factory function to get correct subscription strategy based on feature flag
 import { isNewBackendEnabled } from "../../../helpers";
+
+// Factory below picks the subscription strategy from the feature flag.
+import { appsyncOperations } from "./writeStrategy";
 import { appsyncReader } from "./readStrategy";
 import { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
 import { appsyncSubscriptions } from "./subscriptionStrategy";
@@ -18,6 +11,13 @@ import {
   OrderbookService,
   OrderbookSubscriptionStrategy,
 } from "./../interfaces";
+export * from "./readStrategy";
+export * from "./writeStrategy";
+export * from "./constants";
+
+// Export both subscription strategies
+export { appsyncSubscriptions } from "./subscriptionStrategy";
+export { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
 
 /**
  * Get the appropriate subscription strategy based on feature flag
@@ -25,10 +25,10 @@ import {
  */
 export function getSubscriptionStrategy() {
   if (isNewBackendEnabled()) {
-    console.log('[Subscriptions] Using new GraphQL WebSocket strategy');
+    console.log("[Subscriptions] Using new GraphQL WebSocket strategy");
     return new GraphQLWebSocketSubscriptions(appsyncReader);
   } else {
-    console.log('[Subscriptions] Using legacy AppSync MQTT strategy');
+    console.log("[Subscriptions] Using legacy AppSync MQTT strategy");
     return appsyncSubscriptions;
   }
 }

@@ -38,7 +38,7 @@ import {
   removeOrderFromList,
   replaceOrPushOrder,
 } from "@orderbook/core/utils/orderbookService/appsync/helpers";
-import { useExtensionAccounts } from "@mitra/react-providers";
+import { useExtensionAccounts } from "@aksumite/react-providers";
 
 import { UserAddressTuple, useProfile } from "../profile";
 import { useSettingsProvider } from "../../public/settings";

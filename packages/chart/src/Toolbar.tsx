@@ -46,7 +46,11 @@ export function Toolbar({
   return (
     <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-gray-800">
       {RESOLUTIONS.map((r) => (
-        <button key={r} className={btn(r === resolution)} onClick={() => onResolution(r)}>
+        <button
+          key={r}
+          className={btn(r === resolution)}
+          onClick={() => onResolution(r)}
+        >
           {RESOLUTION_LABELS[r]}
         </button>
       ))}

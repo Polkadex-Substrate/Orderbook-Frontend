@@ -16,7 +16,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import classNames from "classnames";
-import { Skeleton, Typography } from "@mitra/ux";
+import { Skeleton, Typography } from "@mitrabook/ux";
 
 import { columns } from "./columns";
 

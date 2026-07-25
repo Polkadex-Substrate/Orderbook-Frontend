@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover } from "@mitra/ux";
+import { Popover } from "@mitrabook/ux";
 import {
   TradeAccountType,
   useConnectWalletProvider,

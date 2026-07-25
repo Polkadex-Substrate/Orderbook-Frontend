@@ -1,6 +1,12 @@
 "use client";
 
-import { Button, Input, Token, TokenAppearance, Typography } from "@mitra/ux";
+import {
+  Button,
+  Input,
+  Token,
+  TokenAppearance,
+  Typography,
+} from "@mitrabook/ux";
 import {
   RiArrowDownSLine,
   RiArrowLeftRightLine,
@@ -13,7 +19,7 @@ import { useFormik } from "formik";
 import classNames from "classnames";
 import { bridgeValidations } from "@orderbook/core/validations";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
-import { useExtensionAccounts } from "@mitra/react-providers";
+import { useExtensionAccounts } from "@aksumite/react-providers";
 
 import { useBridgeProvider } from "../BridgeProvider";
 import { SelectAsset } from "../selectAsset";

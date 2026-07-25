@@ -1,6 +1,6 @@
 "use client";
 
-import { Icons, Skeleton, Typography } from "@mitra/ux";
+import { Icons, Skeleton, Typography } from "@mitrabook/ux";
 import { PropsWithChildren } from "react";
 export const InlineAccountCard = ({
   icon,

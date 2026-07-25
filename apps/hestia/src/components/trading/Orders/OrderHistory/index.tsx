@@ -15,7 +15,7 @@ import {
   GenericMessage,
   Table as PolkadexTable,
   Spinner,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { useOrderHistory } from "@orderbook/core/hooks";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { DEFAULT_BATCH_LIMIT } from "@orderbook/core/constants";

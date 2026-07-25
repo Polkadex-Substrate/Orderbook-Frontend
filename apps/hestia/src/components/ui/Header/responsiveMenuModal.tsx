@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction } from "react";
-import { Button, Modal, Typography } from "@mitra/ux";
+import { Button, Modal, Typography } from "@mitrabook/ux";
 import Image from "next/image";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { useWindowSize } from "usehooks-ts";

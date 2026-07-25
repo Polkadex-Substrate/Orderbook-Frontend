@@ -1,6 +1,12 @@
 "use client";
 
-import { Interaction, Modal, Searchable, Skeleton, TokenCard } from "@mitra/ux";
+import {
+  Interaction,
+  Modal,
+  Searchable,
+  Skeleton,
+  TokenCard,
+} from "@mitrabook/ux";
 import { SetStateAction, Dispatch, useCallback, ComponentProps } from "react";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";

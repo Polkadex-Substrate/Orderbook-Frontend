@@ -1,4 +1,4 @@
-import { Button, Icon, Popover, Typography } from "@mitra/ux";
+import { Button, Icon, Popover, Typography } from "@mitrabook/ux";
 import { Table } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useMemo } from "react";

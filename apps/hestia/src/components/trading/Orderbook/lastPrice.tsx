@@ -1,4 +1,4 @@
-import { Skeleton, Typography } from "@mitra/ux";
+import { Skeleton, Typography } from "@mitrabook/ux";
 import { RiArrowDownLine, RiArrowUpLine } from "@remixicon/react";
 import classNames from "classnames";
 import { useProfile } from "@orderbook/core/providers/user/profile";

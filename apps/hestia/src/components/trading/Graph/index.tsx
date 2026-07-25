@@ -4,7 +4,7 @@
 
 // import dynamic from "next/dynamic";
 // import Script from "next/script";
-// import { Tabs } from "@mitra/ux";
+// import { Tabs } from "@mitrabook/ux";
 
 // import { Header } from "./header";
 // import { useTradingView } from "./useTradingView";

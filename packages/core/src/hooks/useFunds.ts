@@ -106,7 +106,7 @@ export function useFunds() {
     balances,
     loading: Boolean(
       (isTradingBalanceLoading || isOnChainBalanceLoading) &&
-        mainAddress?.length
+      mainAddress?.length
     ),
     success: isTradingBalanceSuccess || isOnChainBalanceSuccess,
     getFreeProxyBalance,

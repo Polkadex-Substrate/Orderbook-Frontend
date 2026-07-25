@@ -1,4 +1,4 @@
-import { Drawer, Token, Typography } from "@mitra/ux";
+import { Drawer, Token, Typography } from "@mitrabook/ux";
 import { Dispatch, SetStateAction, useMemo } from "react";
 import { GENESIS } from "@orderbook/core/index";
 

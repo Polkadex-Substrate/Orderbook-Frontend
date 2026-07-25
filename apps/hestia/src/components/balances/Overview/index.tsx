@@ -1,5 +1,5 @@
 "use client";
-import { HoverCard, Typography } from "@mitra/ux";
+import { HoverCard, Typography } from "@mitrabook/ux";
 import { useState } from "react";
 import { RiEyeOffLine, RiEyeLine } from "@remixicon/react";
 

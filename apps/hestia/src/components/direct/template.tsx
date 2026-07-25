@@ -1,6 +1,6 @@
 "use client";
 
-import { GenericMessage, Tabs } from "@mitra/ux";
+import { GenericMessage, Tabs } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useMemo, useState } from "react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";

@@ -5,7 +5,7 @@ import {
   Typography,
   Illustrations,
   Interaction,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { TradeAccount } from "@orderbook/core/providers/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

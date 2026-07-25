@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Chain, Button, Dropdown } from "@mitra/ux";
+import { Typography, Chain, Button, Dropdown } from "@mitrabook/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { useMeasure } from "react-use";
 

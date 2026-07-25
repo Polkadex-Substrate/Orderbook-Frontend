@@ -1,5 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { Typography, Token, tokenAppearance } from "@mitra/ux";
+import { Typography, Token, tokenAppearance } from "@mitrabook/ux";
 import { AssetsProps } from "@orderbook/core/hooks";
 import { getChainFromTicker } from "@orderbook/core/helpers";
 

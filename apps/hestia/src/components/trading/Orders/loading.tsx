@@ -1,5 +1,5 @@
 // TODO: Use SkeletonCollection component
-import { Skeleton } from "@mitra/ux";
+import { Skeleton } from "@mitrabook/ux";
 
 export const Loading = () => {
   return (

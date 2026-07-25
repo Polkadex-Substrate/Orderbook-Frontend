@@ -4,8 +4,8 @@ import {
   RiShutDownLine,
   RiSettings3Fill,
 } from "@remixicon/react";
-import { ExtensionAccount } from "@mitra/react-providers";
-import { Button, Typography, PopConfirm } from "@mitra/ux";
+import { ExtensionAccount } from "@aksumite/react-providers";
+import { Button, Typography, PopConfirm } from "@mitrabook/ux";
 
 import { AccountCard } from "../ReadyToUse";
 

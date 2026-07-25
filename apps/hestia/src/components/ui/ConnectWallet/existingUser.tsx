@@ -4,13 +4,13 @@ import {
   Illustrations,
   Interaction,
   Separator,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import classNames from "classnames";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { RiArrowRightSLine } from "@remixicon/react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { TradeAccount } from "@orderbook/core/providers/types";
-import { ExtensionAccount } from "@mitra/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { GenericHorizontalCard, TradingAccountCard } from "../ReadyToUse";
 

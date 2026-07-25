@@ -1,5 +1,5 @@
 import { UseQueryResult, useMutation } from "@tanstack/react-query";
-import { GDriveExternalAccountStore } from "@mitra/local-wallets";
+import { GDriveExternalAccountStore } from "@aksumite/local-wallets";
 import { Dispatch, SetStateAction } from "react";
 
 import { sleep } from "../helpers";

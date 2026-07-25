@@ -56,7 +56,7 @@ export const INDEXER_GETTERS = {
       offset,
     };
 
-    const response = await fetch(url || 'https://sq-indexer.polkadex.ee', {
+    const response = await fetch(url || "https://sq-indexer.polkadex.ee", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,4 +1,9 @@
-import { Accordion, Typography, Illustrations, Interaction } from "@mitra/ux";
+import {
+  Accordion,
+  Typography,
+  Illustrations,
+  Interaction,
+} from "@mitrabook/ux";
 import { MouseEvent } from "react";
 import { TradeAccount } from "@orderbook/core/providers/types";
 

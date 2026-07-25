@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Tabs, Carousel, HoverCard, Skeleton } from "@mitra/ux";
+import { Typography, Tabs, Carousel, HoverCard, Skeleton } from "@mitrabook/ux";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {

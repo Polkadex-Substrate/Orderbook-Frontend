@@ -4,7 +4,7 @@ import {
   getCurrentMarket,
   mergeDuplicateOrders,
 } from "@orderbook/core/helpers";
-import { trimFloat } from "@mitra/numericals";
+import { trimFloat } from "@aksumite/numericals";
 import { useQuery } from "@tanstack/react-query";
 import {
   MAX_DIGITS_AFTER_DECIMAL,
@@ -97,13 +97,10 @@ export function useOrderbook(defaultMarket: string) {
   useEffect(() => {
     // Generate array from 1 to (pricePrecision + 1) & take last 5 elements only
     setInitialState(
-      Array.from(
-        { length: pricePrecision + 1 },
-        (_, i): DecimalSize => ({
-          size: 1 / Math.pow(10, i + 1),
-          length: i + 1,
-        })
-      ).slice(-5)
+      Array.from({ length: pricePrecision + 1 }, (_, i): DecimalSize => ({
+        size: 1 / Math.pow(10, i + 1),
+        length: i + 1,
+      })).slice(-5)
     );
   }, [pricePrecision]);
 

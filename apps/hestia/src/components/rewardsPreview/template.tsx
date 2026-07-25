@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Typography } from "@mitra/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import { useResizeObserver } from "usehooks-ts";
 import { useMemo, useRef } from "react";
 import { RiExternalLinkLine } from "@remixicon/react";

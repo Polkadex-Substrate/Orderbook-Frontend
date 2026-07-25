@@ -19,10 +19,10 @@ export const useOnChainBalances = () => {
 
   const shouldFetchChainBalance = Boolean(
     mainAddress &&
-      mainAddress?.length > 0 &&
-      api?.isConnected &&
-      connected &&
-      isReady
+    mainAddress?.length > 0 &&
+    api?.isConnected &&
+    connected &&
+    isReady
   );
 
   const {

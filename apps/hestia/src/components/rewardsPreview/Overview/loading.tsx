@@ -1,4 +1,4 @@
-import { Skeleton } from "@mitra/ux";
+import { Skeleton } from "@mitrabook/ux";
 
 export const MarketSkeleton = () => {
   return (

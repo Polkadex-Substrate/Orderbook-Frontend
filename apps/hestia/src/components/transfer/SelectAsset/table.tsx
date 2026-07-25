@@ -1,4 +1,8 @@
-import { GenericMessage, Table as PolkadexTable, Skeleton } from "@mitra/ux";
+import {
+  GenericMessage,
+  Table as PolkadexTable,
+  Skeleton,
+} from "@mitrabook/ux";
 import { Fragment, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {

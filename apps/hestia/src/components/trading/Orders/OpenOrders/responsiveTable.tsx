@@ -1,4 +1,4 @@
-import { Copy, Drawer, Typography, truncateString } from "@mitra/ux";
+import { Copy, Drawer, Typography, truncateString } from "@mitrabook/ux";
 import { Dispatch, SetStateAction } from "react";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 import { CancelOrderArgs } from "@orderbook/core/hooks";

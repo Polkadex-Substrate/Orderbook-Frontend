@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Popover, Tooltip } from "@mitra/ux";
+import { Button, Popover, Tooltip } from "@mitrabook/ux";
 import { useMemo } from "react";
 import Link from "next/link";
 import {

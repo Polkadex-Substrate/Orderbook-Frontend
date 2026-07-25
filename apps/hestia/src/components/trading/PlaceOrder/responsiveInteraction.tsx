@@ -1,4 +1,4 @@
-import { Button, Drawer } from "@mitra/ux";
+import { Button, Drawer } from "@mitrabook/ux";
 import { Fragment, useEffect, useState, forwardRef } from "react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { Market } from "@orderbook/core/utils/orderbookService/types";

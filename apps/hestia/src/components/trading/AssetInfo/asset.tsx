@@ -7,7 +7,7 @@ import {
   Skeleton,
   Token,
   tokenAppearance,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import classNames from "classnames";
 import Link from "next/link";
 import { RiArrowDownSLine } from "@remixicon/react";

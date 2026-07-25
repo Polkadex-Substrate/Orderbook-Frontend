@@ -1,17 +1,8 @@
 # ============================================================================
-# OFE (apps/hestia) production image.
-#
-# IMPORTANT — BUILD CONTEXT IS THE PARENT DIRECTORY (`mainnet/`), NOT THIS REPO.
-# apps/hestia depends on @mitra/* via `file:../../../mitra-ts/packages/*`, which
-# resolves OUTSIDE this repository. A build context rooted here cannot see
-# those packages and `yarn install` fails. Build with:
-#
-#   cd mainnet
-#   docker build -f Polkadex-Orderbook-Frontend/Dockerfile -t ofe:latest .
-#
-# (docker-compose.yml in this repo already sets `context: ..` accordingly.)
-# Once @mitra/* is published to npm and the file: deps become semver ranges,
-# the context can move back to this repo and the mitra-ts COPY lines dropped.
+# OFE (apps/hestia) production image. The @aksumite/* and @mitrabook/*
+# libraries are consumed from npm, so a plain `docker build .` is all that's
+# needed. (packages/mitra/ holds their SOURCE and is not part of the build —
+# see packages/mitra/MIGRATION.md.)
 # ============================================================================
 
 # ============================================
@@ -21,20 +12,14 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# The @mitra/* libraries. yarn COPIES file: deps at install time, so their
-# built output (dist/, lib/) must already exist — see DEPLOYMENT.md.
-COPY mitra-ts /mitra-ts
-
 # Workspace manifests needed for dependency resolution
-COPY Polkadex-Orderbook-Frontend/package.json \
-     Polkadex-Orderbook-Frontend/yarn.lock \
-     Polkadex-Orderbook-Frontend/.npmrc ./
-COPY Polkadex-Orderbook-Frontend/apps/hestia/package.json ./apps/hestia/
-COPY Polkadex-Orderbook-Frontend/packages/core/package.json ./packages/core/
-COPY Polkadex-Orderbook-Frontend/packages/chart/package.json ./packages/chart/
-COPY Polkadex-Orderbook-Frontend/packages/eslint-config/package.json ./packages/eslint-config/
-COPY Polkadex-Orderbook-Frontend/packages/format/package.json ./packages/format/
-COPY Polkadex-Orderbook-Frontend/packages/tsconfig/package.json ./packages/tsconfig/
+COPY package.json yarn.lock .npmrc ./
+COPY apps/hestia/package.json ./apps/hestia/
+COPY packages/core/package.json ./packages/core/
+COPY packages/chart/package.json ./packages/chart/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/format/package.json ./packages/format/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
 
 RUN yarn install --frozen-lockfile
 
@@ -45,8 +30,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /mitra-ts /mitra-ts
-COPY Polkadex-Orderbook-Frontend/. .
+COPY . .
 
 # ── Build-time environment ──────────────────────────────────────────────
 # NEXT_PUBLIC_* values are BAKED INTO THE BROWSER BUNDLE here. They cannot be

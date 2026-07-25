@@ -1,7 +1,7 @@
 // TODO: Fix FilterGroup - @polkadex/ux
 "use client";
 
-import { FilterGroup, Typography } from "@mitra/ux";
+import { FilterGroup, Typography } from "@mitrabook/ux";
 import { Column } from "@tanstack/react-table";
 import classNames from "classnames";
 
@@ -26,7 +26,7 @@ export const FacetedFilter = <TData, TValue>({
   return (
     <FilterGroup>
       {/* eslint-disable-next-line */}
-        {/* @ts-ignore */}
+      {/* @ts-ignore */}
       <FilterGroup.Root>
         <FilterGroup.Trigger
           className={classNames(withoutBorder && "border-0")}
@@ -53,7 +53,7 @@ export const FacetedFilter = <TData, TValue>({
         </FilterGroup.Trigger>
       </FilterGroup.Root>
       {/* eslint-disable-next-line */}
-        {/* @ts-ignore */}
+      {/* @ts-ignore */}
       <FilterGroup.Content>
         {values.map((v) => {
           const isSelected = selectedValues.has(v);

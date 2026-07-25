@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import { Typography } from "@mitra/ux";
+import { Typography } from "@mitrabook/ux";
 
 export const MnemonicCard = ({
   position,

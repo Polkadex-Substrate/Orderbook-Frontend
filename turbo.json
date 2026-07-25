@@ -1,10 +1,19 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "lib/**"
+      ],
       "env": [
         "POLKADEX_CHAIN",
         "GOOGLE_ANALYTICS",
@@ -42,12 +51,25 @@
         "NEXT_PUBLIC_GA_MEASUREMENT_ID",
         "NEXT_PUBLIC_ANALYZE",
         "NEXT_PUBLIC_SERVER_BASE_URL",
-        "NEXT_PUBLIC_GATEWAY_SECRET"
+        "NEXT_PUBLIC_GATEWAY_SECRET",
+        "NEXT_PUBLIC_PROJECT_ID",
+        "NEXT_PUBLIC_NATIVE_CHART",
+        "NEXT_PUBLIC_SUBQUERY_URL",
+        "NEXT_PUBLIC_ENABLE_FAUCET",
+        "NEXT_PUBLIC_FAUCET_URL",
+        "NEXT_PUBLIC_FAUCET_API_KEY",
+        "NEXT_PUBLIC_BRIDGE_DESTINATION_RPC_URL",
+        "NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL",
+        "NEXT_PUBLIC_BRIDGE_ISMP_HOST",
+        "NEXT_PUBLIC_BRIDGE_INDEXER_URL",
+        "NEXT_PUBLIC_POLKADEX_STATE_MACHINE"
       ]
     },
     "lint": {},
     "dev": {
-      "dependsOn": ["generate"],
+      "dependsOn": [
+        "generate"
+      ],
       "cache": false,
       "persistent": true,
       "env": [

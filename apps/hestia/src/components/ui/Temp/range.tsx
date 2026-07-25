@@ -1,4 +1,4 @@
-import { Button } from "@mitra/ux";
+import { Button } from "@mitrabook/ux";
 
 interface RangeProps {
   ranges: {

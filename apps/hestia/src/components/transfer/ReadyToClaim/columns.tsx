@@ -1,5 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { Tokens, Tooltip, Typography, truncateString } from "@mitra/ux";
+import { Tokens, Tooltip, Typography, truncateString } from "@mitrabook/ux";
 import { getChainFromTicker } from "@orderbook/core/helpers";
 import { RiArrowRightLine } from "@remixicon/react";
 

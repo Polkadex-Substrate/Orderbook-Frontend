@@ -1,7 +1,7 @@
 "use client";
 
 import { getChainFromTicker } from "@orderbook/core/helpers";
-import { Button, Dropdown, Icons, Typography } from "@mitra/ux";
+import { Button, Dropdown, Icons, Typography } from "@mitrabook/ux";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
 

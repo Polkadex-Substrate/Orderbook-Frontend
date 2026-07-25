@@ -81,11 +81,11 @@
     "styled-system": "^5.1.5",
     "yarn": "^1.22.19",
     "yup": "^0.32.9",
-    "@mitra/local-wallets": "file:../../../mitra-ts/packages/local-wallets",
-    "@mitra/polkadex-api": "file:../../../mitra-ts/packages/polkadex-api",
-    "@mitra/react-providers": "file:../../../mitra-ts/packages/react-providers",
-    "@mitra/thea": "file:../../../mitra-ts/packages/thea",
-    "@mitra/utils": "file:../../../mitra-ts/packages/utils"
+    "@aksumite/local-wallets": "^1.0.0",
+    "@aksumite/chain-api": "^1.0.0",
+    "@aksumite/react-providers": "^1.0.0",
+    "@aksumite/bridge": "^1.0.0",
+    "@aksumite/utils": "^1.0.0"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^14.2.1",

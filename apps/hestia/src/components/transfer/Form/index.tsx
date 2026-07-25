@@ -9,7 +9,7 @@ import {
   Tooltip,
   Modal,
   Spinner,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import {
   Fragment,
   MouseEvent,
@@ -49,7 +49,7 @@ import {
   useTransactionFeeModal,
   useWithdraw,
 } from "@orderbook/core/hooks";
-import { ExtensionAccount } from "@mitra/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { FromFunding } from "./fromFunding";
 import { FromTrading } from "./FromTrading";

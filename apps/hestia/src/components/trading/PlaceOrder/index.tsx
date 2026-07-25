@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Tabs } from "@mitra/ux";
+import { Tabs } from "@mitrabook/ux";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";

@@ -1,4 +1,4 @@
-import { Icons, Typography } from "@mitra/ux";
+import { Icons, Typography } from "@mitrabook/ux";
 
 export const AccountCard = ({ address }: { address: string }) => {
   return (

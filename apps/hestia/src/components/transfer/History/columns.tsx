@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Transaction } from "@orderbook/core/utils/orderbookService";
-import { Tokens, Typography, truncateString } from "@mitra/ux";
+import { Tokens, Typography, truncateString } from "@mitrabook/ux";
 import { intlFormat } from "date-fns";
 import Link from "next/link";
 import { getChainFromTicker } from "@orderbook/core/helpers";

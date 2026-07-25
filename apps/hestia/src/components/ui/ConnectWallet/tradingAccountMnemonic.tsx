@@ -1,4 +1,4 @@
-import { Typography, Illustrations, Interaction } from "@mitra/ux";
+import { Typography, Illustrations, Interaction } from "@mitrabook/ux";
 import { MouseEvent, useState } from "react";
 
 import { MnemonicCard } from "../ReadyToUse";

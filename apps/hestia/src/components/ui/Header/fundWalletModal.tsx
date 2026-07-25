@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction } from "react";
-import { Button, Modal, Typography } from "@mitra/ux";
+import { Button, Modal, Typography } from "@mitrabook/ux";
 import { RiCloseLine } from "@remixicon/react";
 import Link from "next/link";
 

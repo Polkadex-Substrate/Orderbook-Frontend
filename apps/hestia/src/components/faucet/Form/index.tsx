@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Input, Typography } from "@mitra/ux";
+import { Button, Input, Typography } from "@mitrabook/ux";
 import { RiLoader2Line } from "@remixicon/react";
 import { useEffect, useMemo, useState } from "react";
 import { useFormik } from "formik";

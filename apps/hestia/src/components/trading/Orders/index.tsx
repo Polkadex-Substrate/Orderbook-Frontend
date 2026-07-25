@@ -8,7 +8,7 @@ import {
   RangeKeyDict,
   defaultStaticRanges,
 } from "react-date-range";
-import { Button, Tabs, Checkbox, Popover, ScrollArea } from "@mitra/ux";
+import { Button, Tabs, Checkbox, Popover, ScrollArea } from "@mitrabook/ux";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useOpenOrders } from "@orderbook/core/hooks";
 import { Ifilters } from "@orderbook/core/providers/types";

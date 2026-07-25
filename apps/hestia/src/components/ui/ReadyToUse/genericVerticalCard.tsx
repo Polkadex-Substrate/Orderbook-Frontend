@@ -1,7 +1,7 @@
 import classNames from "classnames";
 import { PropsWithChildren } from "react";
-import { Icon, Loading, Typography } from "@mitra/ux";
-import type { IconsProps } from "@mitra/ux";
+import { Icon, Loading, Typography } from "@mitrabook/ux";
+import type { IconsProps } from "@mitrabook/ux";
 
 export const GenericVerticalCard = ({
   title,

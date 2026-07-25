@@ -1,4 +1,4 @@
-import { Typography, TokenAppearance, Token } from "@mitra/ux";
+import { Typography, TokenAppearance, Token } from "@mitrabook/ux";
 import classNames from "classnames";
 
 export const TokenInfo = ({

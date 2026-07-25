@@ -1,4 +1,4 @@
-import { Token, Tokens, Typography, tokenAppearance } from "@mitra/ux";
+import { Token, Tokens, Typography, tokenAppearance } from "@mitrabook/ux";
 export const MarketCard = ({
   icon,
   marketName,

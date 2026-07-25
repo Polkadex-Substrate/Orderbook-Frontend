@@ -19,9 +19,7 @@ export interface UserSessionError {
 }
 
 export type SessionAction =
-  | UserSessionFetch
-  | UserSessionData
-  | UserSessionError;
+  UserSessionFetch | UserSessionData | UserSessionError;
 
 export const userSessionFetch = (): UserSessionFetch => ({
   type: SESSION_FETCH,

@@ -1,5 +1,5 @@
 import { RiMore2Line } from "@remixicon/react";
-import { Button, Dropdown, Typography } from "@mitra/ux";
+import { Button, Dropdown, Typography } from "@mitrabook/ux";
 import Link, { LinkProps } from "next/link";
 
 export const ActionsCard = ({

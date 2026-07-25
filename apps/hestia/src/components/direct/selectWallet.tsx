@@ -4,7 +4,7 @@ import {
   ExtensionAccount,
   useExtensionAccounts,
   useExtensions,
-} from "@mitra/react-providers";
+} from "@aksumite/react-providers";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import { useMemo, useState } from "react";
 import { RiCheckLine, RiWalletLine } from "@remixicon/react";
@@ -18,7 +18,7 @@ import {
   ProviderCard,
   truncateNames,
   truncateString,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import classNames from "classnames";
 
 const ExtensionsArrayWhitelist = ExtensionsArray?.filter(

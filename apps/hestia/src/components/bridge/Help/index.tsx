@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@mitra/ux";
+import { Button } from "@mitrabook/ux";
 import { forwardRef } from "react";
 import { RiBookOpenLine, RiFeedbackLine } from "@remixicon/react";
 

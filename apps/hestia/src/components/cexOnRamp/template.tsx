@@ -2,7 +2,7 @@
 
 import { renderSendWidget } from "@cedelabs/widgets-universal";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
-import { Typography } from "@mitra/ux";
+import { Typography } from "@mitrabook/ux";
 import { RiInformation2Line } from "@remixicon/react";
 import { useEffect, useMemo, useRef } from "react";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";

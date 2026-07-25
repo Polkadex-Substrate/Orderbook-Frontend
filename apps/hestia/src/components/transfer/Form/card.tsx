@@ -1,6 +1,6 @@
 "use client";
 
-import { Dropdown, Typography } from "@mitra/ux";
+import { Dropdown, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import { PropsWithChildren, useRef } from "react";
 import { useResizeObserver } from "usehooks-ts";

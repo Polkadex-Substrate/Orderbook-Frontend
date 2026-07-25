@@ -6,7 +6,7 @@ import {
   Illustrations,
   GenericMessage,
   Table as PolkadexTable,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { RiCloseLine } from "@remixicon/react";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import {

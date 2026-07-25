@@ -4,7 +4,7 @@ import {
   ExtensionAccount,
   useTransactionManager,
   useUserAccounts,
-} from "@mitra/react-providers";
+} from "@aksumite/react-providers";
 import {
   enabledFeatures,
   getAddressFromMnemonic,

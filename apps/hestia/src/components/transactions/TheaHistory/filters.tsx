@@ -11,13 +11,13 @@ export const filters = {
 
 // ─── Original implementation (reference for HyperbridgeHistory) ──────────────
 /*
-import { Button, Icon, Popover, Typography } from "@mitra/ux";
+import { Button, Icon, Popover, Typography } from "@mitrabook/ux";
 import { Table } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useMemo } from "react";
 import { useWindowSize } from "usehooks-ts";
 import { RiMore2Line, RiCloseLine, RiRefreshLine } from "@remixicon/react";
-import { Asset, Chain } from "@mitra/thea";
+import { Asset, Chain } from "@aksumite/bridge";
 
 import { FacetedFilter } from "../facetedFilters";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography } from "@mitra/ux";
+import { Typography } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useMemo } from "react";
 import { RiDropLine } from "@remixicon/react";

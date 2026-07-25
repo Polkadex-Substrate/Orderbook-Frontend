@@ -4,11 +4,13 @@
 import { API as amplifyApi } from "aws-amplify";
 import { GRAPHQL_AUTH_MODE } from "@aws-amplify/auth";
 import { READ_ONLY_TOKEN } from "@orderbook/core/constants";
-import { Maybe } from "@orderbook/core/helpers";
+import {
+  Maybe,
+  isNewBackendEnabled,
+  sendQuery as sendQueryNew,
+  sendMutation as sendMutationNew,
+} from "@orderbook/core/helpers";
 import { GraphQLResult, GraphQLSubscription } from "@aws-amplify/api";
-
-// Import new GraphQL infrastructure
-import { isNewBackendEnabled, sendQuery as sendQueryNew, sendMutation as sendMutationNew } from "@orderbook/core/helpers";
 
 import { Websocket_streamsSubscription } from "../../../API";
 
@@ -41,9 +43,13 @@ export async function sendQueryToAppSync<T = any>({
     const isMutation = /^mutation[\s({]/i.test(trimmed);
 
     if (isMutation) {
-      return await sendMutationNew({ mutation: query, variables, token }) as T;
+      return (await sendMutationNew({
+        mutation: query,
+        variables,
+        token,
+      })) as T;
     }
-    return await sendQueryNew({ query, variables, token }) as T;
+    return (await sendQueryNew({ query, variables, token })) as T;
   }
 
   // Legacy AppSync implementation
@@ -120,22 +126,18 @@ export const convertBookUpdatesToPriceLevels = (
   data: BookUpdateEvent
 ): PriceLevel[] => {
   const { b, a } = data;
-  const bids = Object.entries(b).map(
-    ([p, q]): PriceLevel => ({
-      side: "Bid",
-      price: Number(p),
-      qty: Number(q),
-      seqNum: data.i,
-    })
-  );
-  const asks = Object.entries(a).map(
-    ([p, q]): PriceLevel => ({
-      side: "Ask",
-      price: Number(p),
-      qty: Number(q),
-      seqNum: data.i,
-    })
-  );
+  const bids = Object.entries(b).map(([p, q]): PriceLevel => ({
+    side: "Bid",
+    price: Number(p),
+    qty: Number(q),
+    seqNum: data.i,
+  }));
+  const asks = Object.entries(a).map(([p, q]): PriceLevel => ({
+    side: "Ask",
+    price: Number(p),
+    qty: Number(q),
+    seqNum: data.i,
+  }));
   return [...bids, ...asks];
 };
 

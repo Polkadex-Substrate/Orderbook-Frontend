@@ -1,4 +1,4 @@
-import { Button, Drawer, Tokens } from "@mitra/ux";
+import { Button, Drawer, Tokens } from "@mitrabook/ux";
 import { Dispatch, SetStateAction } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import Link from "next/link";

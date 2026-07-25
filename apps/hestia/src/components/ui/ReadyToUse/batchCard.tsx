@@ -1,4 +1,4 @@
-import { Token, Tokens, Typography } from "@mitra/ux";
+import { Token, Tokens, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 
 type Icon = keyof typeof Tokens;

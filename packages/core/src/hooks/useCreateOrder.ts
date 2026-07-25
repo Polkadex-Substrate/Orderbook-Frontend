@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useUserAccounts } from "@mitra/react-providers";
+import { useUserAccounts } from "@aksumite/react-providers";
 import {
   createOrderPayload,
   createOrderSigningPayload,

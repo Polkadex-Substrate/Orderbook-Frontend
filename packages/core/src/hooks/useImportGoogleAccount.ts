@@ -1,5 +1,5 @@
 import { UseQueryResult, useMutation } from "@tanstack/react-query";
-import { useUserAccounts } from "@mitra/react-providers";
+import { useUserAccounts } from "@aksumite/react-providers";
 import { KeyringPair } from "@polkadot/keyring/types";
 
 import { sleep } from "../helpers";

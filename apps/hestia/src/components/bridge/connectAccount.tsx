@@ -6,13 +6,13 @@ import {
   useInteractableProvider,
   ConnectWallet,
   ExtensionAccounts,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import {
   ExtensionAccount,
   useExtensionAccounts,
   useExtensions,
-} from "@mitra/react-providers";
+} from "@aksumite/react-providers";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 
 type Extension = (typeof ExtensionsArray)[0] | null;

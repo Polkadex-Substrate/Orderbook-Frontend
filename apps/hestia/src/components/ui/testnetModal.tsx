@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Checkbox, Modal, Separator, Typography } from "@mitra/ux";
+import { Button, Checkbox, Modal, Separator, Typography } from "@mitrabook/ux";
 import { RiFlaskLine } from "@remixicon/react";
 
 const SESSION_KEY = "testnet-notice-acknowledged";

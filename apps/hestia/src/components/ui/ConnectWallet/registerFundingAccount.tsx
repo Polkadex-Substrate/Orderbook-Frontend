@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExtensionAccount } from "@mitra/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 import {
   AddProxyAccountArgs,
   useCall,

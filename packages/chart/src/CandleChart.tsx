@@ -328,7 +328,10 @@ export function CandleChart({
         emaSeriesRef.current.set(period, series);
       }
       series.setData(
-        ema(candles, period).map((p) => ({ time: sec(p.time), value: p.value }))
+        ema(candles, period).map((p) => ({
+          time: sec(p.time),
+          value: p.value,
+        }))
       );
     });
 

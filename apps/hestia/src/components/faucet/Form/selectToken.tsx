@@ -6,7 +6,7 @@ import {
   TokenAppearance,
   Button,
   Dropdown,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { PropsWithChildren } from "react";
 import { useMeasure } from "react-use";

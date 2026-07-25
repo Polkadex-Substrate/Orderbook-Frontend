@@ -27,9 +27,9 @@ export const useTheaTransactions = (_params: any) =>
 /*
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { PolkadexChainQuery } from "@mitra/subscan";
-import { toUnit } from "@mitra/numericals";
-import { Asset, Chain } from "@mitra/thea";
+import { PolkadexChainQuery } from "@aksumite/subscan";
+import { toUnit } from "@aksumite/numericals";
+import { Asset, Chain } from "@aksumite/bridge";
 import { GENESIS, QUERY_KEYS } from "@orderbook/core/constants";
 import { defaultConfig } from "@orderbook/core/config";
 

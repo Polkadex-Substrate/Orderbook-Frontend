@@ -4,7 +4,7 @@ import {
   useOrderbook,
 } from "@orderbook/core/index";
 import classNames from "classnames";
-import { Skeleton, Typography } from "@mitra/ux";
+import { Skeleton, Typography } from "@mitrabook/ux";
 
 import { Header } from "./header";
 import { LastPrice } from "./lastPrice";

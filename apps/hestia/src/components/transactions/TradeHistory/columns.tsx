@@ -1,6 +1,6 @@
 import { Trade } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Copy, Tooltip, Typography, truncateString } from "@mitra/ux";
+import { Copy, Tooltip, Typography, truncateString } from "@mitrabook/ux";
 import { RiFileCopyLine } from "@remixicon/react";
 
 import { filters } from "./filters";

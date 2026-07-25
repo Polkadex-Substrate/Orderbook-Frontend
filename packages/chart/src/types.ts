@@ -11,7 +11,16 @@ export type Candle = {
 };
 
 /** Supported resolutions, in the same notation @orderbook/core understands. */
-export const RESOLUTIONS = ["1", "5", "15", "30", "60", "240", "1D", "1W"] as const;
+export const RESOLUTIONS = [
+  "1",
+  "5",
+  "15",
+  "30",
+  "60",
+  "240",
+  "1D",
+  "1W",
+] as const;
 export type Resolution = (typeof RESOLUTIONS)[number];
 
 export const RESOLUTION_LABELS: Record<Resolution, string> = {

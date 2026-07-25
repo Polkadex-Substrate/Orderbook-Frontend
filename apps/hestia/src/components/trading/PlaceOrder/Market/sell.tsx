@@ -2,7 +2,7 @@
 
 import classNames from "classnames";
 import { useFormik } from "formik";
-import { Button, Input, Spinner, Typography } from "@mitra/ux";
+import { Button, Input, Spinner, Typography } from "@mitrabook/ux";
 import { Market, Ticker } from "@orderbook/core/utils/orderbookService/types";
 import { useMarketOrder } from "@orderbook/core/hooks";
 import { marketOrderValidations } from "@orderbook/core/validations";

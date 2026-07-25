@@ -7,7 +7,7 @@ import {
   signPayload,
   isValidAddress,
 } from "@orderbook/core/helpers";
-import { useUserAccounts } from "@mitra/react-providers";
+import { useUserAccounts } from "@aksumite/react-providers";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { Codec } from "@polkadot/types/types";
 

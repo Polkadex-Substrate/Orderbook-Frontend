@@ -1,10 +1,8 @@
 services:
   orderbook-fe:
     build:
-      # Parent dir: apps/hestia's @mitra/* deps are file: paths into
-      # ../mitra-ts, outside this repo. See the Dockerfile header.
-      context: ..
-      dockerfile: Polkadex-Orderbook-Frontend/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       args:
         - POLKADEX_CHAIN=${POLKADEX_CHAIN}
         - GOOGLE_ANALYTICS=${GOOGLE_ANALYTICS}

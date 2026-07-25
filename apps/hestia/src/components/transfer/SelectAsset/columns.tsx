@@ -1,6 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { AssetsProps } from "@orderbook/core/hooks";
-import { Tokens, Typography } from "@mitra/ux";
+import { Tokens, Typography } from "@mitrabook/ux";
 
 import { TokenCard } from "@/components/ui/ReadyToUse";
 import { AmountCard } from "@/components/ui/ReadyToUse/amountCard";

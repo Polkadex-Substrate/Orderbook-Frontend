@@ -1,5 +1,5 @@
-import { Interaction } from "@mitra/ux";
-import { ExtensionAccount } from "@mitra/react-providers";
+import { Interaction } from "@mitrabook/ux";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { GenericHorizontalCard } from "../ReadyToUse";
 

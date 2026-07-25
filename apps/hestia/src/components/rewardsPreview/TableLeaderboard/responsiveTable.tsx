@@ -1,7 +1,7 @@
 import { LmpLeaderboard } from "@orderbook/core/hooks";
-import { Drawer, Typography, truncateString } from "@mitra/ux";
+import { Drawer, Typography, truncateString } from "@mitrabook/ux";
 import { Dispatch, SetStateAction } from "react";
-import { trimFloat } from "@mitra/numericals";
+import { trimFloat } from "@aksumite/numericals";
 
 import { ResponsiveCard } from "@/components/ui/ReadyToUse";
 

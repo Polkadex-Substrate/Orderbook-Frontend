@@ -1,7 +1,13 @@
 "use client";
 
 import { RiFileCopyLine, RiHandCoinLine, RiSortAsc } from "@remixicon/react";
-import { Copy, Icon, Skeleton, Typography, truncateString } from "@mitra/ux";
+import {
+  Copy,
+  Icon,
+  Skeleton,
+  Typography,
+  truncateString,
+} from "@mitrabook/ux";
 import { useMemo, useRef } from "react";
 import { useResizeObserver } from "usehooks-ts";
 import { useProfile } from "@orderbook/core/providers/user/profile";
@@ -11,7 +17,7 @@ import {
   useClaimableRewards,
   useTraderMetrics,
 } from "@orderbook/core/hooks";
-import { trimFloat, millify } from "@mitra/numericals";
+import { trimFloat, millify } from "@aksumite/numericals";
 
 import { RewardsSkeleton } from "./loading";
 import { ClaimReward } from "./claimReward";

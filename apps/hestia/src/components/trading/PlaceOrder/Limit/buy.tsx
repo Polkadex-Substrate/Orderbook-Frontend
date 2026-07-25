@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { Button, Input, Spinner, Typography } from "@mitra/ux";
+import { Button, Input, Spinner, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import { useFormik } from "formik";
 import { useLimitOrder } from "@orderbook/core/hooks";

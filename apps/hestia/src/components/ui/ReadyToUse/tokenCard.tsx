@@ -1,4 +1,4 @@
-import { Token, Typography, TokenAppearance } from "@mitra/ux";
+import { Token, Typography, TokenAppearance } from "@mitrabook/ux";
 import { ComponentProps } from "react";
 import { twMerge } from "tailwind-merge";
 import { useWindowSize } from "usehooks-ts";

@@ -1,5 +1,5 @@
 import { ComponentProps } from "react";
-import { Typography } from "@mitra/ux";
+import { Typography } from "@mitrabook/ux";
 import { RiErrorWarningLine } from "@remixicon/react";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";

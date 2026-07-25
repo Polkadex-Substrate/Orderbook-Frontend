@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton, Typography, truncateString } from "@mitra/ux";
+import { Skeleton, Typography, truncateString } from "@mitrabook/ux";
 import { PropsWithChildren } from "react";
 
 import { InlineAccountCard } from "./inlineAccountCard";

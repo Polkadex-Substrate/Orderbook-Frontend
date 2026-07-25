@@ -1,6 +1,12 @@
 "use client";
 
-import { GenericMessage, Accordion, Tokens, Button, Spinner } from "@mitra/ux";
+import {
+  GenericMessage,
+  Accordion,
+  Tokens,
+  Button,
+  Spinner,
+} from "@mitrabook/ux";
 import { useMemo } from "react";
 import {
   useCall,

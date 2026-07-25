@@ -5,7 +5,7 @@ import { useMarkets } from "@orderbook/core/hooks";
 import { getCurrentMarket } from "@orderbook/core/helpers";
 import { useWindowSize } from "react-use";
 import classNames from "classnames";
-import { Resizable, ImperativePanelHandle } from "@mitra/ux";
+import { Resizable, ImperativePanelHandle } from "@mitrabook/ux";
 
 import { AssetInfo } from "./AssetInfo";
 import { Orderbook } from "./Orderbook";

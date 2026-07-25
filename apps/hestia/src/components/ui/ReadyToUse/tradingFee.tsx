@@ -1,4 +1,4 @@
-import { Typography, Separator, HoverCard } from "@mitra/ux";
+import { Typography, Separator, HoverCard } from "@mitrabook/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { useState } from "react";
 

@@ -8,7 +8,7 @@ import {
   Loading,
   Typography,
   Passcode,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { useFormik } from "formik";
 import { generateUsername } from "friendly-username-generator";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";

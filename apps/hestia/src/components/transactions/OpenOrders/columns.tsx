@@ -3,7 +3,7 @@ import {
   Order,
 } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Copy, Tooltip, Typography, truncateString } from "@mitra/ux";
+import { Copy, Tooltip, Typography, truncateString } from "@mitrabook/ux";
 import { CancelOrderArgs } from "@orderbook/core/hooks";
 import { RiFileCopyLine } from "@remixicon/react";
 

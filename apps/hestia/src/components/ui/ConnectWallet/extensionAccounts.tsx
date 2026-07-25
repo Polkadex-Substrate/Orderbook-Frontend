@@ -1,5 +1,5 @@
 // TODO: Remove it & move to polkadex-ts
-import { ExtensionAccount } from "@mitra/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 import { useEffect, useRef } from "react";
 import {
   Interaction,
@@ -7,7 +7,7 @@ import {
   Loading,
   InteractionProps,
   Illustrations,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import classNames from "classnames";
 
 import { AccountCard } from "../ReadyToUse";

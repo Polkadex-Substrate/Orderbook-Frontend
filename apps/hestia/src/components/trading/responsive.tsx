@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs } from "@mitra/ux";
+import { Tabs } from "@mitrabook/ux";
 import { Market } from "@orderbook/core/utils/orderbookService";
 
 import { Graph } from "./Graph";

@@ -1,4 +1,4 @@
-import { Button, Typography } from "@mitra/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import { RiNotification3Line } from "@remixicon/react";
 export const Banner = ({ open }: { open: boolean }) => {
   return open ? (

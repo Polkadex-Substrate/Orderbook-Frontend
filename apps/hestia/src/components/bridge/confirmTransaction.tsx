@@ -10,7 +10,7 @@ import {
   truncateString,
   ResponsiveCard,
   HoverInformation,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import {
   RiFileCopyLine,
   RiGasStationLine,

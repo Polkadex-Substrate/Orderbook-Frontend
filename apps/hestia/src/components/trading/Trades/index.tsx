@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs } from "@mitra/ux";
+import { Tabs } from "@mitrabook/ux";
 
 import { Markets } from "./Market";
 import { RecentTrades } from "./RecentTrades";

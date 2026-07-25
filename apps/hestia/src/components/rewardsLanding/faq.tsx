@@ -1,4 +1,4 @@
-import { Accordion, Typography } from "@mitra/ux";
+import { Accordion, Typography } from "@mitrabook/ux";
 
 export const Faq = () => {
   return (

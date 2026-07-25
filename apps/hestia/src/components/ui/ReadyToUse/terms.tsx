@@ -1,6 +1,6 @@
 "use client";
 
-import { Checkbox } from "@mitra/ux";
+import { Checkbox } from "@mitrabook/ux";
 import Link from "next/link";
 
 type Props = {

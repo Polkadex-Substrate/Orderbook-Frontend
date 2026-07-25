@@ -1,5 +1,5 @@
 import { NotificationCategory } from "@orderbook/core/providers/public/settings";
-import { Button, Typography } from "@mitra/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import {
   RiExternalLinkLine,
   RiDeleteBin5Line,

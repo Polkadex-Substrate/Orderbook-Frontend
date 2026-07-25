@@ -3,7 +3,7 @@
 import { Fragment, forwardRef, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
-import { Logo } from "@mitra/ux";
+import { Logo } from "@mitrabook/ux";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { defaultConfig } from "@orderbook/core/config";
 import {

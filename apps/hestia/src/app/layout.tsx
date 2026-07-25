@@ -1,5 +1,6 @@
 import "@/styles/globals.scss";
-import "@mitra/ux/dist/index.css";
+import "@aksumite/ui/dist/index.css";
+import "@mitrabook/ux/dist/index.css";
 import { ReactNode } from "react";
 import { Metadata } from "next";
 import classNames from "classnames";

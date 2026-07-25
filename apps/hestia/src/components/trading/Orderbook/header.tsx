@@ -1,6 +1,6 @@
 "use client";
 
-import { Dropdown, Typography } from "@mitra/ux";
+import { Dropdown, Typography } from "@mitrabook/ux";
 import { DecimalSize } from "@orderbook/core/hooks";
 import { parseScientific } from "@orderbook/core/helpers";
 

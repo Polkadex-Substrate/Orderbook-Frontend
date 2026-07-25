@@ -1,5 +1,5 @@
 import { ComponentProps } from "react";
-import { HoverCard, Typography, typeofChildren } from "@mitra/ux";
+import { HoverCard, Typography, typeofChildren } from "@mitrabook/ux";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
 import { RiInformationFill } from "@remixicon/react";

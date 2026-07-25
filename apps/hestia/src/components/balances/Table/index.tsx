@@ -1,4 +1,4 @@
-import { Table as PolkadexTable, GenericMessage } from "@mitra/ux";
+import { Table as PolkadexTable, GenericMessage } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";

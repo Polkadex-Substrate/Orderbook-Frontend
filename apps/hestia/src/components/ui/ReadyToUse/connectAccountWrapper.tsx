@@ -1,6 +1,6 @@
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
-import { Button, GenericMessage } from "@mitra/ux";
+import { Button, GenericMessage } from "@mitrabook/ux";
 
 export const ConnectAccountWrapper = ({
   funding = false,

@@ -1,8 +1,8 @@
 "use client";
 
 import { Fragment } from "react";
-import { useTransactionManager } from "@mitra/react-providers";
-import { ProgressBar } from "@mitra/ux";
+import { useTransactionManager } from "@aksumite/react-providers";
+import { ProgressBar } from "@mitrabook/ux";
 
 const messages = {
   broadcasted: "Transmitted over the network but not yet confirmed.",

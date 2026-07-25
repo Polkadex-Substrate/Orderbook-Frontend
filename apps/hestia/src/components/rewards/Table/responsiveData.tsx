@@ -1,8 +1,8 @@
 import { Dispatch, SetStateAction } from "react";
-import { Button, Drawer, Tokens } from "@mitra/ux";
+import { Button, Drawer, Tokens } from "@mitrabook/ux";
 import { useRouter } from "next/navigation";
 import { LmpMarketConfig } from "@orderbook/core/index";
-import { millify } from "@mitra/numericals";
+import { millify } from "@aksumite/numericals";
 
 import { MarketCard } from "./marketCard";
 

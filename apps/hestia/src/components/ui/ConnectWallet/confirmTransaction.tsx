@@ -11,7 +11,7 @@ import {
   Skeleton,
   Typography,
   truncateString,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { RiAddLine, RiFileCopyLine, RiGasStationLine } from "@remixicon/react";
 import {
   Dispatch,

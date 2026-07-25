@@ -1,5 +1,9 @@
 // Export GraphQL configuration functions
-export { isNewBackendEnabled, getGraphQLConfig, getAuthToken } from '../config/graphql';
+export {
+  isNewBackendEnabled,
+  getGraphQLConfig,
+  getAuthToken,
+} from "../config/graphql";
 
 export * from "./appsync";
 export * from "./cleanPositiveFloatInput";

@@ -1,4 +1,4 @@
-import { Chain, HoverCard, Typography } from "@mitra/ux";
+import { Chain, HoverCard, Typography } from "@mitrabook/ux";
 import { RiInformationFill } from "@remixicon/react";
 
 export const NetworkCard = ({

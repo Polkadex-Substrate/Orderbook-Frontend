@@ -30,23 +30,24 @@ const YbugUserIdentifier = dynamic(
 
 const TransactionManagerProvider = dynamic(
   () =>
-    import("@mitra/react-providers").then(
+    import("@aksumite/react-providers").then(
       (mod) => mod.TransactionManagerProvider
     ),
   { ssr: false }
 );
 const UserAccountsProvider = dynamic(
   () =>
-    import("@mitra/react-providers").then((mod) => mod.UserAccountsProvider),
+    import("@aksumite/react-providers").then((mod) => mod.UserAccountsProvider),
   { ssr: false }
 );
 const ExtensionsProvider = dynamic(
-  () => import("@mitra/react-providers").then((mod) => mod.ExtensionsProvider),
+  () =>
+    import("@aksumite/react-providers").then((mod) => mod.ExtensionsProvider),
   { ssr: false }
 );
 const ExtensionAccountsProvider = dynamic(
   () =>
-    import("@mitra/react-providers").then(
+    import("@aksumite/react-providers").then(
       (mod) => mod.ExtensionAccountsProvider
     ),
   { ssr: false }
@@ -95,9 +96,12 @@ const ConnectWalletProvider = dynamic(
   { ssr: false }
 );
 
-const Toaster = dynamic(() => import("@mitra/ux").then((mod) => mod.Toaster), {
-  ssr: false,
-});
+const Toaster = dynamic(
+  () => import("@mitrabook/ux").then((mod) => mod.Toaster),
+  {
+    ssr: false,
+  }
+);
 
 Amplify.configure(awsconfig);
 

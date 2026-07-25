@@ -5,7 +5,12 @@ import { ElementType, useCallback, useEffect, useState } from "react";
 import { getExtensionIcon } from "@polkadot-cloud/assets/extensions";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
-import { Interaction, InteractionProps, Spinner, Typography } from "@mitra/ux";
+import {
+  Interaction,
+  InteractionProps,
+  Spinner,
+  Typography,
+} from "@mitrabook/ux";
 
 interface AuthorizationProps extends InteractionProps {
   extensionName?: string;

@@ -1,13 +1,13 @@
 "use client";
 
-import { ExtensionAccount } from "@mitra/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 import {
   Typography,
   AccountCard,
   Illustrations,
   Interaction,
   Accordion,
-} from "@mitra/ux";
+} from "@mitrabook/ux";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 
 export const FundAccount = ({

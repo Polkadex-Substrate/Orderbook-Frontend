@@ -1,7 +1,7 @@
 import { LmpLeaderboard } from "@orderbook/core/index";
-import { Typography } from "@mitra/ux";
+import { Typography } from "@mitrabook/ux";
 import { createColumnHelper } from "@tanstack/react-table";
-import { trimFloat, millify } from "@mitra/numericals";
+import { trimFloat, millify } from "@aksumite/numericals";
 
 import { AccountCard } from "./accountCard";
 
