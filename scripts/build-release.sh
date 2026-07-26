@@ -30,6 +30,13 @@
 #   scripts/build-release.sh --push                 # push after building
 #   scripts/build-release.sh --platform linux/arm64 # cross-build
 #   scripts/build-release.sh --skip-install         # tarball: reuse node_modules
+#   scripts/build-release.sh --install-docker       # install Docker if missing,
+#                                                   # without prompting
+#   scripts/build-release.sh --tarball --from-image orderbook-fe:latest
+#                                                   # extract the standalone
+#                                                   # tree from an image you
+#                                                   # already built — no Node,
+#                                                   # yarn or 4 GB rebuild
 #
 set -euo pipefail
 
@@ -43,6 +50,8 @@ IMAGE_REPO="orderbook-fe"
 IMAGE_TAG=""
 PUSH=0
 PLATFORM=""
+FROM_IMAGE=""
+INSTALL_DOCKER=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -54,6 +63,8 @@ while [ $# -gt 0 ]; do
     --push)         PUSH=1; shift ;;
     --platform)     PLATFORM="$2"; shift 2 ;;
     --skip-install) SKIP_INSTALL=1; shift ;;
+    --from-image)   FROM_IMAGE="$2"; MODE=tarball; shift 2 ;;
+    --install-docker) INSTALL_DOCKER=1; shift ;;
     -h|--help)      sed -n '2,33p' "$0"; exit 0 ;;
     *)              echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -62,6 +73,19 @@ done
 log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mWARN:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+
+# Sourced AFTER log/warn/die: the library calls them.
+DOCKER_LIB="$REPO_ROOT/scripts/lib/docker-install.sh"
+if [ -r "$DOCKER_LIB" ]; then
+  # shellcheck disable=SC1090
+  . "$DOCKER_LIB"
+else
+  # Keep the script usable if the lib is missing (e.g. a partial checkout).
+  ensure_docker() {
+    command -v docker >/dev/null || die "docker is not installed (use --tarball)"
+    docker info >/dev/null 2>&1 || die "cannot reach the Docker daemon"
+  }
+fi
 
 [ -f "$ENV_FILE" ] || die "env file not found: $ENV_FILE
 Copy apps/hestia/.env.example and fill it in, or pass --env <path>."
@@ -91,10 +115,7 @@ log "orderbook-fe $STAMP  (mode: $MODE, env: $ENV_FILE)"
 # Docker mode
 # ════════════════════════════════════════════════════════════════════════
 if [ "$MODE" = docker ]; then
-  command -v docker >/dev/null \
-    || die "docker is not installed (use --tarball for a bare-metal build)"
-  docker info >/dev/null 2>&1 \
-    || die "cannot reach the Docker daemon — is it running, and are you in the 'docker' group?"
+  ensure_docker "$INSTALL_DOCKER"
 
   # Derive the build-arg list from the Dockerfile itself, so a newly added ARG
   # is passed automatically instead of silently defaulting to empty. That is
@@ -161,40 +182,64 @@ fi
 # ════════════════════════════════════════════════════════════════════════
 # Tarball mode
 # ════════════════════════════════════════════════════════════════════════
-command -v node >/dev/null || die "node is not installed"
-NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-# 22, not 20: @hyperbridge/sdk declares engines.node ">=22.x.x", so yarn
-# refuses to install on 20. Node 20 also went EOL in April 2026.
-[ "$NODE_MAJOR" -ge 22 ] || die "Node 22+ required (@hyperbridge/sdk), found $(node -v)"
-command -v yarn >/dev/null \
-  || die "yarn is not installed (corepack enable; corepack prepare yarn@1.22.19 --activate)"
-
 OUT_DIR="$REPO_ROOT/dist"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
-
-if [ "$SKIP_INSTALL" -eq 0 ]; then
-  log "Installing dependencies (frozen lockfile)"
-  yarn install --frozen-lockfile
-fi
-
-log "Running production build"
-NODE_OPTIONS="${NODE_OPTIONS:---max_old_space_size=4096}" \
-NEXT_TELEMETRY_DISABLED=1 \
-  yarn build
-
-STANDALONE="apps/hestia/.next/standalone"
-[ -d "$STANDALONE" ] || die "standalone output missing — is output:'standalone' still set in next.config.js?"
-
-log "Assembling release tree"
 PKG="$STAGE/orderbook-fe"
-mkdir -p "$PKG"
-cp -R "$STANDALONE"/. "$PKG"/
 
-# Next deliberately excludes these two from the standalone output.
-mkdir -p "$PKG/apps/hestia/.next"
-cp -R apps/hestia/.next/static "$PKG/apps/hestia/.next/static"
-cp -R apps/hestia/public       "$PKG/apps/hestia/public"
+if [ -n "$FROM_IMAGE" ]; then
+  # The runner stage IS the assembled standalone tree at /app — static assets
+  # and public/ already copied in. Extracting it avoids a second full build
+  # (and its 4 GB peak) on a host that has already produced the image.
+  # No auto-install here: --from-image extracts an image that must already
+  # exist locally, so a fresh Docker install could not satisfy the request.
+  ensure_docker 0
+  docker image inspect "$FROM_IMAGE" >/dev/null 2>&1 \
+    || die "image not found locally: $FROM_IMAGE"
+
+  log "Extracting standalone tree from $FROM_IMAGE"
+  CID="$(docker create "$FROM_IMAGE")"
+  # shellcheck disable=SC2064
+  trap "docker rm -f '$CID' >/dev/null 2>&1; rm -rf '$STAGE'" EXIT
+  mkdir -p "$PKG"
+  docker cp "$CID:/app/." "$PKG/"
+  docker rm "$CID" >/dev/null
+
+  [ -f "$PKG/apps/hestia/server.js" ] \
+    || die "extracted tree has no apps/hestia/server.js — is $FROM_IMAGE an orderbook-fe image?"
+  [ -d "$PKG/apps/hestia/.next/static" ] \
+    || die "extracted tree is missing .next/static"
+else
+  command -v node >/dev/null || die "node is not installed (or use --from-image)"
+  NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
+  # 22, not 20: @hyperbridge/sdk declares engines.node ">=22.x.x", so yarn
+  # refuses to install on 20. Node 20 also went EOL in April 2026.
+  [ "$NODE_MAJOR" -ge 22 ] || die "Node 22+ required (@hyperbridge/sdk), found $(node -v)"
+  command -v yarn >/dev/null \
+    || die "yarn is not installed (corepack enable; corepack prepare yarn@1.22.19 --activate)"
+
+  if [ "$SKIP_INSTALL" -eq 0 ]; then
+    log "Installing dependencies (frozen lockfile)"
+    yarn install --frozen-lockfile
+  fi
+
+  log "Running production build"
+  NODE_OPTIONS="${NODE_OPTIONS:---max_old_space_size=4096}" \
+  NEXT_TELEMETRY_DISABLED=1 \
+    yarn build
+
+  STANDALONE="apps/hestia/.next/standalone"
+  [ -d "$STANDALONE" ] || die "standalone output missing — is output:'standalone' still set in next.config.js?"
+
+  log "Assembling release tree"
+  mkdir -p "$PKG"
+  cp -R "$STANDALONE"/. "$PKG"/
+
+  # Next deliberately excludes these two from the standalone output.
+  mkdir -p "$PKG/apps/hestia/.next"
+  cp -R apps/hestia/.next/static "$PKG/apps/hestia/.next/static"
+  cp -R apps/hestia/public       "$PKG/apps/hestia/public"
+fi
 
 # Runtime metadata, so a deployed host can report what it is running.
 cat > "$PKG/RELEASE" <<EOF
@@ -203,7 +248,8 @@ version=$VERSION
 commit=$GITSHA$DIRTY
 built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 built_from=$(hostname 2>/dev/null || echo unknown)
-node=$(node -v)
+node=$(node -v 2>/dev/null || echo "n/a (extracted from image)")
+source=${FROM_IMAGE:-source-build}
 EOF
 
 # Ship the installer alongside the payload so the tarball is self-sufficient.

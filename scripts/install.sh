@@ -31,6 +31,15 @@
 #   --ssh-port <n>      SSH port to keep open in the firewall  (default 22)
 #   --no-harden         service sandbox only; skip all host changes
 #
+# TLS / Cloudflare:
+#   --cloudflare        terminate TLS with a Cloudflare Origin CA certificate,
+#                       restore the real client IP from CF-Connecting-IP, and
+#                       (with --harden) restrict 80/443 to Cloudflare's ranges
+#   --cf-cert <path>    origin certificate (default /etc/ssl/cloudflare/origin.pem)
+#   --cf-key  <path>    origin private key (default /etc/ssl/cloudflare/origin.key)
+#   --cf-origin-pull    additionally require Cloudflare's client certificate
+#                       (Authenticated Origin Pulls) — strongest origin lock
+#
 # The systemd sandbox is ALWAYS applied. Everything else is opt-in, because
 # reconfiguring a firewall or SSH on someone else's server without asking is
 # how people lock themselves out.
@@ -49,6 +58,10 @@ HARDEN=0
 HARDEN_SSH=0
 SSH_PORT=22
 SERVICE_NAME=orderbook-fe
+CLOUDFLARE=0
+CF_CERT=/etc/ssl/cloudflare/origin.pem
+CF_KEY=/etc/ssl/cloudflare/origin.key
+CF_ORIGIN_PULL=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -64,7 +77,11 @@ while [ $# -gt 0 ]; do
     --harden-ssh)  HARDEN=1; HARDEN_SSH=1; shift ;;
     --ssh-port)    SSH_PORT="$2"; shift 2 ;;
     --no-harden)   HARDEN=0; shift ;;
-    -h|--help)     sed -n '2,42p' "$0"; exit 0 ;;
+    --cloudflare)  CLOUDFLARE=1; WITH_NGINX=1; shift ;;
+    --cf-cert)     CF_CERT="$2"; CLOUDFLARE=1; WITH_NGINX=1; shift 2 ;;
+    --cf-key)      CF_KEY="$2";  CLOUDFLARE=1; WITH_NGINX=1; shift 2 ;;
+    --cf-origin-pull) CF_ORIGIN_PULL=1; CLOUDFLARE=1; WITH_NGINX=1; shift ;;
+    -h|--help)     sed -n '2,55p' "$0"; exit 0 ;;
     *)             echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -84,6 +101,20 @@ echo "$SVC_USER" | grep -Eq '^[a-z_][a-z0-9_-]{0,31}$' || die "invalid --user: $
 case "$PREFIX" in /*) : ;; *) die "--prefix must be an absolute path: $PREFIX" ;; esac
 if [ -n "$DOMAIN" ]; then
   echo "$DOMAIN" | grep -Eq '^[A-Za-z0-9._-]+$' || die "invalid --domain: $DOMAIN"
+fi
+if [ "$CLOUDFLARE" -eq 1 ]; then
+  [ -n "$DOMAIN" ] || die "--cloudflare requires --domain (the cert is issued for a hostname)"
+  case "$CF_CERT" in /*) : ;; *) die "--cf-cert must be an absolute path: $CF_CERT" ;; esac
+  case "$CF_KEY"  in /*) : ;; *) die "--cf-key must be an absolute path: $CF_KEY" ;; esac
+  if [ "$DRY_RUN" -eq 0 ]; then
+    # Fail here rather than after nginx is already reconfigured and reloaded.
+    [ -r "$CF_CERT" ] || die "Cloudflare origin certificate not readable: $CF_CERT
+Create one in the Cloudflare dashboard (SSL/TLS -> Origin Server -> Create
+Certificate), save the certificate and key to that path, then re-run."
+    [ -r "$CF_KEY" ]  || die "Cloudflare origin key not readable: $CF_KEY"
+    openssl x509 -in "$CF_CERT" -noout >/dev/null 2>&1 \
+      || die "$CF_CERT is not a valid PEM certificate"
+  fi
 fi
 
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -368,8 +399,26 @@ if [ "$WITH_NGINX" -eq 1 ]; then
     LINK=""
   fi
 
+  # `http2 on;` is nginx >= 1.25.1 only. On older builds (Debian 11, Ubuntu
+  # 20.04, RHEL 8) it is an unknown directive and `nginx -t` fails outright,
+  # so fall back to the deprecated-but-working `listen ... http2` form.
+  NGINX_VER="$(nginx -v 2>&1 | sed -E 's|.*/([0-9.]+).*|\1|')"
+  if [ -n "$NGINX_VER" ] && \
+     [ "$(printf '%s\n1.25.1\n' "$NGINX_VER" | sort -V | head -1)" = "1.25.1" ]; then
+    HTTP2_DIRECTIVE="    http2 on;"
+    LISTEN_443="listen 443 ssl;
+    listen [::]:443 ssl;"
+  else
+    HTTP2_DIRECTIVE=""
+    LISTEN_443="listen 443 ssl http2;
+    listen [::]:443 ssl http2;"
+  fi
+
   # Rate-limit zones must live in the http{} context, not in a server block.
-  if [ "$DRY_RUN" -eq 0 ] && [ -d /etc/nginx/conf.d ]; then
+  # The vhost references these zones, so if conf.d isn't included the config
+  # is invalid — create it rather than silently skipping.
+  run "mkdir -p /etc/nginx/conf.d"
+  if [ "$DRY_RUN" -eq 0 ]; then
     cat > /etc/nginx/conf.d/00-$SERVICE_NAME-limits.conf <<'EOF'
 # Defends against crude request floods and slow-loris style connection
 # hoarding. Generous enough for a trading UI that polls and holds sockets.
@@ -378,15 +427,23 @@ limit_conn_zone $binary_remote_addr zone=ob_conn:10m;
 EOF
   fi
 
-  if [ "$DRY_RUN" -eq 0 ]; then
-    cat > "$VHOST" <<EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name $SERVER_NAME;
+  # Cloudflare needs its edge ranges known before nginx config is written:
+  # both real_ip and (later) the firewall read the same cached list.
+  if [ "$CLOUDFLARE" -eq 1 ] && [ -n "${HARDEN_LIB:-}" ]; then
+    # shellcheck disable=SC1090
+    . "$HARDEN_LIB"
+    cloudflare_fetch_ips || true
+    cloudflare_realip_conf
+  fi
 
-$(nginx_hardening_snippet)
-
+  # The proxied location block is identical in both modes — define once.
+  #
+  # Escaping note: this heredoc is unquoted so $PORT interpolates, and nginx
+  # variables use a SINGLE backslash (\$host). The value is then inserted into
+  # the outer heredoc by parameter expansion, which does not re-process
+  # backslashes — so \\\$ here would emit a literal backslash and nginx would
+  # refuse to start.
+  PROXY_BLOCK=$(cat <<EOF
     limit_req  zone=ob_req burst=60 nodelay;
     limit_conn ob_conn 32;
 
@@ -409,8 +466,79 @@ $(nginx_hardening_snippet)
         proxy_pass http://127.0.0.1:$PORT;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
+EOF
+)
+
+  if [ "$DRY_RUN" -eq 0 ]; then
+    if [ "$CLOUDFLARE" -eq 1 ]; then
+      ORIGIN_PULL=""
+      if [ "$CF_ORIGIN_PULL" -eq 1 ]; then
+        # Cloudflare presents a client certificate signed by this well-known
+        # CA. Requiring it means a direct request to the origin IP is refused
+        # even if the attacker knows the IP and sends the right Host header.
+        CF_PULL_CA=/etc/ssl/cloudflare/origin-pull-ca.pem
+        if [ ! -r "$CF_PULL_CA" ]; then
+          mkdir -p /etc/ssl/cloudflare
+          curl -fsS --max-time 20 \
+            https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem \
+            -o "$CF_PULL_CA" 2>/dev/null || true
+        fi
+        if [ -r "$CF_PULL_CA" ]; then
+          ORIGIN_PULL="    ssl_client_certificate $CF_PULL_CA;
+    ssl_verify_client on;"
+        else
+          warn "Could not obtain the Cloudflare origin-pull CA — skipping mTLS.
+     Enable it later by adding ssl_client_certificate + ssl_verify_client."
+        fi
+      fi
+
+      cat > "$VHOST" <<EOF
+# HTTP: redirect to HTTPS. Cloudflare should also be set to Full (strict).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $SERVER_NAME;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    $LISTEN_443
+$HTTP2_DIRECTIVE
+    server_name $SERVER_NAME;
+
+    # Cloudflare Origin CA certificate. Only Cloudflare trusts this cert, so
+    # the Cloudflare SSL mode MUST be "Full (strict)" — a browser reaching
+    # the origin directly would (correctly) reject it.
+    ssl_certificate     $CF_CERT;
+    ssl_certificate_key $CF_KEY;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+$ORIGIN_PULL
+
+$(nginx_hardening_snippet)
+
+    # HSTS: safe here because Cloudflare serves this hostname over HTTPS only.
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+$PROXY_BLOCK
 }
 EOF
+    else
+      cat > "$VHOST" <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $SERVER_NAME;
+
+$(nginx_hardening_snippet)
+
+$PROXY_BLOCK
+}
+EOF
+    fi
     [ -n "$LINK" ] && ln -sf "$VHOST" "$LINK"
     rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
   fi
@@ -419,7 +547,7 @@ EOF
   run "systemctl enable nginx" 2>/dev/null || true
   run "systemctl reload nginx 2>/dev/null || systemctl restart nginx"
 
-  if [ -n "$DOMAIN" ]; then
+  if [ -n "$DOMAIN" ] && [ "$CLOUDFLARE" -eq 0 ]; then
     echo
     log "For TLS, run:  certbot --nginx -d $DOMAIN"
   fi
@@ -433,7 +561,7 @@ if [ "$HARDEN" -eq 1 ]; then
     echo
     log "Applying host hardening"
     harden_sysctl
-    harden_firewall "$SSH_PORT"
+    harden_firewall "$SSH_PORT" "$CLOUDFLARE"
     harden_fail2ban
     harden_auto_updates
     # Only bind to loopback when something is actually proxying to us,

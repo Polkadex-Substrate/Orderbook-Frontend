@@ -69,31 +69,95 @@ EOF
   sysctl --system >/dev/null 2>&1 || warn "sysctl reload reported errors (often benign in containers)"
 }
 
+# ── Cloudflare origin IP ranges ─────────────────────────────────────────
+# Fetched at install time rather than hardcoded: Cloudflare does change these,
+# and a stale baked-in list silently locks out real visitors. Cached under
+# /etc so nginx and the firewall use the same snapshot.
+CF_IP_CACHE=/etc/orderbook-fe/cloudflare-ips
+cloudflare_fetch_ips() {
+  local dir; dir="$(dirname "$CF_IP_CACHE")"
+  [ "$DRY_RUN" -eq 1 ] && { echo "  [dry-run] fetch Cloudflare IP ranges"; return 0; }
+  mkdir -p "$dir"
+  local v4 v6
+  v4="$(curl -fsS --max-time 20 https://www.cloudflare.com/ips-v4 2>/dev/null || true)"
+  v6="$(curl -fsS --max-time 20 https://www.cloudflare.com/ips-v6 2>/dev/null || true)"
+  # Sanity-check rather than trust: a captive portal or error page would
+  # otherwise be written straight into a firewall rule.
+  if ! echo "$v4" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$'; then
+    warn "Could not fetch Cloudflare IPv4 ranges — leaving 80/443 open to all."
+    return 1
+  fi
+  printf '%s\n%s\n' "$v4" "$v6" | grep -E '^[0-9a-fA-F:.]+/[0-9]+$' > "$CF_IP_CACHE"
+  log "Cloudflare ranges cached: $(wc -l < "$CF_IP_CACHE") prefixes"
+  return 0
+}
+
 # ── Host firewall ───────────────────────────────────────────────────────
 # Defends against: direct access to the app port and to any other service
 # listening on the box. The app itself should only be reachable via the
 # reverse proxy.
+#
+# With Cloudflare in front, 80/443 are additionally restricted to Cloudflare's
+# ranges. Without that, anyone who learns the origin IP can bypass Cloudflare
+# entirely — along with its WAF, rate limiting and bot rules — by sending a
+# Host header directly. DNS history sites make origin IPs easy to find.
 harden_firewall() {
   local ssh_port="${1:-22}"
-  log "Configuring host firewall (default deny inbound)"
+  local cf_only="${2:-0}"
+  local cf_ranges=""
+
+  if [ "$cf_only" = "1" ] && cloudflare_fetch_ips && [ -s "$CF_IP_CACHE" ]; then
+    cf_ranges="$(cat "$CF_IP_CACHE")"
+    log "Configuring host firewall (default deny; 80/443 restricted to Cloudflare)"
+  else
+    [ "$cf_only" = "1" ] && warn "Falling back to open 80/443."
+    log "Configuring host firewall (default deny inbound)"
+  fi
 
   if command -v ufw >/dev/null; then
     run "ufw --force reset"
     run "ufw default deny incoming"
     run "ufw default allow outgoing"
     run "ufw allow ${ssh_port}/tcp comment 'ssh'"
-    run "ufw allow 80/tcp comment 'http'"
-    run "ufw allow 443/tcp comment 'https'"
+    if [ -n "$cf_ranges" ]; then
+      while read -r cidr; do
+        [ -n "$cidr" ] || continue
+        run "ufw allow from $cidr to any port 80  proto tcp comment 'cloudflare'"
+        run "ufw allow from $cidr to any port 443 proto tcp comment 'cloudflare'"
+      done <<< "$cf_ranges"
+    else
+      run "ufw allow 80/tcp comment 'http'"
+      run "ufw allow 443/tcp comment 'https'"
+    fi
     run "ufw --force enable"
   elif command -v firewall-cmd >/dev/null; then
     run "systemctl enable --now firewalld"
     run "firewall-cmd --permanent --add-service=ssh"
-    run "firewall-cmd --permanent --add-service=http"
-    run "firewall-cmd --permanent --add-service=https"
     [ "$ssh_port" != "22" ] && run "firewall-cmd --permanent --add-port=${ssh_port}/tcp"
+    if [ -n "$cf_ranges" ]; then
+      # rich rules scope the ports to Cloudflare sources
+      while read -r cidr; do
+        [ -n "$cidr" ] || continue
+        local fam=ipv4; case "$cidr" in *:*) fam=ipv6 ;; esac
+        run "firewall-cmd --permanent --add-rich-rule='rule family=\"$fam\" source address=\"$cidr\" port port=\"80\" protocol=\"tcp\" accept'"
+        run "firewall-cmd --permanent --add-rich-rule='rule family=\"$fam\" source address=\"$cidr\" port port=\"443\" protocol=\"tcp\" accept'"
+      done <<< "$cf_ranges"
+    else
+      run "firewall-cmd --permanent --add-service=http"
+      run "firewall-cmd --permanent --add-service=https"
+    fi
     run "firewall-cmd --reload"
   elif command -v nft >/dev/null; then
     [ "$DRY_RUN" -eq 1 ] && { echo "  [dry-run] write /etc/nftables.conf"; return; }
+    local web_rule='tcp dport { 80, 443 } accept'
+    if [ -n "$cf_ranges" ]; then
+      local v4list v6list
+      v4list="$(echo "$cf_ranges" | grep -v ':' | paste -sd, -)"
+      v6list="$(echo "$cf_ranges" | grep ':'    | paste -sd, -)"
+      web_rule="ip saddr { $v4list } tcp dport { 80, 443 } accept"
+      [ -n "$v6list" ] && web_rule="$web_rule
+    ip6 saddr { $v6list } tcp dport { 80, 443 } accept"
+    fi
     cat > /etc/nftables.conf <<EOF
 #!/usr/sbin/nft -f
 flush ruleset
@@ -105,7 +169,8 @@ table inet filter {
     iif lo accept
     ip protocol icmp accept
     ip6 nexthdr ipv6-icmp accept
-    tcp dport { $ssh_port, 80, 443 } accept
+    tcp dport { $ssh_port } accept
+    $web_rule
   }
   chain forward { type filter hook forward priority 0; policy drop; }
   chain output  { type filter hook output  priority 0; policy accept; }
@@ -118,7 +183,22 @@ EOF
      The app port $PORT may be reachable directly from the network."
     return
   fi
-  log "Firewall: inbound limited to ssh(${ssh_port}), 80, 443"
+
+  if [ -n "$cf_ranges" ]; then
+    log "Firewall: ssh(${ssh_port}) open; 80/443 only from Cloudflare"
+  else
+    log "Firewall: inbound limited to ssh(${ssh_port}), 80, 443"
+  fi
+
+  # Docker installs its own iptables DOCKER chain, which is consulted BEFORE
+  # ufw's rules — a published port is then reachable regardless of what ufw
+  # reports. Worth saying out loud on a host that has Docker installed.
+  if command -v docker >/dev/null; then
+    warn "Docker is installed on this host. Docker bypasses ufw by writing its
+     own iptables rules, so any container started with '-p 3000:3000' will be
+     internet-reachable even though ufw says otherwise. Publish to
+     '127.0.0.1:PORT:PORT' instead."
+  fi
 }
 
 # ── The app must not be reachable except through the proxy ──────────────
@@ -272,4 +352,29 @@ nginx_hardening_snippet() {
     client_header_timeout 15s;
     send_timeout 30s;
 EOF
+}
+
+# ── Cloudflare real client IP ───────────────────────────────────────────
+# Without this, every request appears to originate from a Cloudflare edge IP.
+# That breaks rate limiting in the worst possible way: limit_req keys on
+# $binary_remote_addr, so a few thousand users collapse into a handful of
+# buckets and legitimate traffic gets throttled while an attacker behind a
+# different edge sails through. Logs and fail2ban are equally useless.
+#
+# Written to a conf.d snippet so it applies http-wide.
+cloudflare_realip_conf() {
+  local out="/etc/nginx/conf.d/01-$SERVICE_NAME-cloudflare.conf"
+  [ "$DRY_RUN" -eq 1 ] && { echo "  [dry-run] write $out"; return; }
+  [ -s "$CF_IP_CACHE" ] || { warn "No Cloudflare IP cache — skipping real_ip config."; return; }
+  {
+    echo "# Generated by install.sh — Cloudflare edge ranges."
+    echo "# Refresh after Cloudflare changes them: re-run the installer."
+    while read -r cidr; do
+      [ -n "$cidr" ] && echo "set_real_ip_from $cidr;"
+    done < "$CF_IP_CACHE"
+    # CF-Connecting-IP is set by Cloudflare and cannot be spoofed by a client
+    # once set_real_ip_from restricts trust to Cloudflare's ranges.
+    echo "real_ip_header CF-Connecting-IP;"
+  } > "$out"
+  log "nginx: real client IP restored from CF-Connecting-IP"
 }
