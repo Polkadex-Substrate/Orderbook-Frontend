@@ -17,9 +17,26 @@ const font = Roboto({
   subsets: ["latin"],
 });
 
+/**
+ * Absolute base for OG/Twitter image URLs.
+ *
+ * Social crawlers do not resolve relative paths — without metadataBase Next
+ * emits a relative og:image and every preview silently renders without an
+ * image. Build-time value (NEXT_PUBLIC_*), so it is baked per environment.
+ */
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://testnet.polkadex.ee";
+
+const TITLE = "Polkadex Orderbook — non-custodial trading";
+const DESCRIPTION =
+  "A non-custodial, orderbook-based DEX on Polkadex. Trade directly from " +
+  "your wallet — no account, no deposits held by us. Testnet tokens are " +
+  "free from the faucet.";
+
 export const metadata: Metadata = {
-  title: "Polkadex Orderbook || A fully decentralized exchange platform",
-  description: "A fully decentralized exchange platform",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   keywords: [
     "trading",
     "crypto",
@@ -27,7 +44,30 @@ export const metadata: Metadata = {
     "polkadex",
     "decentralized",
     "exchange",
+    "testnet",
+    "dex",
   ],
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Polkadex Orderbook",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Polkadex Orderbook testnet — a non-custodial orderbook DEX",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og-image.png"],
+  },
 };
 
 export default async function RootLayout({
