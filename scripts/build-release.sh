@@ -133,7 +133,11 @@ if [ "$MODE" = docker ]; then
     else
       MISSING+=("$name")
     fi
-  done < <(grep -oE '^ARG [A-Z_][A-Z0-9_]*' Dockerfile | awk '{print $2}' | sort -u)
+    # Only ARGs WITHOUT a default in the Dockerfile (`ARG NAME`, not
+    # `ARG NAME=value`). One with a default is not "baked empty" when unset,
+    # so warning about it would be wrong and would train you to ignore the
+    # warning that matters.
+  done < <(grep -E '^ARG [A-Z_][A-Z0-9_]*[[:space:]]*$' Dockerfile | awk '{print $2}' | sort -u)
 
   if [ ${#MISSING[@]} -gt 0 ]; then
     warn "${#MISSING[@]} build arg(s) unset in $ENV_FILE, baked empty:

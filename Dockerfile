@@ -1,3 +1,6 @@
+# syntax=docker/dockerfile:1
+# The syntax directive is required for `RUN --mount=type=cache` below. Without
+# it, older Docker parses those flags as literal arguments and the build fails.
 # ============================================================================
 # OFE (apps/hestia) production image. The @aksumite/* and @mitrabook/*
 # libraries are consumed from npm, so a plain `docker build .` is all that's
@@ -26,7 +29,11 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/format/package.json ./packages/format/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 
-RUN yarn install --frozen-lockfile
+# Cache mount for the yarn download cache. This layer is already skipped
+# entirely when no manifest changed; the mount only helps when one did, by
+# avoiding a full re-download of the dependency tree.
+RUN --mount=type=cache,target=/usr/local/share/.cache/yarn,sharing=locked \
+    yarn install --frozen-lockfile
 
 # ============================================
 # Stage 2: Build the application
@@ -149,8 +156,25 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
 ENV NODE_OPTIONS="--max_old_space_size=4096"
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# turbo builds @orderbook/core and @orderbook/chart first via dependsOn
-RUN npx turbo run build --filter=@orderbook/hestia --concurrency=1
+# Serial by default because the Next build alone peaks near 4 GB and a parallel
+# task will OOM a small VPS (exit code 137, no explanation). Raise it on a
+# machine with headroom:  --build-arg TURBO_CONCURRENCY=2
+ARG TURBO_CONCURRENCY=1
+# Pin turbo's cache location so the mount below is guaranteed to match it.
+ENV TURBO_CACHE_DIR=/app/.turbo
+
+# `COPY . .` above invalidates this layer on ANY source change, so the build
+# always re-runs. These cache mounts are what stop it re-running *from
+# scratch*: Next keeps its incremental compiler cache in .next/cache and turbo
+# keeps task results in .turbo, and both survive between builds on this host.
+# Without them every deploy recompiles @polkadot/api and the chart libs even
+# when a single line of copy changed.
+#
+# Cache mounts are not part of the image, so nothing here bloats the result.
+RUN --mount=type=cache,target=/app/apps/hestia/.next/cache,sharing=locked \
+    --mount=type=cache,target=/app/.turbo,sharing=locked \
+    --mount=type=cache,target=/root/.npm,sharing=locked \
+    npx turbo run build --filter=@orderbook/hestia --concurrency=$TURBO_CONCURRENCY
 
 # ============================================
 # Stage 3: Production runner (minimal image)

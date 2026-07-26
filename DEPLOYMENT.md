@@ -328,6 +328,28 @@ because the `@polkadot/api` + chart graph exceeds 2 GB. On a small VPS the
 build is OOM-killed with a bare `exit code 137`. Add swap, or build elsewhere
 and ship the image.
 
+### Build times
+
+`COPY . .` invalidates the build layer on any source change, so the build step
+always re-runs. What it must not do is re-run *from scratch*, which is what a
+10-minute rebuild after a one-line edit means.
+
+The Dockerfile keeps three BuildKit cache mounts across builds on the same
+host: Next's incremental compiler cache (`.next/cache`), turbo's task cache
+(`.turbo`), and the yarn download cache. None of them end up in the image.
+Expect the first build after a change to these to be full-length (cold cache),
+and subsequent ones to be substantially shorter.
+
+Other levers:
+
+- `sudo scripts/deploy.sh --no-build` reuses the existing local image. Use it
+  when re-running the installer after a config change with no code change.
+- `--build-arg TURBO_CONCURRENCY=2` parallelises turbo. Default is 1 because
+  the Next build alone peaks near 4 GB and a second concurrent task will OOM a
+  small VPS. Check `free -h` before raising it.
+- Docker prunes cache mounts under disk pressure. If a build is unexpectedly
+  slow again, `docker system df` will show whether the cache was evicted.
+
 ## Option C - Manual (bare Node 22 + systemd)
 
 ```bash
