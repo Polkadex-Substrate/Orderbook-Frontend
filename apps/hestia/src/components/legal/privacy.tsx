@@ -13,11 +13,13 @@ import { LegalLayout } from "./layout";
  *  - retention now links to the in-app page instead of a GitHub PDF
  *  - blockchain-specific limits on erasure made explicit
  *
- * CONFIRM BEFORE PRODUCTION: the controller entity below (Polkadex Inc, BVI)
- * is carried over from the 2022 document and will change with the rebrand.
- * The contact address is gdpr@polkadex.ee - an interim address; make sure the
- * mailbox exists and is monitored, since this page invites rights requests to
- * it and GDPR sets response deadlines.
+ * gdpr@polkadex.ee is live and monitored (confirmed 2026-07-26), which is what
+ * makes publishing this page safe: it invites data-subject requests and GDPR
+ * starts a statutory clock from the moment one arrives.
+ *
+ * STILL TO CONFIRM BEFORE MAINNET: the controller entity below (Polkadex Inc,
+ * BVI) is carried over from the 2022 document and changes with the rebrand.
+ * Naming the wrong controller is a defect in the notice itself, not a typo.
  */
 export function Privacy() {
   return (

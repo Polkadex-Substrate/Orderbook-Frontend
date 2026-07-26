@@ -74,9 +74,13 @@ export const Footer = forwardRef<
               product feature. The footer is where these are conventionally
               found, and it keeps them one click from every page.
 
-              Hidden below xl only because this bar is narrow: the responsive
-              menu carries the same list from the same source array, so the
-              documents stay reachable at every width. */}
+              Two renderings of the SAME array, swapping at xl. Five inline
+              links overflow this bar once the market ticker, status dot and
+              Help are also in it, but simply hiding them left 640-1280px with
+              no visible legal links at all - reachable only via the hamburger,
+              which nobody looks in for a privacy policy. Below xl they
+              collapse into one dropdown instead, so the links are visible at
+              every width. */}
           <div className="hidden xl:flex items-center gap-3">
             {LEGAL_LINKS.map(({ href, label }) => (
               <Typography.Text key={href} appearance="primary" size="xs">
@@ -85,6 +89,23 @@ export const Footer = forwardRef<
                 </Link>
               </Typography.Text>
             ))}
+          </div>
+          <div className="xl:hidden flex items-center">
+            <Dropdown>
+              <Dropdown.Trigger className="items-center inline-flex gap-1 opacity-80 transition-opacity hover:opacity-100">
+                <Typography.Text size="xs">Legal</Typography.Text>
+                <Dropdown.Icon />
+              </Dropdown.Trigger>
+              <Dropdown.Content>
+                {LEGAL_LINKS.map(({ href, label }) => (
+                  <Dropdown.Item key={href}>
+                    <Link href={href} className="text-left block w-full">
+                      {label}
+                    </Link>
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Content>
+            </Dropdown>
           </div>
           <div className="flex items-center gap-1">
             <div
