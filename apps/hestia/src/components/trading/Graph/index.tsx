@@ -687,10 +687,10 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
           )}
           {chartState === "empty" && (
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 bg-gray-900/80 px-6 text-center">
-              <p className="text-sm font-medium text-gray-200">
+              <p className="text-sm font-medium text-current">
                 No price history yet
               </p>
-              <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+              <p className="max-w-xs text-xs leading-relaxed text-primary">
                 Nothing has traded on this pair yet. The chart starts as soon as
                 the first order fills.
               </p>
@@ -706,10 +706,10 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
           )}
           {chartState === "error" && (
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-1 bg-gray-900/80 px-6 text-center">
-              <p className="text-sm font-medium text-amber-400">
+              <p className="text-sm font-medium text-attention-base">
                 Couldn&apos;t load price history
               </p>
-              <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+              <p className="max-w-xs text-xs leading-relaxed text-primary">
                 The market data service didn&apos;t respond. Order placement and
                 balances are unaffected.
               </p>

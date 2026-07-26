@@ -13,7 +13,7 @@ import ConnectAccount from "../connectAccount";
 import { OrderAction } from "../orderAction";
 
 import { Range } from "@/components/ui/Temp/range";
-import { useFlashOnExternalChange } from "@/hooks/useFlashOnExternalChange";
+import { useFlashOnFill } from "@/components/trading/orderbookFill";
 import { useMoveAndTrade } from "@/hooks/useMoveAndTrade";
 import { TradingFee } from "@/components/ui/ReadyToUse";
 
@@ -111,9 +111,9 @@ export const SellOrder = ({
   };
 
   // Highlight fields when the orderbook click fills them (external change).
-  const priceFlash = useFlashOnExternalChange(values.price);
-  const amountFlash = useFlashOnExternalChange(values.amount);
-  const totalFlash = useFlashOnExternalChange(values.total);
+  const priceFlash = useFlashOnFill("price");
+  const amountFlash = useFlashOnFill("amount");
+  const totalFlash = useFlashOnFill("total");
 
   return (
     <form

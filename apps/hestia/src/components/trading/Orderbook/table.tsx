@@ -6,6 +6,8 @@ import { useRef } from "react";
 import { GenericMessage, Typography } from "@mitrabook/ux";
 import { Decimal } from "@orderbook/core/utils";
 
+import { useNotifyFill } from "../orderbookFill";
+
 import { GenericAction } from "./columns";
 
 export const Table = ({
@@ -41,15 +43,26 @@ export const Table = ({
     bids,
   });
 
+  // notifyFill drives the highlight. It must fire on every click, even when
+  // the value written is identical to what the field already held: core's
+  // changeMarketPrice skips the state update in that case, so value-watching
+  // silently missed those clicks and the flash looked random.
+  const notifyFill = useNotifyFill();
+
   const onChangePrice: GenericAction = (selectedIndex) => {
     changeMarketPrice(selectedIndex, isSell ? "asks" : "bids");
+    notifyFill("price");
   };
 
-  const onChangeAmount: GenericAction = (selectedIndex) =>
+  const onChangeAmount: GenericAction = (selectedIndex) => {
     changeMarketAmount(selectedIndex, isSell ? "asks" : "bids");
+    notifyFill("amount");
+  };
 
-  const onChangeTotal: GenericAction = (selectedIndex) =>
+  const onChangeTotal: GenericAction = (selectedIndex) => {
     changeMarketAmountSumClick(selectedIndex);
+    notifyFill("total");
+  };
 
   // Row click loads BOTH price and amount - "take this order" is the common
   // intent, and typing a smaller size over the amount is quicker than typing
@@ -59,6 +72,10 @@ export const Table = ({
   const onChangeAllValues: GenericAction = (selectedIndex) => {
     changeMarketPrice(selectedIndex, isSell ? "asks" : "bids");
     changeMarketAmount(selectedIndex, isSell ? "asks" : "bids");
+    // Both fields, so a row click highlights both even if one value is
+    // unchanged. Previously a row sharing its price with the form flashed
+    // only the amount, which read as a half-broken control.
+    notifyFill("price", "amount");
   };
 
   if (!active) return null;

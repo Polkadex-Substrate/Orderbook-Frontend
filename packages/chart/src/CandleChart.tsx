@@ -541,12 +541,20 @@ export function CandleChart({
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
         </div>
       )}
+      {/* Theme tokens, not raw Tailwind palette colours. `attention-base` is
+          the brand's warning orange and tracks the palette if it is retuned;
+          `text-amber-400` was an arbitrary colour that only rendered at all
+          because the same class happened to appear in an app file Tailwind
+          scans (this package was outside the content globs until now).
+
+          A failed fetch is a WARNING, not an error: trading and balances are
+          unaffected, only the chart is missing. It must not use danger red. */}
       {empty && !loading && !failed && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center pointer-events-none">
-          <p className="text-sm font-medium text-gray-200">
+          <p className="text-sm font-medium text-current">
             No price history yet
           </p>
-          <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+          <p className="max-w-xs text-xs leading-relaxed text-primary">
             Nothing has traded on this pair yet. The chart starts as soon as the
             first order fills.
           </p>
@@ -554,10 +562,10 @@ export function CandleChart({
       )}
       {failed && !loading && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center pointer-events-none">
-          <p className="text-sm font-medium text-amber-400">
+          <p className="text-sm font-medium text-attention-base">
             Couldn&apos;t load price history
           </p>
-          <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+          <p className="max-w-xs text-xs leading-relaxed text-primary">
             The market data service didn&apos;t respond. Order placement and
             balances are unaffected.
           </p>

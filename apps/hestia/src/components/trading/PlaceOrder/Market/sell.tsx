@@ -13,7 +13,7 @@ import { OrderAction } from "../orderAction";
 
 import { Range } from "@/components/ui/Temp/range";
 import { TradingFee } from "@/components/ui/ReadyToUse";
-import { useFlashOnExternalChange } from "@/hooks/useFlashOnExternalChange";
+import { useFlashOnFill } from "@/components/trading/orderbookFill";
 import { useMoveAndTrade } from "@/hooks/useMoveAndTrade";
 
 const AMOUNT = "amount";
@@ -89,7 +89,7 @@ export const SellOrder = ({
     available: availableBaseAmount,
   });
 
-  const amountFlash = useFlashOnExternalChange(values.amount);
+  const amountFlash = useFlashOnFill("amount");
 
   return (
     <form className="flex flex-auto flex-col gap-2" onSubmit={handleSubmit}>
