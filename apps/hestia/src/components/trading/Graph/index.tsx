@@ -56,6 +56,7 @@
 // };
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createChart, ColorType } from "lightweight-charts";
 import { Market } from "@orderbook/core/utils/orderbookService";
 
@@ -94,7 +95,12 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
   const [lastUpdate, setLastUpdate] = useState("--:--:--");
   const [isLoading, setIsLoading] = useState(false);
   const [isChartReady, setIsChartReady] = useState(false);
-  const [isChartError, setIsChartError] = useState(false);
+  // Three states, not a boolean. "empty" (market never traded) and "error"
+  // (data service unreachable) look identical to a boolean but mean opposite
+  // things to a visitor: one is normal, the other is broken.
+  const [chartState, setChartState] = useState<"ok" | "empty" | "error">("ok");
+  // Same gate the header uses — don't offer a faucet that isn't deployed.
+  const isFaucetEnabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET === "true";
 
   // Ticker state
   const [tickerData, setTickerData] = useState({
@@ -127,7 +133,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
   useEffect(() => {
     if (firstAsset && secondAsset) {
       setSelectedPair(`${firstAsset}-${secondAsset}`);
-      setIsChartError(false);
+      setChartState("ok");
     }
   }, [firstAsset, secondAsset]);
 
@@ -467,7 +473,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
 
     try {
       setIsLoading(true);
-      setIsChartError(false);
+      setChartState("ok");
       setStatusBadge({
         text: "Connecting...",
         className:
@@ -489,8 +495,26 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
 
       const data = await response.json();
 
+      // UDF protocol: `s` is "ok" | "no_data" | "error". "no_data" is the
+      // NORMAL reply for a pair that has never traded. Throwing on it is what
+      // painted a red "Chart data not available" over a healthy testnet
+      // market and flipped the badge to "Server Not Detected (Mock Data)" —
+      // two false failure signals on the most prominent panel of the page.
+      if (data.s === "no_data") {
+        candlestickSeriesRef.current?.setData([]);
+        volumeSeriesRef.current?.setData([]);
+        setChartState("empty");
+        setLastUpdate(new Date().toLocaleTimeString());
+        setStatusBadge({
+          text: "Server Connected",
+          className:
+            "px-3 py-1 rounded-full text-xs font-medium bg-green-900 text-green-300",
+        });
+        return;
+      }
+
       if (data.s !== "ok") {
-        throw new Error(data.errmsg || "No data available");
+        throw new Error(data.errmsg || "Unexpected response from history API");
       }
 
       const candleData: any[] = [];
@@ -538,7 +562,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
         className:
           "px-3 py-1 rounded-full text-xs font-medium bg-yellow-900 text-yellow-300",
       });
-      setIsChartError(true);
+      setChartState("error");
 
       // generateMockData(symbol);
     } finally {
@@ -661,9 +685,34 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
           )}
-          {isChartError && (
-            <div className="absolute inset-0 z-30 flex items-center justify-center bg-gray-900/80">
-              <p className="text-red-500">Chart data not available</p>
+          {chartState === "empty" && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 bg-gray-900/80 px-6 text-center">
+              <p className="text-sm font-medium text-gray-200">
+                No price history yet
+              </p>
+              <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+                Nothing has traded on this pair yet. The chart starts as soon as
+                the first order fills.
+              </p>
+              {isFaucetEnabled && (
+                <Link
+                  href="/faucet"
+                  className="mt-1 rounded-full bg-[#E6007A] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#c8006a]"
+                >
+                  Get testnet funds
+                </Link>
+              )}
+            </div>
+          )}
+          {chartState === "error" && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-1 bg-gray-900/80 px-6 text-center">
+              <p className="text-sm font-medium text-amber-400">
+                Couldn&apos;t load price history
+              </p>
+              <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+                The market data service didn&apos;t respond. Order placement and
+                balances are unaffected.
+              </p>
             </div>
           )}
           {/* Legend overlay */}

@@ -37,10 +37,7 @@ export const Footer = () => {
             appearance="primary"
             className="hover:text-current duration-300 transition-colors"
           >
-            <Link
-              href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf"
-              target="_blank"
-            >
+            <Link href="/legal/terms" target="_blank">
               Terms and conditions
             </Link>
           </Typography.Text>
@@ -48,10 +45,7 @@ export const Footer = () => {
             appearance="primary"
             className="hover:text-current duration-300 transition-colors"
           >
-            <Link
-              href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Privacy_Policy.pdf"
-              target="_blank"
-            >
+            <Link href="/legal/privacy" target="_blank">
               Privacy policy
             </Link>
           </Typography.Text>

@@ -43,7 +43,15 @@ export function Template({ id }: { id: string }) {
   const tabletView = useMemo(() => width >= 954 && width <= 1280, [width]);
 
   return (
-    <Fragment>
+    <div
+      className={classNames(
+        "flex flex-col",
+        // Definite height + overflow-hidden: the panel group's height:100%
+        // needs a resolvable parent, and the footer must stay in view rather
+        // than being pushed below the fold.
+        desktopView ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+      )}
+    >
       <ConnectTradingInteraction />
       <Header />
       {mobileView ? (
@@ -60,19 +68,27 @@ export function Template({ id }: { id: string }) {
       ) : (
         <Resizable
           direction="vertical"
-          className="flex-1 h-full w-full max-w-[3440px] mx-auto"
-          autoSaveId="persistence"
+          className="flex-1 min-h-0 w-full max-w-[3440px] mx-auto"
+          // Versioned autoSaveId. These layouts persist in localStorage, so a
+          // returning user keeps their saved split and NEVER sees a changed
+          // defaultSize. Bump the suffix whenever the defaults below change,
+          // otherwise the fix ships but nobody who has used the app sees it.
+          // Each group also needs its OWN id — they all shared "persistence".
+          autoSaveId="trading-vertical-v2"
           vaul-drawer-wrapper=""
         >
           <Resizable.Panel
             ref={mainPanelRef}
-            defaultSize={80}
-            minSize={50}
-            className="flex min-h-[400px]"
+            // 80/20 starved the order form: at 20% of a 16:9 desktop the
+            // bottom panel is ~200px, less than half what the form needs once
+            // the root font scales up at >=1680px wide.
+            defaultSize={68}
+            minSize={35}
+            className="flex min-h-0"
           >
             <Resizable
               direction="horizontal"
-              autoSaveId="persistence"
+              autoSaveId="trading-main-v2"
               className="!h-auto"
             >
               <Resizable.Panel minSize={40}>
@@ -110,27 +126,32 @@ export function Template({ id }: { id: string }) {
           </Resizable.Panel>
           <Resizable.Handle />
           <Resizable.Panel
+            defaultSize={32}
+            minSize={24}
             className={classNames(
-              tabletView && "min-h-[710px]",
-              desktopView && "min-h-[300px]"
+              "min-h-0",
+              // Tablet stacks these vertically and genuinely needs the room;
+              // desktop must NOT set a pixel minimum (see note above).
+              tabletView && "min-h-[710px]"
             )}
           >
             <Resizable
               direction={desktopView ? "horizontal" : "vertical"}
-              autoSaveId="persistence"
+              autoSaveId="trading-bottom-v2"
               className={classNames(!desktopView && "min-h-webKit")}
             >
               {tabletView && (
                 <Resizable
                   direction="horizontal"
-                  autoSaveId="persistence"
+                  autoSaveId="trading-tablet-v2"
                   className="max-h-[320px] border-b border-primary !h-webKit"
                 >
                   <Resizable.Panel
                     className="min-h-[310px] min-w-[615px]"
                     collapsible
                     collapsedSize={0}
-                    defaultValue={60}
+                    // was `defaultValue`, which react-resizable-panels ignores
+                    defaultSize={60}
                     minSize={38}
                   >
                     <PlaceOrder market={currentMarket} />
@@ -149,8 +170,11 @@ export function Template({ id }: { id: string }) {
               )}
               <Resizable.Panel
                 defaultSize={58}
-                minSize={58}
+                // minSize was pinned at 58 (== defaultSize), so the order form
+                // could never be widened past 42%.
+                minSize={40}
                 className={classNames(
+                  "min-h-0",
                   !desktopView && "flex flex-col max-h-[400px]"
                 )}
               >
@@ -160,11 +184,16 @@ export function Template({ id }: { id: string }) {
                 <Fragment>
                   <Resizable.Handle />
                   <Resizable.Panel
-                    className="min-h-[310px]"
+                    // No pixel min-height: it would make this panel taller
+                    // than the group can allocate on short viewports, and the
+                    // group clips rather than scrolls. PlaceOrder scrolls
+                    // internally instead (min-h-0 + overflow-auto).
+                    className="min-h-0"
                     collapsible
                     collapsedSize={0}
-                    defaultValue={38}
-                    minSize={38}
+                    // was `defaultValue`, which react-resizable-panels ignores
+                    defaultSize={42}
+                    minSize={30}
                   >
                     <PlaceOrder market={currentMarket} />
                   </Resizable.Panel>
@@ -191,6 +220,6 @@ export function Template({ id }: { id: string }) {
       >
         <span className="text-base font-bold leading-none select-none">?</span>
       </button>
-    </Fragment>
+    </div>
   );
 }

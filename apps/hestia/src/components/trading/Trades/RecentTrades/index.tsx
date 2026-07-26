@@ -52,7 +52,7 @@ export const RecentTrades = ({ id }: { id: string }) => {
   });
   return (
     <Skeleton loading={loading || marketsLoading} className="h-full w-full">
-      <div className="flex-1 flex flex-col h-full scrollbar-hide overflow-auto">
+      <div className="flex-1 flex flex-col h-full min-h-0 scrollbar-hide overflow-auto">
         {list?.length ? (
           <table className="w-full">
             <thead className="sticky top-[0] bg-level-0">
@@ -111,9 +111,12 @@ export const RecentTrades = ({ id }: { id: string }) => {
         ) : (
           /* Compact empty state: on a thin/new market this panel is empty
              most of the time — a full illustration reads as broken. */
-          <div className="flex-1 h-full flex items-center justify-center bg-level-0 py-6">
+          <div className="flex-1 h-full flex flex-col gap-1 items-center justify-center bg-level-0 py-6 px-4 text-center">
             <Typography.Text appearance="primary" size="xs">
               No trades yet on this pair
+            </Typography.Text>
+            <Typography.Text appearance="secondary" size="xs">
+              Fills show up here in real time.
             </Typography.Text>
           </div>
         )}

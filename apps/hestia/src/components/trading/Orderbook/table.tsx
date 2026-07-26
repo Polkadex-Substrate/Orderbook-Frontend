@@ -51,20 +51,25 @@ export const Table = ({
   const onChangeTotal: GenericAction = (selectedIndex) =>
     changeMarketAmountSumClick(selectedIndex);
 
-  // Row click loads the PRICE only (standard exchange behavior): the size on
-  // a level is someone else's order, not a suggestion for yours — prefilling
-  // it put users with a smaller balance straight into an error state.
-  // Clicking the amount or total cell explicitly still copies those values.
+  // Row click loads BOTH price and amount — "take this order" is the common
+  // intent, and typing a smaller size over the amount is quicker than typing
+  // a size from scratch. Safe now that an over-balance amount surfaces as an
+  // inline error plus the "Move X & Buy/Sell" action rather than a wall of
+  // red. Clicking the amount or total cell still copies just that value.
   const onChangeAllValues: GenericAction = (selectedIndex) => {
     changeMarketPrice(selectedIndex, isSell ? "asks" : "bids");
+    changeMarketAmount(selectedIndex, isSell ? "asks" : "bids");
   };
 
   if (!active) return null;
 
+  // "No data" reads as a failed fetch. An empty side of the book is a normal
+  // state on a quiet market, and saying which side is empty tells the user
+  // there is room for their order rather than that something is broken.
   if (!orders.length)
     return (
       <GenericMessage
-        title="No data"
+        title={isSell ? "No sell orders" : "No buy orders"}
         illustration="NoData"
         className="bg-level-0 p-0"
         imageProps={{

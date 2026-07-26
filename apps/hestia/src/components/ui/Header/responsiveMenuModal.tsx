@@ -96,7 +96,7 @@ export const ResponsiveMenuModal = ({
                   <HeaderLink.Accordion
                     items={[
                       {
-                        href: "https://discord.gg/G4KMw2sGGe",
+                        href: "https://discord.gg/QNfwPevNG",
                         label: "Community support",
                       },
                       {
@@ -115,27 +115,27 @@ export const ResponsiveMenuModal = ({
                     items={[
                       { href: "/", label: "Listings" },
                       {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf",
+                        href: "/legal/terms",
                         label: "Terms of use",
                       },
                       {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Privacy_Policy.pdf",
+                        href: "/legal/privacy",
                         label: "Privacy policy",
                       },
                       {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Disclaimer_and_Legal_Notice.pdf",
+                        href: "/legal/disclaimer",
                         label: "Disclaimer",
                       },
                       {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Excluded_Jurisdictions.pdf",
+                        href: "/legal/excluded-jurisdictions",
                         label: "Excluded Jurisdictions",
                       },
                       {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Data_Retention_Policy.pdf",
+                        href: "/legal/data-retention",
                         label: "Data Retention Policy",
                       },
                       {
-                        href: "https://pdexanalytics.com",
+                        href: "https://explorer.polkadex.ee/analytics",
                         label: "Analytics",
                       },
                     ]}

@@ -75,7 +75,7 @@ export const BalancesTable = ({ height }: { height: number }) => {
         open={responsiveState}
       />
       <div
-        className="flex-1 h-full overflow-auto scrollbar-hide"
+        className="flex-1 h-full min-h-0 overflow-auto scrollbar-hide"
         style={{ maxHeight: height }}
       >
         <PolkadexTable className="w-full [&_th]:border-b [&_th]:border-primary mb-1">

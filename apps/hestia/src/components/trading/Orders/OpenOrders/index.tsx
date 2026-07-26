@@ -125,7 +125,7 @@ export const OpenOrdersTable = ({
         onCancelOrder={onCancelOrder}
       />
       <InfiniteScroll
-        className="flex-1 h-full overflow-auto scrollbar-hide"
+        className="flex-1 h-full min-h-0 overflow-auto scrollbar-hide"
         dataLength={openOrders.length}
         next={() => {}}
         hasMore={false}

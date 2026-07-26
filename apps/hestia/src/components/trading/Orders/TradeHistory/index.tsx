@@ -71,7 +71,7 @@ export const TradeHistoryTable = ({
         open={responsiveState}
       />
       <InfiniteScroll
-        className="flex-1 h-full overflow-auto scrollbar-hide"
+        className="flex-1 h-full min-h-0 overflow-auto scrollbar-hide"
         dataLength={trades.length}
         next={() => {
           onFetchNextPage();

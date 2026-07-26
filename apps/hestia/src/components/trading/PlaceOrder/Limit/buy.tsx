@@ -10,6 +10,7 @@ import { Market } from "@orderbook/core/utils/orderbookService/types";
 
 import { Balance } from "../balance";
 import ConnectAccount from "../connectAccount";
+import { OrderAction } from "../orderAction";
 
 import { Range } from "@/components/ui/Temp/range";
 import { useFlashOnExternalChange } from "@/hooks/useFlashOnExternalChange";
@@ -257,45 +258,48 @@ export const BuyOrder = ({
         </Typography.Text>
       )}
 
-      {isSignedIn ? (
-        dirty && requiredQuote > availableQuoteAmount && canMoveAndTrade ? (
-          <Button.Solid
-            appearance="success"
-            type="button"
-            disabled={phase !== "idle" || isSubmitting}
-            onClick={() =>
-              moveAndTrade(async () => {
-                await onExecuteOrder(values.price, values.amount);
-                resetForm();
-              })
-            }
-          >
-            {phase === "depositing" ? (
-              <Spinner.Keyboard className="h-6 w-6" />
-            ) : phase === "crediting" ? (
-              <>Crediting balance...</>
-            ) : (
-              <>
-                Move {moveAmount.toFixed(4)} {market?.quoteAsset?.ticker} & Buy
-              </>
-            )}
-          </Button.Solid>
+      <OrderAction>
+        {isSignedIn ? (
+          dirty && requiredQuote > availableQuoteAmount && canMoveAndTrade ? (
+            <Button.Solid
+              appearance="success"
+              type="button"
+              disabled={phase !== "idle" || isSubmitting}
+              onClick={() =>
+                moveAndTrade(async () => {
+                  await onExecuteOrder(values.price, values.amount);
+                  resetForm();
+                })
+              }
+            >
+              {phase === "depositing" ? (
+                <Spinner.Keyboard className="h-6 w-6" />
+              ) : phase === "crediting" ? (
+                <>Crediting balance...</>
+              ) : (
+                <>
+                  Move {moveAmount.toFixed(4)} {market?.quoteAsset?.ticker} &
+                  Buy
+                </>
+              )}
+            </Button.Solid>
+          ) : (
+            <Button.Solid
+              appearance="success"
+              type="submit"
+              disabled={!(isValid && dirty) || isSubmitting}
+            >
+              {isSubmitting ? (
+                <Spinner.Keyboard className="h-6 w-6" />
+              ) : (
+                <>Buy {market?.baseAsset?.ticker}</>
+              )}
+            </Button.Solid>
+          )
         ) : (
-          <Button.Solid
-            appearance="success"
-            type="submit"
-            disabled={!(isValid && dirty) || isSubmitting}
-          >
-            {isSubmitting ? (
-              <Spinner.Keyboard className="h-6 w-6" />
-            ) : (
-              <>Buy {market?.baseAsset?.ticker}</>
-            )}
-          </Button.Solid>
-        )
-      ) : (
-        <ConnectAccount />
-      )}
+          <ConnectAccount />
+        )}
+      </OrderAction>
     </form>
   );
 };

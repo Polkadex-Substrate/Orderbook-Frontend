@@ -98,6 +98,10 @@ export function CandleChart({
   const syncGuardRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  // A market that has never traded resolves successfully with zero bars.
+  // That is NOT a failure, but without its own state it rendered as a blank
+  // chart with no explanation at all — indistinguishable from a broken one.
+  const [empty, setEmpty] = useState(false);
 
   const showRsi = !!indicators?.rsi;
   const emaPeriods = useMemo(
@@ -408,6 +412,7 @@ export function CandleChart({
     let cancelled = false;
     setLoading(true);
     setFailed(false);
+    setEmpty(false);
     candlesRef.current = [];
     oldestRef.current = null;
 
@@ -421,6 +426,7 @@ export function CandleChart({
         if (cancelled) return;
         candlesRef.current = bars;
         oldestRef.current = bars.length ? bars[0].time : null;
+        setEmpty(bars.length === 0);
         rebuildMainSeries();
         chartRef.current?.timeScale().fitContent();
         setLoading(false);
@@ -443,6 +449,8 @@ export function CandleChart({
         if (last && bar.time < last.time) return; // stale tick
         if (last && bar.time === last.time) candles[candles.length - 1] = bar;
         else candles.push(bar);
+        // First live bar on a previously untraded market: drop the overlay.
+        setEmpty(false);
         mainSeriesRef.current?.update(toSeriesData(bar) as never);
         volSeriesRef.current?.update({
           time: sec(bar.time),
@@ -533,9 +541,26 @@ export function CandleChart({
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
         </div>
       )}
+      {empty && !loading && !failed && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center pointer-events-none">
+          <p className="text-sm font-medium text-gray-200">
+            No price history yet
+          </p>
+          <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+            Nothing has traded on this pair yet. The chart starts as soon as the
+            first order fills.
+          </p>
+        </div>
+      )}
       {failed && !loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <p className="text-red-500 text-sm">Chart data not available</p>
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center pointer-events-none">
+          <p className="text-sm font-medium text-amber-400">
+            Couldn&apos;t load price history
+          </p>
+          <p className="max-w-xs text-xs leading-relaxed text-gray-400">
+            The market data service didn&apos;t respond. Order placement and
+            balances are unaffected.
+          </p>
         </div>
       )}
     </div>

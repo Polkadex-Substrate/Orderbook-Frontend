@@ -62,7 +62,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       <HelpCard
         title="Having Trouble?"
         description="Feel free to reach out to our community for support."
-        href="https://discord.gg/G4KMw2sGGe"
+        href="https://discord.gg/QNfwPevNG"
       >
         <Button.Icon
           size="2sm"

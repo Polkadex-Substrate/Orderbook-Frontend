@@ -12,7 +12,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       className="flex items-start max-md:flex-col max-md:gap-4 w-full max-lg:pb-4 border-t border-primary p-4 hover:bg-level-0 transition-colors duration-300"
     >
       <Link
-        href="https://discord.gg/G4KMw2sGGe"
+        href="https://discord.gg/QNfwPevNG"
         target="_blank"
         className="w-full flex items-center justify-between"
       >

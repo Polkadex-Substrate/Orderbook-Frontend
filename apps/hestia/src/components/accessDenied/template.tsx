@@ -37,7 +37,7 @@ export function Template() {
               <Typography.Text asChild appearance="primary-base" bold>
                 <Link
                   target="_blank"
-                  href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Excluded_Jurisdictions.pdf"
+                  href="/legal/excluded-jurisdictions"
                   className="underline"
                 >
                   Restricted jurisdiction
@@ -45,11 +45,7 @@ export function Template() {
               </Typography.Text>
               . Based on the{" "}
               <Typography.Text asChild appearance="primary-base" bold>
-                <Link
-                  target="_blank"
-                  href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf"
-                  className="underline"
-                >
+                <Link target="_blank" href="/legal/terms" className="underline">
                   Terms of use
                 </Link>
               </Typography.Text>
