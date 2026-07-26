@@ -19,7 +19,7 @@ import { picoScale } from "@/helpers";
 const responsiveKeys = ["inOrders", "fundingAccount"];
 
 // Plain component: was forwardRef but ignored the ref and no caller
-// passed one — triggered React's forwardRef-arity warning on mount.
+// passed one - triggered React's forwardRef-arity warning on mount.
 export const Table = ({
   maxHeight,
   data,

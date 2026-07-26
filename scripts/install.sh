@@ -23,6 +23,9 @@
 #   --domain <fqdn>     domain for the nginx vhost        (implies --with-nginx)
 #   --no-start          install but do not start the service
 #   --dry-run           print what would happen, change nothing
+#   --keep-backups <n>  previous installs to retain           (default 3, 0 = none)
+#   --replace-env       overwrite the installed runtime env from --env
+#                       (default: an existing /etc/<svc>/<svc>.env is KEPT)
 #
 # Hardening (see scripts/lib/harden.sh for what each one defends against):
 #   --harden            sysctl + firewall + fail2ban + auto-updates + proxy-only bind
@@ -38,7 +41,7 @@
 #   --cf-cert <path>    origin certificate (default /etc/ssl/cloudflare/origin.pem)
 #   --cf-key  <path>    origin private key (default /etc/ssl/cloudflare/origin.key)
 #   --cf-origin-pull    additionally require Cloudflare's client certificate
-#                       (Authenticated Origin Pulls) — strongest origin lock
+#                       (Authenticated Origin Pulls) - strongest origin lock
 #
 # The systemd sandbox is ALWAYS applied. Everything else is opt-in, because
 # reconfiguring a firewall or SSH on someone else's server without asking is
@@ -62,6 +65,8 @@ CLOUDFLARE=0
 CF_CERT=/etc/ssl/cloudflare/origin.pem
 CF_KEY=/etc/ssl/cloudflare/origin.key
 CF_ORIGIN_PULL=0
+KEEP_BACKUPS=3
+REPLACE_ENV=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -81,6 +86,8 @@ while [ $# -gt 0 ]; do
     --cf-cert)     CF_CERT="$2"; CLOUDFLARE=1; WITH_NGINX=1; shift 2 ;;
     --cf-key)      CF_KEY="$2";  CLOUDFLARE=1; WITH_NGINX=1; shift 2 ;;
     --cf-origin-pull) CF_ORIGIN_PULL=1; CLOUDFLARE=1; WITH_NGINX=1; shift ;;
+    --keep-backups) KEEP_BACKUPS="$2"; shift 2 ;;
+    --replace-env)  REPLACE_ENV=1; shift ;;
     -h|--help)     sed -n '2,55p' "$0"; exit 0 ;;
     *)             echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -135,7 +142,7 @@ if [ "$CLOUDFLARE" -eq 1 ]; then
   case "$CF_KEY"  in /*) : ;; *) die "--cf-key must be an absolute path: $CF_KEY" ;; esac
   if [ "$DRY_RUN" -eq 0 ]; then
     # Everything below fails BEFORE nginx is reconfigured, so a bad cert can
-    # never take the site down — you get a named error instead of a 526.
+    # never take the site down - you get a named error instead of a 526.
     [ -r "$CF_CERT" ] || die "Cloudflare origin certificate not readable: $CF_CERT
 Create one in the Cloudflare dashboard (SSL/TLS -> Origin Server -> Create
 Certificate), save the certificate and key to that path, then re-run."
@@ -150,7 +157,7 @@ Certificate), save the certificate and key to that path, then re-run."
     [ -n "$key_pub" ] || die "$CF_KEY is not a valid private key"
     [ "$cert_pub" = "$key_pub" ] || die \
       "Certificate and private key do not match.
-They must come from the SAME 'Create Certificate' screen — Cloudflare shows
+They must come from the SAME 'Create Certificate' screen - Cloudflare shows
 the private key only once, at creation, so a regenerated cert needs its key
 copied at the same time."
 
@@ -162,7 +169,7 @@ copied at the same time."
     CERT_SANS="$(openssl x509 -in "$CF_CERT" -noout -ext subjectAltName 2>/dev/null \
       | tr ',' '\n' | sed -n 's/.*DNS:[[:space:]]*\([^[:space:],]*\).*/\1/p')"
     if [ -z "$CERT_SANS" ]; then
-      warn "Certificate has no subjectAltName — cannot verify it covers $DOMAIN."
+      warn "Certificate has no subjectAltName - cannot verify it covers $DOMAIN."
     elif ! cert_san_covers "$DOMAIN" "$CERT_SANS"; then
       die "Origin certificate does not cover $DOMAIN.
 
@@ -193,7 +200,7 @@ done
 # ── Payload validation ──────────────────────────────────────────────────
 # Checking only for server.js is not enough: a truncated or partially-built
 # payload has it while missing the compiled assets, and the app then starts,
-# serves HTML, and returns 400 for every JS chunk — which looks like a proxy
+# serves HTML, and returns 400 for every JS chunk - which looks like a proxy
 # or CDN fault and is miserable to trace back to packaging. Verify the pieces
 # Next actually needs before overwriting a working install.
 A="$SRC_DIR/apps/hestia"
@@ -209,7 +216,7 @@ payload_missing=""
 [ -d "$A/public" ]               || payload_missing="$payload_missing public/"
 
 if [ -n "$payload_missing" ]; then
-  die "Release payload is incomplete — refusing to install.
+  die "Release payload is incomplete - refusing to install.
 
   Missing:$payload_missing
   Looked in: $A
@@ -220,14 +227,14 @@ Rebuild the artifact:
   scripts/build-release.sh --tarball                          # from source
   scripts/build-release.sh --tarball --from-image <image>     # from an image
 
-then unpack the NEW tarball and run its install.sh — not a leftover directory
+then unpack the NEW tarball and run its install.sh - not a leftover directory
 from an earlier attempt."
 fi
 
 # A build with no chunks is technically 'present' but useless.
 chunk_count="$(find "$A/.next/static" -name '*.js' 2>/dev/null | wc -l)"
 [ "$chunk_count" -gt 0 ] || die \
-  "$A/.next/static contains no JavaScript — the build output is empty."
+  "$A/.next/static contains no JavaScript - the build output is empty."
 log "Payload OK ($chunk_count static JS files)"
 
 # ── 1. Identify the distribution ────────────────────────────────────────
@@ -243,7 +250,7 @@ case "$OS_ID $OS_LIKE" in
   *alpine*)                                   PKG=apk;    INIT=openrc ;;
   *debian*|*ubuntu*|*raspbian*|*linuxmint*)   PKG=apt ;;
   # RHEL family BEFORE fedora: Rocky/Alma/Amazon all carry "fedora" in
-  # ID_LIKE, but Amazon Linux 2 has only yum — so probe rather than assume.
+  # ID_LIKE, but Amazon Linux 2 has only yum - so probe rather than assume.
   *rhel*|*centos*|*rocky*|*almalinux*|*amzn*) PKG=$(command -v dnf >/dev/null && echo dnf || echo yum) ;;
   *fedora*)                                   PKG=dnf ;;
   *suse*|*sles*|*opensuse*)                   PKG=zypper ;;
@@ -253,7 +260,7 @@ case "$OS_ID $OS_LIKE" in
       command -v "$c" >/dev/null && { PKG="${c%-get}"; break; }
     done
     [ -n "$PKG" ] || die "could not determine the package manager for: $OS_NAME"
-    warn "Unrecognised distribution '$OS_NAME' — proceeding with $PKG"
+    warn "Unrecognised distribution '$OS_NAME' - proceeding with $PKG"
     ;;
 esac
 command -v systemctl >/dev/null || INIT=openrc
@@ -273,7 +280,7 @@ pkg_install() {
 
 # ── 2. Node.js 22+ ──────────────────────────────────────────────────────
 # 22, not 20: @hyperbridge/sdk declares engines.node ">=22.x.x". Node 20 also
-# reached end of life in April 2026, so it receives no security patches —
+# reached end of life in April 2026, so it receives no security patches -
 # don't install it on a host we just spent an installer hardening.
 NODE_MIN=22
 need_node=1
@@ -294,7 +301,7 @@ if [ "$need_node" -eq 1 ]; then
       pkg_install curl ca-certificates gnupg
       # Prefer the distro package when it is already new enough. Recent Ubuntu
       # and Debian ship Node 22+, and NodeSource often has no repository for a
-      # freshly released distro — adding it would fail where the built-in
+      # freshly released distro - adding it would fail where the built-in
       # package would have worked perfectly.
       apt_node_major=""
       if command -v apt-cache >/dev/null; then
@@ -302,7 +309,7 @@ if [ "$need_node" -eq 1 ]; then
           | awk '/Candidate:/ {print $2}' | sed -E 's/^[0-9]+://; s/[^0-9].*//')"
       fi
       if [ -n "$apt_node_major" ] && [ "$apt_node_major" -ge "$NODE_MIN" ] 2>/dev/null; then
-        log "Distro package provides Node $apt_node_major — using it instead of NodeSource"
+        log "Distro package provides Node $apt_node_major - using it instead of NodeSource"
         pkg_install nodejs npm
       else
         run "curl -fsSL https://deb.nodesource.com/setup_${NODE_MIN}.x | bash -"
@@ -324,11 +331,11 @@ if [ "$need_node" -eq 1 ]; then
   esac
 
   # These verify the *result* of the installs above, so they must not run in
-  # dry-run mode — nothing was installed, and they would fail on a host where
+  # dry-run mode - nothing was installed, and they would fail on a host where
   # the real run would have succeeded.
   if [ "$DRY_RUN" -eq 0 ]; then
     command -v node >/dev/null || die "Node installation failed"
-    # Arch/Alpine install "whatever is current" — verify rather than assume.
+    # Arch/Alpine install "whatever is current" - verify rather than assume.
     got="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
     [ "$got" -ge "$NODE_MIN" ] || die \
       "Installed Node $(node -v) is older than ${NODE_MIN}; install Node ${NODE_MIN}+ manually and re-run."
@@ -352,9 +359,30 @@ fi
 # ── 4. Install the application ──────────────────────────────────────────
 if [ -d "$PREFIX" ]; then
   BACKUP="${PREFIX}.bak.$(date +%Y%m%d%H%M%S)"
-  log "Existing install found — moving to $BACKUP"
+  log "Existing install found - moving to $BACKUP"
   run "mv '$PREFIX' '$BACKUP'"
 fi
+
+# Prune old backups. Each one is ~140 MB, so a few weeks of deploys fills the
+# disk - and a full disk breaks the running service, not just the next deploy.
+# Pruning happens HERE rather than at the end on purpose: the tree just moved
+# aside is the newest backup and is always retained, so a rollback target
+# survives even if this run fails later.
+prune_backups() {
+  [ "$KEEP_BACKUPS" -ge 0 ] 2>/dev/null || return 0
+  local all count excess
+  all="$(ls -1d "${PREFIX}".bak.* 2>/dev/null | sort -r || true)"
+  [ -n "$all" ] || return 0
+  count="$(printf '%s\n' "$all" | wc -l)"
+  excess=$(( count - KEEP_BACKUPS ))
+  [ "$excess" -gt 0 ] || { log "Backups: $count kept (limit $KEEP_BACKUPS)"; return 0; }
+  log "Pruning $excess old backup(s), keeping the $KEEP_BACKUPS most recent"
+  printf '%s\n' "$all" | tail -n "$excess" | while read -r old; do
+    [ -n "$old" ] || continue
+    run "rm -rf '$old'"
+  done
+}
+prune_backups
 
 log "Installing to $PREFIX"
 run "mkdir -p '$PREFIX'"
@@ -367,7 +395,7 @@ run "chown -R root:$SVC_USER '$PREFIX'"
 run "find '$PREFIX' -type d -exec chmod 0750 {} +"
 run "find '$PREFIX' -type f -exec chmod 0640 {} +"
 
-# Next writes image and fetch caches at runtime — the one writable path.
+# Next writes image and fetch caches at runtime - the one writable path.
 run "mkdir -p '$PREFIX/apps/hestia/.next/cache'"
 run "chown -R $SVC_USER:$SVC_USER '$PREFIX/apps/hestia/.next/cache'"
 run "chmod 0750 '$PREFIX/apps/hestia/.next/cache'"
@@ -377,10 +405,28 @@ ENV_DIR=/etc/$SERVICE_NAME
 ENV_FILE="$ENV_DIR/$SERVICE_NAME.env"
 run "mkdir -p '$ENV_DIR'"
 
-if [ -f "$ENV_FILE" ]; then
-  log "Keeping existing $ENV_FILE"
+if [ -f "$ENV_FILE" ] && [ "$REPLACE_ENV" -eq 0 ]; then
+  # Existing env is preserved so a redeploy cannot clobber hand-edits made on
+  # the server. But that means edits to the SOURCE env file are silently
+  # ignored on re-run - surprising when you have just changed GRAPHQL_URL and
+  # redeployed. Say so, loudly, when the two differ.
+  if [ -n "$ENV_SRC" ] && [ -f "$ENV_SRC" ] && ! cmp -s "$ENV_SRC" "$ENV_FILE"; then
+    warn "Runtime env differs from $ENV_SRC - KEEPING the installed copy.
+     Installed: $ENV_FILE
+     Source:    $ENV_SRC
+     Re-run with --replace-env to overwrite (the current file is backed up).
+     Note NEXT_PUBLIC_* values are compiled in at build time and are not
+     affected either way - those need a rebuild."
+  else
+    log "Keeping existing $ENV_FILE"
+  fi
 elif [ -n "$ENV_SRC" ] && [ -f "$ENV_SRC" ]; then
-  log "Installing runtime env from $ENV_SRC"
+  if [ -f "$ENV_FILE" ]; then
+    log "Replacing runtime env from $ENV_SRC (previous kept as .prev)"
+    run "cp -a '$ENV_FILE' '$ENV_FILE.prev'"
+  else
+    log "Installing runtime env from $ENV_SRC"
+  fi
   run "install -m 0640 -o root -g $SVC_USER '$ENV_SRC' '$ENV_FILE'"
 elif [ -f "$SRC_DIR/orderbook-fe.env" ]; then
   log "Installing runtime env bundled with the release"
@@ -391,7 +437,7 @@ else
     cat > "$ENV_FILE" <<EOF
 # Runtime environment for $SERVICE_NAME.
 # NOTE: NEXT_PUBLIC_* values are compiled into the browser bundle at BUILD
-# time and cannot be changed here — rebuild the release to change them.
+# time and cannot be changed here - rebuild the release to change them.
 NODE_ENV=production
 PORT=$PORT
 HOSTNAME=0.0.0.0
@@ -462,7 +508,7 @@ CapabilityBoundingSet=
 AmbientCapabilities=
 UMask=0077
 
-# Resource ceilings — a runaway or attacked process can't exhaust the host.
+# Resource ceilings - a runaway or attacked process can't exhaust the host.
 LimitNOFILE=65535
 LimitNPROC=512
 MemoryMax=4G
@@ -527,7 +573,7 @@ if [ "$WITH_NGINX" -eq 1 ]; then
   # so fall back to the deprecated-but-working `listen ... http2` form.
   NGINX_VER="$(command -v nginx >/dev/null && nginx -v 2>&1 | sed -E 's|.*/([0-9.]+).*|\1|' || true)"
   if [ -z "$NGINX_VER" ] && [ "$DRY_RUN" -eq 1 ]; then
-    warn "nginx not installed yet — previewing the pre-1.25 http2 syntax.
+    warn "nginx not installed yet - previewing the pre-1.25 http2 syntax.
      The real run will detect the installed version and may use 'http2 on;'."
   fi
   if [ -n "$NGINX_VER" ] && \
@@ -543,7 +589,7 @@ if [ "$WITH_NGINX" -eq 1 ]; then
 
   # Rate-limit zones must live in the http{} context, not in a server block.
   # The vhost references these zones, so if conf.d isn't included the config
-  # is invalid — create it rather than silently skipping.
+  # is invalid - create it rather than silently skipping.
   run "mkdir -p /etc/nginx/conf.d"
   if [ "$DRY_RUN" -eq 0 ]; then
     cat > /etc/nginx/conf.d/00-$SERVICE_NAME-limits.conf <<'EOF'
@@ -563,12 +609,12 @@ EOF
     cloudflare_realip_conf
   fi
 
-  # The proxied location block is identical in both modes — define once.
+  # The proxied location block is identical in both modes - define once.
   #
   # Escaping note: this heredoc is unquoted so $PORT interpolates, and nginx
   # variables use a SINGLE backslash (\$host). The value is then inserted into
   # the outer heredoc by parameter expansion, which does not re-process
-  # backslashes — so \\\$ here would emit a literal backslash and nginx would
+  # backslashes - so \\\$ here would emit a literal backslash and nginx would
   # refuse to start.
   PROXY_BLOCK=$(cat <<EOF
     limit_req  zone=ob_req burst=60 nodelay;
@@ -614,7 +660,7 @@ EOF
           ORIGIN_PULL="    ssl_client_certificate $CF_PULL_CA;
     ssl_verify_client on;"
         else
-          warn "Could not obtain the Cloudflare origin-pull CA — skipping mTLS.
+          warn "Could not obtain the Cloudflare origin-pull CA - skipping mTLS.
      Enable it later by adding ssl_client_certificate + ssl_verify_client."
         fi
       fi
@@ -634,7 +680,7 @@ $HTTP2_DIRECTIVE
     server_name $SERVER_NAME;
 
     # Cloudflare Origin CA certificate. Only Cloudflare trusts this cert, so
-    # the Cloudflare SSL mode MUST be "Full (strict)" — a browser reaching
+    # the Cloudflare SSL mode MUST be "Full (strict)" - a browser reaching
     # the origin directly would (correctly) reject it.
     ssl_certificate     $CF_CERT;
     ssl_certificate_key $CF_KEY;
@@ -703,7 +749,7 @@ if [ "$HARDEN" -eq 1 ]; then
     fi
     [ "$HARDEN_SSH" -eq 1 ] && harden_ssh
   else
-    warn "harden.sh not found next to install.sh — skipping host hardening"
+    warn "harden.sh not found next to install.sh - skipping host hardening"
   fi
 else
   echo
@@ -763,7 +809,7 @@ if [ "$NO_START" -eq 0 ] && [ "$DRY_RUN" -eq 0 ]; then
   log "Waiting for the service to answer…"
   for i in $(seq 1 20); do
     if curl -fsS -o /dev/null "http://127.0.0.1:$PORT/" 2>/dev/null; then
-      log "Health check OK — the app is serving on port $PORT"
+      log "Health check OK - the app is serving on port $PORT"
       exit 0
     fi
     sleep 1

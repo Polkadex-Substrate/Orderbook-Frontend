@@ -121,7 +121,7 @@ export function useMarkets(market?: string) {
       return {
         ...item,
         // Display-only fallback: a market with no recent trades has a
-        // genuinely null price/volume — show 0 here rather than propagate
+        // genuinely null price/volume - show 0 here rather than propagate
         // null into this list's display-only consumers.
         last: (ticker || defaultTicker).close ?? 0,
         volume: (ticker || defaultTicker).quoteVolume ?? 0,

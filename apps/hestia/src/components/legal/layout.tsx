@@ -35,7 +35,7 @@ export function LegalLayout({
         <div className="mx-auto w-full max-w-[820px] px-5 py-10">
           {/* Link straight to the market, not "/": that route is a server-side
               redirect(), which Next's client-side Link navigation does not
-              follow — the click appeared to do nothing. */}
+              follow - the click appeared to do nothing. */}
           <Link
             href={`/trading/${defaultConfig.landingPageMarket}`}
             className="inline-flex items-center gap-1.5 text-sm opacity-70 hover:opacity-100 transition-opacity mb-8"

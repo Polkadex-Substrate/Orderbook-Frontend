@@ -71,7 +71,7 @@ export async function transferSubstrateToEvm(
   const signer = injector.signer;
   if (!signer?.signPayload) {
     throw new Error(
-      "Extension signer does not support signPayload — please update your wallet extension."
+      "Extension signer does not support signPayload - please update your wallet extension."
     );
   }
 
@@ -90,7 +90,7 @@ export async function transferSubstrateToEvm(
   const amountBigInt = parseUnits(String(amount), decimals);
 
   // The IsmpHostStateMachine enum on Polkadex is SCALE-encoded as a tagged
-  // variant, not a string. Polkadot.js rejects "EVM-11155111" — it needs the
+  // variant, not a string. Polkadot.js rejects "EVM-11155111" - it needs the
   // object form { Evm: chainId }.
   const destinationEnum = { Evm: _evmChain.chainId };
 

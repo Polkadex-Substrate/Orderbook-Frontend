@@ -77,7 +77,7 @@ export const FundWalletModal = ({
           </div>
         </div>
         {/* Everything below funds an account with REAL PDEX. On the testnet
-            none of it works — a CEX withdrawal, a Simplex card purchase and
+            none of it works - a CEX withdrawal, a Simplex card purchase and
             the cede.store on-ramp all deliver mainnet tokens, so they are
             dead ends that send a new user off-site and lose them. The faucet
             replaces the lot. Gated rather than deleted so mainnet is intact. */}

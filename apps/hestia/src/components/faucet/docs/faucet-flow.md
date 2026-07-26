@@ -1,6 +1,6 @@
-# Faucet Feature — Complete Flow Reference
+# Faucet Feature - Complete Flow Reference
 
-The faucet is a testnet token dispenser that lets users request free tokens on either the **Polkadex Testnet** (Substrate chain) or **Sepolia Testnet** (EVM chain). It requires no wallet connection — any valid address can receive tokens.
+The faucet is a testnet token dispenser that lets users request free tokens on either the **Polkadex Testnet** (Substrate chain) or **Sepolia Testnet** (EVM chain). It requires no wallet connection - any valid address can receive tokens.
 
 ---
 
@@ -26,7 +26,7 @@ The faucet is a testnet token dispenser that lets users request free tokens on e
 ```
 apps/hestia/src/
 ├── app/faucet/
-│   └── page.tsx                       # Next.js route — dynamically imports Template
+│   └── page.tsx                       # Next.js route - dynamically imports Template
 ├── middleware.ts                       # Route guard: redirects /faucet when disabled
 └── components/faucet/
     ├── api.ts                          # All fetch calls to the faucet backend
@@ -93,8 +93,8 @@ Template                            (template.tsx)
 │   ├── Form                        (Form/index.tsx)
 │   │   ├── SelectNetwork           (Form/selectNetwork.tsx)
 │   │   ├── SelectToken             (Form/selectToken.tsx)
-│   │   │   └── SelectToken.Card    (Form/selectToken.tsx — per-token list item)
-│   │   └── Input.Vertical          (@polkadex/ux — wallet address field)
+│   │   │   └── SelectToken.Card    (Form/selectToken.tsx - per-token list item)
+│   │   └── Input.Vertical          (@polkadex/ux - wallet address field)
 │   └── Help                        (Help.tsx)
 │       ├── HelpCard "How to use the Faucet" → https://docs.polkadex.ee
 │       └── HelpCard "Having Trouble?" → https://discord.gg/QNfwPevNG
@@ -178,14 +178,14 @@ Template                            (template.tsx)
    On error:
    - Error message extracted from API JSON response body (field: "error")
    - Falls back to "Request failed (status)" if body is not JSON
-   - Error toast shown: "Request Failed — {message}"
+   - Error toast shown: "Request Failed - {message}"
 ```
 
 ---
 
 ## 5. State Management
 
-The faucet uses **no global or server state** — everything lives in the `Form` component.
+The faucet uses **no global or server state** - everything lives in the `Form` component.
 
 ### Formik (form state)
 
@@ -210,17 +210,17 @@ const [selectedNetwork, setSelectedNetwork] = useState<FaucetNetwork | undefined
 const [selectedToken, setSelectedToken] = useState<FaucetToken | undefined>();
 ```
 
-These are kept as separate state objects (not just the string IDs stored in Formik) because the UI components need the full objects — name, chainIcon, ticker — for rendering.
+These are kept as separate state objects (not just the string IDs stored in Formik) because the UI components need the full objects - name, chainIcon, ticker - for rendering.
 
 ### Context (read-only)
 
 | Hook | Context | Used for |
 |------|---------|---------|
-| `useProfile()` | `ProfileProvider` | `selectedAddresses.mainAddress` — auto-fill for Polkadex |
-| `useSettingsProvider()` | `SettingProvider` | `onHandleAlert()`, `onHandleError()` — toast notifications |
-| `useConnectWalletProvider()` | `ConnectWalletProvider` | `browserAccountPresent`, `extensionAccountPresent` — mobile profile bar visibility |
+| `useProfile()` | `ProfileProvider` | `selectedAddresses.mainAddress` - auto-fill for Polkadex |
+| `useSettingsProvider()` | `SettingProvider` | `onHandleAlert()`, `onHandleError()` - toast notifications |
+| `useConnectWalletProvider()` | `ConnectWalletProvider` | `browserAccountPresent`, `extensionAccountPresent` - mobile profile bar visibility |
 
-The faucet does **not** write to any context or trigger any blockchain transactions — it is purely a REST API consumer.
+The faucet does **not** write to any context or trigger any blockchain transactions - it is purely a REST API consumer.
 
 ---
 
@@ -280,7 +280,7 @@ Registers a Substrate address with the faucet service before dripping. Called on
 }
 ```
 
-**Notes:** The frontend does not distinguish between `created: true` and `created: false` — either way it proceeds to `/api/drip`. If this call fails (non-2xx), the drip is aborted and an error toast is shown.
+**Notes:** The frontend does not distinguish between `created: true` and `created: false` - either way it proceeds to `/api/drip`. If this call fails (non-2xx), the drip is aborted and an error toast is shown.
 
 ---
 
@@ -390,7 +390,7 @@ export const FAUCET_NETWORKS: FaucetNetwork[] = [
 | `aave` | AAVE | Aave Token |
 | `wsteth` | WSTETH | Wrapped Liquid Staked ETH 2.0 |
 
-**Sepolia Testnet (7 tokens — no PDEX or WETH):**
+**Sepolia Testnet (7 tokens - no PDEX or WETH):**
 
 | id | ticker | name |
 |----|--------|------|
@@ -411,7 +411,7 @@ const availableTokens = useMemo(
 );
 ```
 
-> **Note:** These lists are hardcoded and must be kept in sync with what the backend faucet service actually supports. Adding a new token or network requires a code change here. This has the same scalability limitation as the bridge token config — see the bridge migration plan as a reference for how a future API-driven approach could work.
+> **Note:** These lists are hardcoded and must be kept in sync with what the backend faucet service actually supports. Adding a new token or network requires a code change here. This has the same scalability limitation as the bridge token config - see the bridge migration plan as a reference for how a future API-driven approach could work.
 
 The `id` field of each token is also used as the `TokenAppearance` key for the token icon in `@polkadex/ux`:
 
@@ -451,7 +451,7 @@ The `useEffect` covers the case where the user already has Polkadex selected but
 
 `selectedAddresses.mainAddress` comes from `useProfile()` → `ProfileProvider` → Polkadot.js extension or local browser account. It is a Substrate SS58 address (begins with `5`).
 
-For **Sepolia**, no auto-fill occurs — the user must manually enter their Ethereum address.
+For **Sepolia**, no auto-fill occurs - the user must manually enter their Ethereum address.
 
 ---
 
@@ -478,7 +478,7 @@ onHandleError(
 
 The `error.message` is the string extracted from the backend's JSON `error` field (see `extractErrorMessage`). Common causes include rate limiting (daily limit exceeded) or invalid address format rejected server-side.
 
-After a **successful** submission, the entire form resets to its initial state — all Formik fields cleared, `selectedNetwork` and `selectedToken` both set to `undefined`. The user must start the selection flow from scratch for the next request.
+After a **successful** submission, the entire form resets to its initial state - all Formik fields cleared, `selectedNetwork` and `selectedToken` both set to `undefined`. The user must start the selection flow from scratch for the next request.
 
 ---
 
@@ -505,6 +505,6 @@ The `paddingBottom` of `<main>` is set dynamically to whichever fixed element is
 | `NEXT_PUBLIC_FAUCET_URL` | Yes | Base URL of the faucet backend service (e.g. `https://faucet.polkadex.ee`). Defaults to `""` (all requests fail silently). |
 | `NEXT_PUBLIC_FAUCET_API_KEY` | Yes | Value sent as `X-API-Key` header on every request. Defaults to `""`. |
 
-All three must be set for the faucet to function. If `NEXT_PUBLIC_FAUCET_URL` or `NEXT_PUBLIC_FAUCET_API_KEY` are missing, requests will go to `""` or fail authentication — the form will submit but every request will error.
+All three must be set for the faucet to function. If `NEXT_PUBLIC_FAUCET_URL` or `NEXT_PUBLIC_FAUCET_API_KEY` are missing, requests will go to `""` or fail authentication - the form will submit but every request will error.
 
 Declare them in `apps/hestia/next.config.js` under `env:` if they are not already listed, and populate them in `.env.local` (local dev) or your deployment environment secrets.

@@ -202,8 +202,8 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       // Functional update against the CACHE, not component state. The old
       // version closed over useOrderbook's asks/bids, which (a) made this
       // callback change identity on every tick, so the websocket
-      // subscription was torn down and re-created continuously — dropping
-      // increments in the gaps — and (b) during a market switch still held
+      // subscription was torn down and re-created continuously - dropping
+      // increments in the gaps - and (b) during a market switch still held
       // the PREVIOUS market's book, seeding the new market's cache with it
       // (the "data flaps when clicking through markets" bug). It also wrote
       // merged numeric tuples into a cache that stores raw string tuples.

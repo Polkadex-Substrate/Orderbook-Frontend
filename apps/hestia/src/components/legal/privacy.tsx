@@ -3,7 +3,7 @@
 import { LegalLayout } from "./layout";
 
 /**
- * Privacy Policy — testnet edition.
+ * Privacy Policy - testnet edition.
  *
  * Adapted from Polkadex_Privacy_Policy.pdf (26/10/2022). Structure, legal
  * bases and the data-subject rights list are preserved from the original,
@@ -15,7 +15,7 @@ import { LegalLayout } from "./layout";
  *
  * CONFIRM BEFORE PRODUCTION: the controller entity below (Polkadex Inc, BVI)
  * is carried over from the 2022 document and will change with the rebrand.
- * The contact address is gdpr@polkadex.ee — an interim address; make sure the
+ * The contact address is gdpr@polkadex.ee - an interim address; make sure the
  * mailbox exists and is monitored, since this page invites rights requests to
  * it and GDPR sets response deadlines.
  */
@@ -34,7 +34,7 @@ export function Privacy() {
       </p>
       <p>
         It is possible to use the Orderbook without providing identifying
-        personal data — there is no registration, and no identity verification
+        personal data - there is no registration, and no identity verification
         is performed on the testnet. We process personal data in compliance with
         applicable data protection law, including Regulation (EU) 2016/679 (the{" "}
         <strong>GDPR</strong>) and the Personal Data Protection Act of Estonia.
@@ -43,25 +43,25 @@ export function Privacy() {
       <h2>2. Terms</h2>
       <ul>
         <li>
-          <strong>Data subject</strong> — an identified or identifiable natural
+          <strong>Data subject</strong> - an identified or identifiable natural
           person whose data is processed.
         </li>
         <li>
-          <strong>Personal data</strong> — any information concerning an
+          <strong>Personal data</strong> - any information concerning an
           identified or identifiable natural person, including location
           information and network identifiers.
         </li>
         <li>
-          <strong>Processing</strong> — any operation performed on personal
+          <strong>Processing</strong> - any operation performed on personal
           data, including collection, storage, use, transfer, restriction and
           erasure.
         </li>
         <li>
-          <strong>Controller</strong> — the party determining the purposes and
+          <strong>Controller</strong> - the party determining the purposes and
           means of processing.
         </li>
         <li>
-          <strong>Processor</strong> — a party processing personal data on
+          <strong>Processor</strong> - a party processing personal data on
           behalf of the controller.
         </li>
       </ul>
@@ -80,8 +80,8 @@ export function Privacy() {
 
       <h3>4.1 Providing the service</h3>
       <p>
-        Technical data — IP address, browser and device type, and request
-        timestamps — is processed so that the application can be served, secured
+        Technical data - IP address, browser and device type, and request
+        timestamps - is processed so that the application can be served, secured
         and debugged. The legal basis is our legitimate interest in operating
         and securing the service.
       </p>
@@ -89,7 +89,7 @@ export function Privacy() {
       <h3>4.2 Compliance with legal acts</h3>
       <p>
         Your IP address is processed to carry out geoblocking of{" "}
-        <a href="/legal/excluded-jurisdictions">excluded jurisdictions</a> —
+        <a href="/legal/excluded-jurisdictions">excluded jurisdictions</a> -
         geographic regions where we do not offer the service. The legal basis is
         our legitimate interest in complying with applicable law. The assessment
         is made at the moment of the request; IP addresses are not retained in a
@@ -104,7 +104,7 @@ export function Privacy() {
         you by third parties.
       </p>
       <p>
-        Note that no marketing communications are sent from the testnet — we do
+        Note that no marketing communications are sent from the testnet - we do
         not collect email addresses, so the consent-based processing described
         in the previous version of this policy does not apply here.
       </p>
@@ -113,7 +113,7 @@ export function Privacy() {
       <p>
         We disclose personal data to our personnel strictly on a need-to-know
         basis. In certain cases we disclose personal data to co-operation
-        partners providing services necessary to operate the Orderbook — for
+        partners providing services necessary to operate the Orderbook - for
         example IT and infrastructure providers, RPC and indexing services, and
         error monitoring. In most cases these constitute data processors under
         the GDPR, and personal data is disclosed to them only where a data
@@ -134,7 +134,7 @@ export function Privacy() {
         We have implemented appropriate technical and organisational measures to
         protect personal data, supported by internal information security
         policies that are binding on everyone in the organisation. Note that
-        your private keys are never transmitted to us — they remain on your
+        your private keys are never transmitted to us - they remain on your
         device, and we could not disclose them even if required to.
       </p>
 

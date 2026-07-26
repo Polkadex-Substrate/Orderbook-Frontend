@@ -99,7 +99,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
   // (data service unreachable) look identical to a boolean but mean opposite
   // things to a visitor: one is normal, the other is broken.
   const [chartState, setChartState] = useState<"ok" | "empty" | "error">("ok");
-  // Same gate the header uses — don't offer a faucet that isn't deployed.
+  // Same gate the header uses - don't offer a faucet that isn't deployed.
   const isFaucetEnabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET === "true";
 
   // Ticker state
@@ -128,7 +128,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
 
   // Keep selectedPair in sync with the market coming from the URL/markets
   // list. Fixes: chart blank on initial page load (state initialized before
-  // currentMarket resolved) — previously only a remount (switching pairs and
+  // currentMarket resolved) - previously only a remount (switching pairs and
   // back) repaired it.
   useEffect(() => {
     if (firstAsset && secondAsset) {
@@ -313,7 +313,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
 
     try {
       const url = `${SERVER_BASE_URL}/gateway/ticker?symbols=${symbol.toUpperCase()}&vs_currency=${quote}`;
-      // Same auth header as fetchChartData — the gateway rejects unauthenticated
+      // Same auth header as fetchChartData - the gateway rejects unauthenticated
       // calls, and this fetch previously sent none.
       const response = await fetch(url, {
         headers: {
@@ -498,7 +498,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
       // UDF protocol: `s` is "ok" | "no_data" | "error". "no_data" is the
       // NORMAL reply for a pair that has never traded. Throwing on it is what
       // painted a red "Chart data not available" over a healthy testnet
-      // market and flipped the badge to "Server Not Detected (Mock Data)" —
+      // market and flipped the badge to "Server Not Detected (Mock Data)" -
       // two false failure signals on the most prominent panel of the page.
       if (data.s === "no_data") {
         candlestickSeriesRef.current?.setData([]);
@@ -675,7 +675,7 @@ const GraphV1 = ({ currentMarket }: { currentMarket?: Market }) => {
         </div>
 
         {/* Chart Container */}
-        {/* The chart container must stay mounted even in the error state —
+        {/* The chart container must stay mounted even in the error state -
              unmounting it destroys the lightweight-charts canvas, making any
              retry (e.g. after the market resolves) impossible without a full
              remount. The error message is an overlay instead. */}

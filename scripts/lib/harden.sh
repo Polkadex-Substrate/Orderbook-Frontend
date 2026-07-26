@@ -3,7 +3,7 @@
 # Hardening helpers, sourced by install.sh.
 #
 # SCOPE, honestly stated: this hardens the *host and service* around a
-# public, read-only web application. It does not make a machine "secure" —
+# public, read-only web application. It does not make a machine "secure" -
 # that depends on your network, your SSH key hygiene, patching cadence and
 # what else runs on the box. Each function below states what it defends
 # against so you can judge whether it's worth enabling.
@@ -29,7 +29,7 @@ net.ipv4.tcp_synack_retries = 2
 net.ipv4.conf.all.rp_filter = 1
 net.ipv4.conf.default.rp_filter = 1
 
-# Ignore ICMP redirects and source-routed packets — both are used to
+# Ignore ICMP redirects and source-routed packets - both are used to
 # redirect traffic through an attacker.
 net.ipv4.conf.all.accept_redirects = 0
 net.ipv4.conf.default.accept_redirects = 0
@@ -76,12 +76,12 @@ EOF
 CF_IP_CACHE=/etc/orderbook-fe/cloudflare-ips
 CF_IPS_FETCHED=0
 cloudflare_fetch_ips() {
-  # Fetch once per run — called from both the nginx and firewall stages.
+  # Fetch once per run - called from both the nginx and firewall stages.
   [ "$CF_IPS_FETCHED" = "1" ] && return 0
 
   # In dry-run, still fetch (it is a read-only GET) but write to a temp file
   # instead of /etc. Skipping the fetch would make the preview claim 80/443
-  # are opened to the world when the real run restricts them to Cloudflare —
+  # are opened to the world when the real run restricts them to Cloudflare -
   # a dry-run that misrepresents the firewall is worse than no dry-run.
   if [ "$DRY_RUN" -eq 1 ]; then
     CF_IP_CACHE="$(mktemp)"
@@ -96,7 +96,7 @@ cloudflare_fetch_ips() {
   # Sanity-check rather than trust: a captive portal or error page would
   # otherwise be written straight into a firewall rule.
   if ! echo "$v4" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$'; then
-    warn "Could not fetch Cloudflare IPv4 ranges — leaving 80/443 open to all."
+    warn "Could not fetch Cloudflare IPv4 ranges - leaving 80/443 open to all."
     return 1
   fi
   printf '%s\n%s\n' "$v4" "$v6" | grep -E '^[0-9a-fA-F:.]+/[0-9]+$' > "$CF_IP_CACHE"
@@ -112,7 +112,7 @@ cloudflare_fetch_ips() {
 #
 # With Cloudflare in front, 80/443 are additionally restricted to Cloudflare's
 # ranges. Without that, anyone who learns the origin IP can bypass Cloudflare
-# entirely — along with its WAF, rate limiting and bot rules — by sending a
+# entirely - along with its WAF, rate limiting and bot rules - by sending a
 # Host header directly. DNS history sites make origin IPs easy to find.
 harden_firewall() {
   local ssh_port="${1:-22}"
@@ -192,7 +192,7 @@ EOF
     run "systemctl enable --now nftables"
     run "nft -f /etc/nftables.conf"
   else
-    warn "No supported firewall tool found (ufw/firewalld/nft) — skipping.
+    warn "No supported firewall tool found (ufw/firewalld/nft) - skipping.
      The app port $PORT may be reachable directly from the network."
     return
   fi
@@ -204,7 +204,7 @@ EOF
   fi
 
   # Docker installs its own iptables DOCKER chain, which is consulted BEFORE
-  # ufw's rules — a published port is then reachable regardless of what ufw
+  # ufw's rules - a published port is then reachable regardless of what ufw
   # reports. Worth saying out loud on a host that has Docker installed.
   if command -v docker >/dev/null; then
     warn "Docker is installed on this host. Docker bypasses ufw by writing its
@@ -230,7 +230,7 @@ harden_bind_localhost() {
 # floods and scanner noise.
 harden_fail2ban() {
   log "Installing fail2ban"
-  pkg_install fail2ban || { warn "fail2ban unavailable for this distro — skipping"; return; }
+  pkg_install fail2ban || { warn "fail2ban unavailable for this distro - skipping"; return; }
   [ "$DRY_RUN" -eq 1 ] && return
   cat > /etc/fail2ban/jail.d/"$SERVICE_NAME".local <<EOF
 [DEFAULT]
@@ -280,17 +280,17 @@ EOF
         || warn "enable openSUSE automatic updates manually"
       ;;
     *)
-      warn "No automatic-update mechanism configured for $PKG — patch manually"
+      warn "No automatic-update mechanism configured for $PKG - patch manually"
       ;;
   esac
 }
 
 # ── SSH ─────────────────────────────────────────────────────────────────
 # Defends against: password guessing and root login.
-# DANGEROUS if you don't already have a working key — hence the guard.
+# DANGEROUS if you don't already have a working key - hence the guard.
 harden_ssh() {
   local cfg=/etc/ssh/sshd_config
-  [ -f "$cfg" ] || { warn "no sshd_config — skipping SSH hardening"; return; }
+  [ -f "$cfg" ] || { warn "no sshd_config - skipping SSH hardening"; return; }
 
   # Refuse to disable passwords unless at least one authorized_keys exists,
   # otherwise this locks the operator out of their own server.
@@ -299,7 +299,7 @@ harden_ssh() {
     [ -s "$f" ] && has_keys=1
   done
   if [ "$has_keys" -eq 0 ]; then
-    warn "No authorized_keys found anywhere — NOT touching SSH.
+    warn "No authorized_keys found anywhere - NOT touching SSH.
      Set up key-based login first, then re-run with --harden-ssh."
     return
   fi
@@ -330,7 +330,7 @@ EOF
   if sshd -t 2>/dev/null; then
     run "systemctl reload sshd 2>/dev/null || systemctl reload ssh"
   else
-    warn "sshd config test FAILED — reverting SSH changes"
+    warn "sshd config test FAILED - reverting SSH changes"
     rm -f /etc/ssh/sshd_config.d/99-"$SERVICE_NAME".conf
   fi
 }
@@ -353,7 +353,7 @@ nginx_hardening_snippet() {
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
     # Isolate the browsing context, but ALLOW POPUPS to keep talking to us.
     # Plain "same-origin" severs window.opener for cross-origin popups, which
-    # breaks every wallet that authenticates in a popup — Coinbase Smart
+    # breaks every wallet that authenticates in a popup - Coinbase Smart
     # Wallet logs an explicit error, and WalletConnect's popup flow silently
     # never returns. "same-origin-allow-popups" keeps the isolation that
     # matters (other origins still cannot reference this window) while
@@ -363,7 +363,7 @@ nginx_hardening_snippet() {
     # NOTE: no Content-Security-Policy here. A wallet dApp loads scripts and
     # opens sockets to wallet extensions, RPC endpoints and indexers; a CSP
     # written blind would break the app. Add one once you have enumerated
-    # those origins — report-only first.
+    # those origins - report-only first.
 
     # Cap request size: this app accepts no uploads.
     client_max_body_size 1m;
@@ -373,7 +373,7 @@ nginx_hardening_snippet() {
 
     # Cloudflare stacks CF-Connecting-IP, CF-Ray, CF-Visitor, CF-IPCountry and
     # X-Forwarded-For on top of the browser's cookies. Past nginx's default
-    # (4 8k) the response is a bare 400 with no explanation — which shows up
+    # (4 8k) the response is a bare 400 with no explanation - which shows up
     # as random static assets failing while the HTML loads fine.
     large_client_header_buffers 8 32k;
 EOF
@@ -390,9 +390,9 @@ EOF
 cloudflare_realip_conf() {
   local out="/etc/nginx/conf.d/01-$SERVICE_NAME-cloudflare.conf"
   [ "$DRY_RUN" -eq 1 ] && { echo "  [dry-run] write $out"; return; }
-  [ -s "$CF_IP_CACHE" ] || { warn "No Cloudflare IP cache — skipping real_ip config."; return; }
+  [ -s "$CF_IP_CACHE" ] || { warn "No Cloudflare IP cache - skipping real_ip config."; return; }
   {
-    echo "# Generated by install.sh — Cloudflare edge ranges."
+    echo "# Generated by install.sh - Cloudflare edge ranges."
     echo "# Refresh after Cloudflare changes them: re-run the installer."
     while read -r cidr; do
       [ -n "$cidr" ] && echo "set_real_ip_from $cidr;"

@@ -163,7 +163,7 @@ export const replaceOrPushOrder = (
 };
 
 // Converts a GraphQL numeric-string field to a number, preserving null/undefined
-// instead of coercing them to 0 — a genuinely missing value (no trades in the
+// instead of coercing them to 0 - a genuinely missing value (no trades in the
 // ticker window) must stay distinguishable from a real value of zero.
 export const toNullableNumber = (
   value: string | number | null | undefined

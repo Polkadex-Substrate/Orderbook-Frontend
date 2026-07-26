@@ -55,7 +55,7 @@ export function Template({ id }: { id: string }) {
   });
 
   // NB: a `tableRowsHeight` term used to be in this formula, fed by refs the
-  // table components silently ignored — it was always 0. Removed along with
+  // table components silently ignored - it was always 0. Removed along with
   // the dead refs; had it ever attached, subtracting the rows' own height
   // from their max-height would have been a resize feedback loop.
   const maxHeight = useMemo(

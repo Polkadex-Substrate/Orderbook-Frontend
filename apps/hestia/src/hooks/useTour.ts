@@ -6,8 +6,31 @@ import type { Config, Driver, DriveStep } from "driver.js";
 
 import { getTradingSteps } from "@/config/tours/tradingTour";
 import { getOnboardingSteps } from "@/config/tours/onboardingTour";
+import { TESTNET_ACK_EVENT, isTestnetAcknowledged } from "@/config/network";
 
-const TOUR_KEY = "trading-tour-v1";
+// Bumped from v1: the steps were rewritten for the current funding flow
+// (faucet, Fund Account, Move & Trade), so returning users should see it once.
+const TOUR_KEY = "trading-tour-v2";
+
+/**
+ * Resolve once nothing is covering the viewport.
+ *
+ * The testnet notice is a full-screen modal shown on mount. If the tour starts
+ * while it is open, driver.js highlights elements *behind* the backdrop: the
+ * spotlight is hidden, so the popover appears to point into a black screen.
+ */
+function waitForClearViewport(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (isTestnetAcknowledged()) return resolve();
+    const done = () => {
+      window.removeEventListener(TESTNET_ACK_EVENT, done);
+      signal.removeEventListener("abort", done);
+      if (!signal.aborted) resolve();
+    };
+    window.addEventListener(TESTNET_ACK_EVENT, done, { once: true });
+    signal.addEventListener("abort", done, { once: true });
+  });
+}
 
 const BASE_CONFIG: Omit<Config, "steps"> = {
   showProgress: true,
@@ -72,14 +95,26 @@ export function useTour() {
     await launchTour(getTradingSteps(window.innerWidth));
   }, [launchTour]);
 
-  // Auto-start on first visit — runs once on mount, reads latest provider
-  // state after the delay so it isn't stale from initial render.
+  // Auto-start on first visit - waits for the testnet notice to be dismissed,
+  // then reads the latest provider state so it isn't stale from first render.
   useEffect(() => {
-    const seen = localStorage.getItem(TOUR_KEY);
-    if (seen) return;
+    if (localStorage.getItem(TOUR_KEY)) return;
 
-    const timer = setTimeout(async () => {
-      if (typeof window === "undefined") return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    (async () => {
+      // Blocks until the modal is gone (resolves immediately if it never
+      // showed). Previously a flat 900ms timer, which raced the modal.
+      await waitForClearViewport(controller.signal);
+      if (controller.signal.aborted || typeof window === "undefined") return;
+
+      // Short settle so the modal's close animation finishes and driver.js
+      // measures the final element positions rather than mid-transition ones.
+      await new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, 400);
+      });
+      if (controller.signal.aborted) return;
 
       const {
         extensionAccountPresent,
@@ -91,10 +126,10 @@ export function useTour() {
       const hasTradingAccount = !!selectedTradingAccount;
 
       if (extensionAccountPresent && hasTradingAccount) {
-        // Fully set up — show the interface tour.
+        // Fully set up - show the interface tour.
         await launchTour(getTradingSteps(window.innerWidth));
       } else {
-        // Incomplete setup — show the onboarding tour.
+        // Incomplete setup - show the onboarding tour.
         await launchTour(
           getOnboardingSteps(
             extensionAccountPresent,
@@ -104,9 +139,12 @@ export function useTour() {
           )
         );
       }
-    }, 900);
+    })();
 
-    return () => clearTimeout(timer);
+    return () => {
+      controller.abort();
+      if (timer) clearTimeout(timer);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cleanup on unmount

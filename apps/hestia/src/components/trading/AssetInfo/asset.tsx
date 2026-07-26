@@ -16,7 +16,7 @@ import { isNegative } from "@orderbook/core/helpers";
 import { Decimal } from "@orderbook/core/utils";
 
 /**
- * Pair selector. The old version was a Link back to the same page — clicking
+ * Pair selector. The old version was a Link back to the same page - clicking
  * the pair did nothing useful. It now opens a popover listing every market
  * (sorted by 24h volume) for direct switching; the right-rail Markets tab
  * remains the searchable/filterable variant.

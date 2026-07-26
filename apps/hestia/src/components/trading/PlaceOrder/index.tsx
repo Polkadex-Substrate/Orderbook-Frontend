@@ -61,7 +61,7 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
       {/* min-h-0 is load-bearing: a flex child defaults to min-height:auto,
           which refuses to shrink below its content. Without it `overflow-auto`
           never engages, the form grows past the panel, and the panel group's
-          `overflow: hidden` CLIPS the Buy/Sell buttons — which reads as the
+          `overflow: hidden` CLIPS the Buy/Sell buttons - which reads as the
           ticker bar overlapping them. */}
       <div className="flex flex-1 h-full min-h-0 overflow-auto scrollbar-hide">
         {isPasswordProtected ? (

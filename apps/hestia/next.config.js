@@ -54,7 +54,7 @@ const nextConfig = {
     }
   },
   // NOTE: Next 16 removed the `eslint` config key (and `next lint`). Linting is
-  // no longer part of `next build` at all — run `yarn lint` (eslint directly).
+  // no longer part of `next build` at all - run `yarn lint` (eslint directly).
   env: {
     POLKADEX_CHAIN: process.env.POLKADEX_CHAIN,
     GOOGLE_ANALYTICS: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,

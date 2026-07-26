@@ -366,7 +366,7 @@ export const Form = () => {
                   </SelectNetwork>
                 </div>
                 {/* EVM source → WalletConnect | Substrate source → extension picker */}
-                {/* Substrate source: must be an account the user controls —
+                {/* Substrate source: must be an account the user controls -
                     they sign the send. Same owned-accounts-only modal as the
                     destination; no pasted addresses. */}
                 {isEvmSource ? (
@@ -406,7 +406,7 @@ export const Form = () => {
                   </div>
                 )}
                 {/* Asset & amount live with the SOURCE: what you send is a
-                          source-side fact — the destination receives the same token. */}
+                          source-side fact - the destination receives the same token. */}
                 <div className="flex flex-col gap-2 mt-1">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
@@ -532,7 +532,7 @@ export const Form = () => {
               </div>
               {/* EVM destination → extension picker | Substrate destination → WalletConnect */}
               {/* Destination = Polkadex: the account must be one the user
-                  controls — an address from the connected substrate wallet,
+                  controls - an address from the connected substrate wallet,
                   chosen through the same connect/select modal the source
                   side uses. No free-text/pasted addresses here. */}
               {isEvmSource ? (
@@ -576,7 +576,7 @@ export const Form = () => {
             </div>
           </div>
 
-          {/* ── SUMMARY — what actually happens if you press Transfer ──── */}
+          {/* ── SUMMARY - what actually happens if you press Transfer ──── */}
           {sourceAccount &&
             destinationAccount &&
             selectedAsset &&
@@ -612,7 +612,7 @@ export const Form = () => {
                     Estimated arrival
                   </Typography.Text>
                   <Typography.Text size="xs">
-                    ~10–30 min (Hyperbridge relay)
+                    ~10-30 min (Hyperbridge relay)
                   </Typography.Text>
                 </div>
               </div>

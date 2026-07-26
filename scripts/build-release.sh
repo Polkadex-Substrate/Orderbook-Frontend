@@ -4,20 +4,20 @@
 #
 # Two modes, same env file, same version stamp:
 #
-#   docker  (DEFAULT) — build an OCI image from the repo Dockerfile.
+#   docker  (DEFAULT) - build an OCI image from the repo Dockerfile.
 #                       Produces <repo>:<version>-<sha> and <repo>:latest.
-#   tarball           — build a self-contained tarball for scripts/install.sh
+#   tarball           - build a self-contained tarball for scripts/install.sh
 #                       (bare-metal / systemd deploys, no Docker on the host).
 #
 # IMPORTANT: NEXT_PUBLIC_* and the next.config.js `env:` values are compiled
-# into the build. The artifact is therefore specific to ONE environment — to
+# into the build. The artifact is therefore specific to ONE environment - to
 # build for staging and production, run this twice with different --env files.
 # Only genuinely runtime settings (PORT, HOSTNAME, NODE_ENV) can differ later.
 #
 # Why this script rather than a bare `docker compose build`: compose
 # interpolates ${VAR} in the compose file from the shell or a ROOT .env only.
 # `env_file:` applies to the running container, NOT to build args. So a plain
-# `docker compose build` silently bakes EMPTY values — including
+# `docker compose build` silently bakes EMPTY values - including
 # NEXT_PUBLIC_PROJECT_ID, without which the app throws at boot. This script
 # exports the env file before building, which is the fix.
 #
@@ -35,7 +35,7 @@
 #   scripts/build-release.sh --tarball --from-image orderbook-fe:latest
 #                                                   # extract the standalone
 #                                                   # tree from an image you
-#                                                   # already built — no Node,
+#                                                   # already built - no Node,
 #                                                   # yarn or 4 GB rebuild
 #
 set -euo pipefail
@@ -107,7 +107,7 @@ set -a
 . "$ENV_FILE"
 set +a
 
-: "${NEXT_PUBLIC_PROJECT_ID:?NEXT_PUBLIC_PROJECT_ID is required — the app throws at boot without it}"
+: "${NEXT_PUBLIC_PROJECT_ID:?NEXT_PUBLIC_PROJECT_ID is required - the app throws at boot without it}"
 
 log "orderbook-fe $STAMP  (mode: $MODE, env: $ENV_FILE)"
 
@@ -127,7 +127,7 @@ if [ "$MODE" = docker ]; then
   while read -r name; do
     [ -n "$name" ] || continue
     if [ -n "${!name:-}" ]; then
-      # Two array elements per arg — count separately, don't use ${#BUILD_ARGS[@]}.
+      # Two array elements per arg - count separately, don't use ${#BUILD_ARGS[@]}.
       BUILD_ARGS+=(--build-arg "$name=${!name}")
       RESOLVED=$((RESOLVED + 1))
     else
@@ -143,7 +143,7 @@ if [ "$MODE" = docker ]; then
   # A faucet that is switched on but has no endpoint fails at the point of use,
   # after the user has already been sent to /faucet from the Fund Account modal.
   if [ "${NEXT_PUBLIC_ENABLE_FAUCET:-}" = "true" ] && [ -z "${NEXT_PUBLIC_FAUCET_URL:-}" ]; then
-    warn "NEXT_PUBLIC_ENABLE_FAUCET=true but NEXT_PUBLIC_FAUCET_URL is empty —
+    warn "NEXT_PUBLIC_ENABLE_FAUCET=true but NEXT_PUBLIC_FAUCET_URL is empty -
      the faucet page will be reachable and non-functional."
   fi
 
@@ -188,7 +188,7 @@ trap 'rm -rf "$STAGE"' EXIT
 PKG="$STAGE/orderbook-fe"
 
 if [ -n "$FROM_IMAGE" ]; then
-  # The runner stage IS the assembled standalone tree at /app — static assets
+  # The runner stage IS the assembled standalone tree at /app - static assets
   # and public/ already copied in. Extracting it avoids a second full build
   # (and its 4 GB peak) on a host that has already produced the image.
   # No auto-install here: --from-image extracts an image that must already
@@ -206,7 +206,7 @@ if [ -n "$FROM_IMAGE" ]; then
   docker rm "$CID" >/dev/null
 
   [ -f "$PKG/apps/hestia/server.js" ] \
-    || die "extracted tree has no apps/hestia/server.js — is $FROM_IMAGE an orderbook-fe image?"
+    || die "extracted tree has no apps/hestia/server.js - is $FROM_IMAGE an orderbook-fe image?"
   [ -d "$PKG/apps/hestia/.next/static" ] \
     || die "extracted tree is missing .next/static"
 else
@@ -229,7 +229,7 @@ else
     yarn build
 
   STANDALONE="apps/hestia/.next/standalone"
-  [ -d "$STANDALONE" ] || die "standalone output missing — is output:'standalone' still set in next.config.js?"
+  [ -d "$STANDALONE" ] || die "standalone output missing - is output:'standalone' still set in next.config.js?"
 
   log "Assembling release tree"
   mkdir -p "$PKG"

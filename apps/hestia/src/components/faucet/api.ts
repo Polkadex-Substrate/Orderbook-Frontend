@@ -7,7 +7,7 @@ const requestHeaders = () => ({
 });
 
 /** With NEXT_PUBLIC_FAUCET_URL unset, fetch("/api/…") hits the Next app
- *  itself and 404s — a uselessly misleading error. Fail with the cause. */
+ *  itself and 404s - a uselessly misleading error. Fail with the cause. */
 function assertConfigured() {
   if (!BASE_URL)
     throw new Error(

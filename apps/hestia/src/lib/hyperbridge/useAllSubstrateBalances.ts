@@ -27,7 +27,7 @@ export type SubstrateTokenSpec = { ticker: string; decimals: number };
 /**
  * Fetches on-chain balances for all given tokens from the Polkadex (Substrate)
  * chain. Asset IDs are discovered automatically from `api.query.assets.metadata`
- * by matching the on-chain symbol to the token ticker — no hardcoding required.
+ * by matching the on-chain symbol to the token ticker - no hardcoding required.
  */
 export function useAllSubstrateBalances(
   address?: string,
@@ -120,7 +120,7 @@ export function useAllSubstrateBalances(
     return () => {
       cancelled = true;
     };
-    // tokensKey is a stable string proxy for the tokens array — intentional
+    // tokensKey is a stable string proxy for the tokens array - intentional
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, wsUrl, tokensKey, refreshCount]);
 

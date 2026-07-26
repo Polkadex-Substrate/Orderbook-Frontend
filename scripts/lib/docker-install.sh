@@ -8,7 +8,7 @@
 # and build-release.sh's --platform flag needs buildx while docker-compose.yml
 # needs `docker compose`.
 #
-# Deliberately NOT using https://get.docker.com — it is Docker's official
+# Deliberately NOT using https://get.docker.com - it is Docker's official
 # convenience script, but piping a remote script into a root shell is a worse
 # habit than adding a signed apt/dnf repo, and it refuses to run on several of
 # the distros the installer already supports.
@@ -52,7 +52,7 @@ docker_sudo() {
 
 install_docker() {
   local pkg; pkg="$(docker_detect_pkg)"
-  [ -n "$pkg" ] || die "could not determine the package manager — install Docker manually"
+  [ -n "$pkg" ] || die "could not determine the package manager - install Docker manually"
 
   log "Installing Docker Engine (package manager: $pkg)"
 
@@ -115,7 +115,7 @@ https://download.docker.com/linux/$id $codename stable' > /etc/apt/sources.list.
         docker_sudo sh -c "curl -fsSL \
 'https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)' \
 -o $plugin_dir/docker-compose" && docker_sudo chmod +x "$plugin_dir/docker-compose" \
-          || warn "compose plugin not installed — 'docker compose' will be unavailable"
+          || warn "compose plugin not installed - 'docker compose' will be unavailable"
       fi
       ;;
 
@@ -137,7 +137,7 @@ https://download.docker.com/linux/$id $codename stable' > /etc/apt/sources.list.
   log "Installed $(docker --version 2>/dev/null || echo docker)"
 
   # A non-root user needs group membership, and that only takes effect on a
-  # NEW login — the current shell will keep getting permission denied.
+  # NEW login - the current shell will keep getting permission denied.
   if [ "$(id -u)" -ne 0 ] && ! docker info >/dev/null 2>&1; then
     docker_sudo usermod -aG docker "$USER" 2>/dev/null || true
     die "Added $USER to the 'docker' group, but group membership only applies to
@@ -155,7 +155,7 @@ ensure_docker() {
   fi
 
   if command -v docker >/dev/null; then
-    # Installed but unreachable — installing again will not help.
+    # Installed but unreachable - installing again will not help.
     if [ "$(id -u)" -ne 0 ] && ! groups 2>/dev/null | grep -qw docker; then
       die "Docker is installed but this user cannot reach the daemon.
 Run: sudo usermod -aG docker $USER   then log out and back in."

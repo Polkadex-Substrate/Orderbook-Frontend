@@ -5,7 +5,7 @@
 #
 # Build via scripts/build-release.sh (default mode), which loads the env file
 # and passes every ARG below. A bare `docker compose build` does NOT pick up
-# apps/hestia/.env — compose only interpolates from the shell or a ROOT .env,
+# apps/hestia/.env - compose only interpolates from the shell or a ROOT .env,
 # and `env_file:` applies at runtime only. Use:
 #     docker compose --env-file apps/hestia/.env build
 # ============================================================================
@@ -39,7 +39,7 @@ COPY . .
 
 # ── Build-time environment ──────────────────────────────────────────────
 # NEXT_PUBLIC_* values are BAKED INTO THE BROWSER BUNDLE here. They cannot be
-# changed at container runtime — a value change means a rebuild. They are also
+# changed at container runtime - a value change means a rebuild. They are also
 # public: never put a real secret in one.
 # Keep this list in sync with apps/hestia/.env.example.
 ARG POLKADEX_CHAIN
@@ -67,7 +67,7 @@ ARG DEFAULT_THEA_SOURCE_CHAIN
 ARG DEFAULT_THEA_DESTINATION_CHAIN
 ARG DISABLED_THEA_CHAINS
 # These six are read by next.config.js `env:` and were passed by
-# docker-compose, but had no matching ARG here — so Docker discarded them and
+# docker-compose, but had no matching ARG here - so Docker discarded them and
 # every image was built with them empty. Feature flags failing silently open.
 ARG SIGNUP_DISABLED
 ARG SHOW_SHUTDOWN_POPUP
@@ -76,7 +76,7 @@ ARG IDENTITY_POOL_ID
 ARG USER_POOL_ID
 ARG USER_WEB_CLIENT_ID
 ARG PIN_POINT_CLIENT_ID
-# WalletConnect — app THROWS AT BOOT without it (src/config/wagmi.ts)
+# WalletConnect - app THROWS AT BOOT without it (src/config/wagmi.ts)
 ARG NEXT_PUBLIC_PROJECT_ID
 # Chart
 ARG NEXT_PUBLIC_NATIVE_CHART
@@ -91,7 +91,7 @@ ARG NEXT_PUBLIC_BRIDGE_ISMP_HOST
 ARG NEXT_PUBLIC_BRIDGE_INDEXER_URL
 ARG NEXT_PUBLIC_POLKADEX_STATE_MACHINE
 ARG NEXT_PUBLIC_HYPERBRIDGE_URL
-# Public origin — metadataBase for OG/Twitter image URLs
+# Public origin - metadataBase for OG/Twitter image URLs
 ARG NEXT_PUBLIC_SITE_URL
 # Testnet faucet (route + nav + notice modal)
 ARG NEXT_PUBLIC_ENABLE_FAUCET
@@ -160,7 +160,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
-# Bind all interfaces — the default (localhost) is unreachable from outside
+# Bind all interfaces - the default (localhost) is unreachable from outside
 # the container.
 ENV HOSTNAME=0.0.0.0
 

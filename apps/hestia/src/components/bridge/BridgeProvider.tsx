@@ -28,7 +28,7 @@ import type {
 } from "@/config/bridge";
 
 // ---------------------------------------------------------------------------
-// Static chain / asset definitions — sourced from central config
+// Static chain / asset definitions - sourced from central config
 // ---------------------------------------------------------------------------
 
 export const SEPOLIA_CHAIN = BRIDGE_CHAINS.sepolia;
@@ -132,7 +132,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     else setEvmAccount(account);
   };
 
-  // Swap direction — accounts stay assigned to their wallet type
+  // Swap direction - accounts stay assigned to their wallet type
   const onSwitchChain = () => {
     setDirection((prev) =>
       prev === "evm-to-substrate" ? "substrate-to-evm" : "evm-to-substrate"
@@ -326,7 +326,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         supportedSourceChains: allChains,
         supportedDestinationChains: allChains,
         onSwitchChain,
-        // Empty string when the on-chain assetId isn't known (yet) — usePool
+        // Empty string when the on-chain assetId isn't known (yet) - usePool
         // gates its quote query on `!!asset`, so this cleanly disables the
         // auto-swap quote instead of sending a fake id ("weth-id") that the
         // runtime rejects with: Could not parse 'AssetId'.

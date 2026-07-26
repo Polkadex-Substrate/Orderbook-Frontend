@@ -53,11 +53,21 @@ export function useMoveAndTrade({
   }, [balances, assetId]);
 
   const shortfall = Math.max(required - available, 0);
-  // Ceil to 8dp (the UI's display precision) so a rounding remainder can't
-  // leave the deposit a hair short; never exceed what funding actually has.
-  const moveAmount = Math.min(
-    Math.ceil(shortfall * 1e8) / 1e8 + 1e-8,
-    fundingAvailable
+  // Quantise to 8dp. Two reasons, and the second one bites hard:
+  //  1. it is the UI's display precision, so the number shown on the button
+  //     is exactly the number deposited;
+  //  2. the deposit path multiplies this by 10^12 to reach chain units. A raw
+  //     float (0.1 + 0.2 -> 0.30000000000000004) leaves a fractional part
+  //     there, and Compact<u128> rejects it outright. Number(toFixed(8))
+  //     collapses the binary noise, because BigNumber reads a number's
+  //     decimal string rather than its binary value.
+  const q8 = (n: number) => Number(n.toFixed(8));
+  const moveAmount = q8(
+    Math.min(
+      // +1e-8 covers a rounding remainder that would leave us a hair short.
+      Math.ceil(shortfall * 1e8) / 1e8 + 1e-8,
+      fundingAvailable
+    )
   );
 
   const canMoveAndTrade =

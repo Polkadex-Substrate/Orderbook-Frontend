@@ -7,7 +7,7 @@ export const ConnectAccountWrapper = ({
   compact = false,
 }: {
   funding?: boolean;
-  /** Slim horizontal bar instead of the tall illustration — for panels that
+  /** Slim horizontal bar instead of the tall illustration - for panels that
    *  shouldn't spend hundreds of pixels on an unconnected state. */
   compact?: boolean;
 }) => {

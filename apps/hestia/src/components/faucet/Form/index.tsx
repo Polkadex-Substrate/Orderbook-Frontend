@@ -51,7 +51,7 @@ export const Form = () => {
   const [selectedToken, setSelectedToken] = useState<FaucetToken | undefined>();
   const { onHandleAlert, onHandleError } = useSettingsProvider();
   const { selectedAddresses } = useProfile();
-  // Connected EVM wallet (wagmi) — lets Sepolia requests autofill the same
+  // Connected EVM wallet (wagmi) - lets Sepolia requests autofill the same
   // way Polkadex requests already autofill from the profile address.
   const { address: evmAddress } = useAccount();
 
@@ -188,7 +188,7 @@ export const Form = () => {
       className="flex flex-col gap-5 max-w-[640px] mx-auto py-8 w-full px-4"
     >
       <div className="flex flex-col gap-6 border border-primary rounded-md bg-level-0 p-6 max-sm:p-4">
-        {/* Network + Token — equal width side by side */}
+        {/* Network + Token - equal width side by side */}
         <div className="flex flex-col gap-3">
           <Typography.Heading>Network & Token</Typography.Heading>
           <div className="flex gap-2">
@@ -219,7 +219,7 @@ export const Form = () => {
           </div>
         </div>
 
-        {/* Wallet Address — only shown after network is selected */}
+        {/* Wallet Address - only shown after network is selected */}
         {selectedNetwork && (
           <div className="flex flex-col gap-3">
             <Typography.Heading>Wallet Address</Typography.Heading>

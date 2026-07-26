@@ -25,7 +25,7 @@ export type EvmTokenSpec = {
 
 /**
  * Fetches ERC-20 balances for all given EVM tokens in parallel.
- * WETH (native ETH on bridge) is intentionally excluded — pass only ERC-20 tokens.
+ * WETH (native ETH on bridge) is intentionally excluded - pass only ERC-20 tokens.
  */
 export function useAllEvmTokenBalances(
   address?: string,
@@ -73,7 +73,7 @@ export function useAllEvmTokenBalances(
       setBalances(result);
       setIsLoading(false);
     }
-    // tokensKey is a stable string proxy for the tokens array — intentional
+    // tokensKey is a stable string proxy for the tokens array - intentional
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, publicClient, tokensKey]);
 

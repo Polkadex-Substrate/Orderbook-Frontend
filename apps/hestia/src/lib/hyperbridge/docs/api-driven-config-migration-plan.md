@@ -4,9 +4,9 @@
 
 The list of supported chains and tokens for the Hyperbridge bridge is fully hardcoded in `apps/hestia/src/config/bridge.ts`. Specifically:
 
-- **`BRIDGE_CHAINS`** — 2 chains (Sepolia, Polkadex) defined as static constants
-- **`SEPOLIA_PDEX_TOKENS`** — 8 tokens (WETH, USDC, USDT, WBTC, LINK, UNI, AAVE, wstETH) defined as a static array
-- **`BRIDGE_ROUTES`** — derived from the above; also static
+- **`BRIDGE_CHAINS`** - 2 chains (Sepolia, Polkadex) defined as static constants
+- **`SEPOLIA_PDEX_TOKENS`** - 8 tokens (WETH, USDC, USDT, WBTC, LINK, UNI, AAVE, wstETH) defined as a static array
+- **`BRIDGE_ROUTES`** - derived from the above; also static
 
 Any change to supported assets requires a frontend code change, PR review, and full deployment. This is a poor operational model: the backend/protocol team knows which tokens and chains are live, but they cannot make that change without going through the frontend release cycle.
 
@@ -17,7 +17,7 @@ Any change to supported assets requires a frontend code change, PR review, and f
 Replace all three static collections with data served by the backend API. The frontend should:
 
 1. Fetch chains, tokens, and routes from a single API endpoint at startup (or on first bridge page load).
-2. Use the fetched data exactly where the current static constants are used today — no other component needs to change.
+2. Use the fetched data exactly where the current static constants are used today - no other component needs to change.
 3. Fall back gracefully if the API is unavailable (show an error state, never silently display stale hardcoded data).
 
 ---
@@ -90,7 +90,7 @@ Response 200:
 }
 ```
 
-The response shape maps 1:1 to `BridgeChainConfig`, `BridgeTokenConfig`, and `BridgeRouteConfig` already defined in `config/bridge.ts` — no new types needed.
+The response shape maps 1:1 to `BridgeChainConfig`, `BridgeTokenConfig`, and `BridgeRouteConfig` already defined in `config/bridge.ts` - no new types needed.
 
 ---
 
@@ -103,7 +103,7 @@ Remove the hardcoded `BRIDGE_CHAINS`, `SEPOLIA_PDEX_TOKENS`, `BRIDGE_TOKENS`, an
 - All TypeScript interfaces (`EvmChainConfig`, `SubstrateChainConfig`, `BridgeTokenConfig`, `BridgeRouteConfig`, `BridgeChainConfig`)
 - All helper functions (`getBridgeChain`, `getBridgeToken`, `getRouteSupportedTokens`, `getRouteConfig`)
 
-The helper functions will need to operate on the runtime data rather than module-level constants — see Step 3 below.
+The helper functions will need to operate on the runtime data rather than module-level constants - see Step 3 below.
 
 ### 2. New file: `apps/hestia/src/lib/hyperbridge/useBridgeConfig.ts`
 
@@ -138,7 +138,7 @@ export function useBridgeConfig() {
 
 ### 3. `apps/hestia/src/components/bridge/BridgeProvider.tsx`
 
-Replace direct imports of `BRIDGE_CHAINS`, `BRIDGE_TOKENS`, `BRIDGE_ROUTES` with the `useBridgeConfig()` hook. The provider already owns the chain/token selection state — it is the right place to hold the async config and expose it to children via context.
+Replace direct imports of `BRIDGE_CHAINS`, `BRIDGE_TOKENS`, `BRIDGE_ROUTES` with the `useBridgeConfig()` hook. The provider already owns the chain/token selection state - it is the right place to hold the async config and expose it to children via context.
 
 Key changes:
 - Call `useBridgeConfig()` at the top of `BridgeProvider`
@@ -153,7 +153,7 @@ Add a loading skeleton and an error state for when `useBridgeConfig` is in fligh
 
 ## Migration Steps
 
-### Step 1 — Agree on the API shape with the backend team
+### Step 1 - Agree on the API shape with the backend team
 
 Before writing frontend code, confirm with the backend team that:
 - The endpoint URL and auth mechanism match (same `READ_ONLY_TOKEN` pattern, or a new public endpoint)
@@ -161,7 +161,7 @@ Before writing frontend code, confirm with the backend team that:
 - The `hftAddress` field for EVM-side token entries is included (it is a frontend-critical field, not a pure display field)
 - The backend will include all fields needed for Substrate chains (`wsUrl`, `consensusStateId`, `hasher`)
 
-### Step 2 — Create a Next.js API route proxy (optional but recommended)
+### Step 2 - Create a Next.js API route proxy (optional but recommended)
 
 To avoid exposing the backend URL and token to the browser, proxy the request through a Next.js API route:
 
@@ -172,7 +172,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const res = await fetch(`${process.env.GRAPHQL_URL}/bridge/config`, {
     headers: { Authorization: `Bearer ${process.env.READ_ONLY_TOKEN}` },
-    next: { revalidate: 300 },   // Next.js ISR — revalidate every 5 min
+    next: { revalidate: 300 },   // Next.js ISR - revalidate every 5 min
   });
   if (!res.ok) return NextResponse.json({ error: "upstream error" }, { status: res.status });
   return NextResponse.json(await res.json());
@@ -181,7 +181,7 @@ export async function GET() {
 
 This keeps `READ_ONLY_TOKEN` server-side only and lets Next.js cache the response at the edge.
 
-### Step 3 — Implement `useBridgeConfig` (from the template in Files to Change above)
+### Step 3 - Implement `useBridgeConfig` (from the template in Files to Change above)
 
 Add the query hook. At this stage it can still fall back to the hardcoded constants if the API is unavailable, to allow incremental rollout:
 
@@ -192,11 +192,11 @@ const tokens = data?.tokens ?? SEPOLIA_PDEX_TOKENS;                // temporary 
 const routes = data?.routes ?? BRIDGE_ROUTES;                      // temporary fallback
 ```
 
-### Step 4 — Wire `BridgeProvider` to use the hook's data
+### Step 4 - Wire `BridgeProvider` to use the hook's data
 
 Pass `chains`, `tokens`, and `routes` from the hook into the existing context value. All child components that currently call `getRouteSupportedTokens()` or access `BRIDGE_TOKENS` directly should be updated to read from context instead.
 
-### Step 5 — Add loading and error states to the bridge UI
+### Step 5 - Add loading and error states to the bridge UI
 
 Wrap the bridge form in a conditional:
 
@@ -205,15 +205,15 @@ if (isLoading) return <BridgeConfigSkeleton />;
 if (error) return <BridgeConfigError message="Could not load supported tokens. Please try again." />;
 ```
 
-### Step 6 — Remove hardcoded constants and fallbacks
+### Step 6 - Remove hardcoded constants and fallbacks
 
 Once the API is proven stable in staging:
 1. Delete `SEPOLIA_PDEX_TOKENS`, `BRIDGE_TOKENS`, and `BRIDGE_ROUTES` from `config/bridge.ts`
-2. Remove the `BRIDGE_CHAINS` constant — only keep the TypeScript interfaces
+2. Remove the `BRIDGE_CHAINS` constant - only keep the TypeScript interfaces
 3. Remove the temporary fallbacks from Step 3
 4. Update `config/wagmi.ts` to derive `SUPPORTED_EVM_CHAIN_IDS` from the fetched chain list instead of the static constant
 
-### Step 7 — Remove env vars that move to the API
+### Step 7 - Remove env vars that move to the API
 
 Once all token addresses and chain endpoints are served from the API, the following env vars become redundant and should be removed from `next.config.js` and `.env.migration.example`:
 
@@ -255,8 +255,8 @@ The bridge config changes rarely (only when new tokens or chains are added by th
 
 ## What Does NOT Change
 
-- The `BridgeChainConfig`, `BridgeTokenConfig`, `BridgeRouteConfig` interfaces — the API response must match them.
-- The bridge transaction logic in `ethereumToSubstrate.ts` and `substrateToEthereum.ts` — they receive config objects at call time; the source of those objects is irrelevant.
-- The `useEvmTokenBalance`, `useSubstrateWethBalance`, and other hooks — they accept config parameters, not module-level constants.
-- The `WrappedHyperFungibleTokenABI` from `@hyperbridge/sdk` — chain-agnostic, unchanged.
-- The ABI files in `lib/hyperbridge/abis/` — still needed for ISMP Host event parsing.
+- The `BridgeChainConfig`, `BridgeTokenConfig`, `BridgeRouteConfig` interfaces - the API response must match them.
+- The bridge transaction logic in `ethereumToSubstrate.ts` and `substrateToEthereum.ts` - they receive config objects at call time; the source of those objects is irrelevant.
+- The `useEvmTokenBalance`, `useSubstrateWethBalance`, and other hooks - they accept config parameters, not module-level constants.
+- The `WrappedHyperFungibleTokenABI` from `@hyperbridge/sdk` - chain-agnostic, unchanged.
+- The ABI files in `lib/hyperbridge/abis/` - still needed for ISMP Host event parsing.

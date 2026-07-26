@@ -170,7 +170,20 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
   }: DepositArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
-    const amountStr = new BigNumber(amount).multipliedBy(UNIT_BN).toString();
+    // `amount` is in human units and may be a JS float carrying binary noise
+    // (0.1 + 0.2 -> 0.30000000000000004). BigNumber builds from the number's
+    // decimal string, so multiplying by 10^12 can leave a fractional part -
+    // and `Compact<u128>` rejects it with "String should not contain decimal
+    // points or scientific notation". `.toString()` would also emit exponent
+    // form for very large or small values, which the codec likewise refuses.
+    //
+    // integerValue + toFixed(0) guarantees a plain integer string. FLOOR, not
+    // round: the caller has usually capped the amount at the user's available
+    // balance, and rounding up by one planck would make the extrinsic fail.
+    const amountStr = new BigNumber(amount)
+      .multipliedBy(UNIT_BN)
+      .integerValue(BigNumber.ROUND_FLOOR)
+      .toFixed(0);
     const ext = api.tx.ocex.deposit(asset as unknown as string, amountStr);
     const signedExt = await ext.signAsync(account.address, {
       signer: account.signer,

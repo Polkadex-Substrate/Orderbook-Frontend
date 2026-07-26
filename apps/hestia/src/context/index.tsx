@@ -10,7 +10,7 @@ if (!projectId) throw new Error("Project ID is not defined");
 
 // "use client" modules still EXECUTE on the server during prerender/SSG.
 // createWeb3Modal boots the WalletConnect core, whose key-value storage
-// probes indexedDB — undefined in Node, which spams the build with
+// probes indexedDB - undefined in Node, which spams the build with
 // "ReferenceError: indexedDB is not defined". The modal is browser-only,
 // so only initialize it there.
 if (typeof window !== "undefined") {

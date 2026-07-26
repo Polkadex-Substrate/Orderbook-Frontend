@@ -14,18 +14,18 @@ import { LegalLayout } from "./layout";
  * were carried over from the previous list.
  *
  * NB the FATF revises these lists at each plenary (roughly February, June and
- * October). This page must be reviewed after each one — see the note rendered
+ * October). This page must be reviewed after each one - see the note rendered
  * at the foot of the page.
  */
 
-// FATF "Call for Action" — 19 June 2026 (unchanged at that plenary).
+// FATF "Call for Action" - 19 June 2026 (unchanged at that plenary).
 const CALL_FOR_ACTION = [
   "Democratic People's Republic of Korea (DPRK)",
   "Iran",
   "Myanmar",
 ];
 
-// FATF "Jurisdictions under Increased Monitoring" — 19 June 2026.
+// FATF "Jurisdictions under Increased Monitoring" - 19 June 2026.
 // Bosnia and Herzegovina and Iraq added; Algeria and Namibia removed.
 const INCREASED_MONITORING = [
   "Angola",

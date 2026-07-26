@@ -51,7 +51,7 @@ export const Table = ({
   const onChangeTotal: GenericAction = (selectedIndex) =>
     changeMarketAmountSumClick(selectedIndex);
 
-  // Row click loads BOTH price and amount — "take this order" is the common
+  // Row click loads BOTH price and amount - "take this order" is the common
   // intent, and typing a smaller size over the amount is quicker than typing
   // a size from scratch. Safe now that an over-balance amount surfaces as an
   // inline error plus the "Move X & Buy/Sell" action rather than a wall of

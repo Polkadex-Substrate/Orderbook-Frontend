@@ -35,7 +35,7 @@ export function useRecentTrades(market: string) {
   return {
     list: recentTradesList ?? [],
     // isLoading only: background refetches (isFetching) must not blank the
-    // list behind a skeleton — that's the "data disappears" flicker when
+    // list behind a skeleton - that's the "data disappears" flicker when
     // hopping between markets.
     loading: isLoading,
     isDecreasing,

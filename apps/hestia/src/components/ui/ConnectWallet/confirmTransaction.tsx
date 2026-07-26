@@ -105,7 +105,7 @@ export const ConfirmTransaction = ({
       tokenFee?.id && isPDEX
         ? walletBalance < fee + existential
         : // null = no on-chain pool for this token, so the fee cannot be
-          // quoted (let alone paid) in it — that blocks, it isn't "free".
+          // quoted (let alone paid) in it - that blocks, it isn't "free".
           swapPrice === null ||
           Number(selectedAssetBalance?.onChainBalance) < swapPrice,
     [
@@ -222,7 +222,7 @@ export const ConfirmTransaction = ({
                       <Skeleton loading={swapLoading} className="min-h-4 w-10">
                         <div className="flex items-center gap-1">
                           <Typography.Text>{`${
-                            swapPrice === null ? "—" : swapPrice.toFixed(4)
+                            swapPrice === null ? "-" : swapPrice.toFixed(4)
                           } ${tokenFee?.name}`}</Typography.Text>
                           <Typography.Text appearance="primary">
                             ≈

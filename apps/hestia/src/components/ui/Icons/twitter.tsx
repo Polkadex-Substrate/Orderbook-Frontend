@@ -6,7 +6,7 @@ import * as React from "react";
  * The export is still named `Twitter` on purpose: the landing footer resolves
  * icons dynamically via `Icons[val.iconName]`, so renaming this breaks that
  * lookup silently at runtime rather than at compile time. Only the artwork
- * changed — the bird mark was replaced with the X glyph.
+ * changed - the bird mark was replaced with the X glyph.
  *
  * No `fill` is set so callers can colour it with a Tailwind `fill-*` class,
  * which is how the existing call sites style it.

@@ -1,4 +1,4 @@
-/* Driver.js — Polkadex dark theme overrides */
+/* Driver.js - Polkadex dark theme overrides */
 
 .driver-popover.polkadex-tour-popover {
   background-color: #111318;
@@ -85,7 +85,7 @@
   color: #e2e8f0;
 }
 
-/* Arrow colors — match popover background for all sides */
+/* Arrow colors - match popover background for all sides */
 .driver-popover.polkadex-tour-popover.driver-popover-arrow-side-top .driver-popover-arrow {
   border-top-color: #111318;
 }

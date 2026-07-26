@@ -41,7 +41,7 @@ export interface ReadyToClaimDataProps extends Omit<WithdrawGroup, "items"> {
 }
 
 // Plain component: was forwardRef but ignored the ref and no caller
-// passed one — triggered React's forwardRef-arity warning on mount.
+// passed one - triggered React's forwardRef-arity warning on mount.
 export const ReadyToClaim = ({ maxHeight }: { maxHeight: string }) => {
   const { loading, readyWithdrawals } = useTransactions();
   const { onFetchClaimWithdraw, claimsInLoading } = useWithdrawsProvider();

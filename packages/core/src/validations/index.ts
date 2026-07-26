@@ -312,7 +312,7 @@ export const marketOrderValidations = ({
       )
       .test("Min volume", `Minimum volume required: ${minVolume}`, (value) => {
         if (isSell) {
-          // No current price available (e.g. market has no recent trades) —
+          // No current price available (e.g. market has no recent trades) -
           // this is a data-availability gap, not evidence the amount is too
           // small, so don't block the order on this check.
           if (currentMarketPrice == null) return true;

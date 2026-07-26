@@ -86,7 +86,7 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
 
 // ─── Token definitions ────────────────────────────────────────────────────────
 // Single source of truth for all Sepolia ↔ Polkadex bridgeable tokens.
-// When the backend API is ready, replace this array with the API response —
+// When the backend API is ready, replace this array with the API response -
 // the shape of each entry must match BridgeTokenConfig.
 export const SEPOLIA_PDEX_TOKENS: BridgeTokenConfig[] = [
   {
@@ -212,7 +212,7 @@ export const SEPOLIA_PDEX_TOKENS: BridgeTokenConfig[] = [
   },
 ];
 
-// Derived lookup map — used by bridge functions that need to look up a token by id.
+// Derived lookup map - used by bridge functions that need to look up a token by id.
 // Do not modify this directly; add tokens to SEPOLIA_PDEX_TOKENS above.
 export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> =
   Object.fromEntries(SEPOLIA_PDEX_TOKENS.map((t) => [t.id, t]));
@@ -271,7 +271,7 @@ export function getRouteConfig(
   );
 }
 
-// EVM chain IDs the bridge currently supports — consumed by wagmi config
+// EVM chain IDs the bridge currently supports - consumed by wagmi config
 export const SUPPORTED_EVM_CHAIN_IDS: number[] = Object.values(BRIDGE_CHAINS)
   .filter((c): c is EvmChainConfig => c.type === "EVM")
   .map((c) => c.chainId);

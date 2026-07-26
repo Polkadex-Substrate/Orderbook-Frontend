@@ -3,7 +3,7 @@
 import { LegalLayout } from "./layout";
 
 /**
- * Disclaimer and Legal Notice — testnet edition.
+ * Disclaimer and Legal Notice - testnet edition.
  *
  * Adapted from Polkadex_Disclaimer_and_Legal_Notice.pdf. The original's risk
  * sections (volatility, liquidity, availability, third parties) are retained
@@ -122,8 +122,8 @@ export function Disclaimer() {
 
       <h2>Third-party risk</h2>
       <p>
-        Third parties — including wallet providers, RPC and indexing services,
-        and bridge operators — may be involved in delivering functionality. You
+        Third parties - including wallet providers, RPC and indexing services,
+        and bridge operators - may be involved in delivering functionality. You
         may be subject to their terms, over which we have no control, and their
         failures may affect your use of the Orderbook.
       </p>

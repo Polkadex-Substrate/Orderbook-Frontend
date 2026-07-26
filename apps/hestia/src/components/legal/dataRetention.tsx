@@ -3,12 +3,12 @@
 import { LegalLayout } from "./layout";
 
 /**
- * Data Retention Policy — testnet edition.
+ * Data Retention Policy - testnet edition.
  *
  * NB: this is NOT a port of Polkadex_Data_Retention_Policy.pdf. That document
  * is an internal staff data-protection guideline (it addresses "the employer"
  * and "employees" throughout) and never described what data the exchange keeps
- * about its users — yet it was the document linked from the public menu. This
+ * about its users - yet it was the document linked from the public menu. This
  * page answers the question a user actually has.
  *
  * Every statement below must be checked against what the deployment really
@@ -25,7 +25,7 @@ export function DataRetention() {
       <p>
         This policy covers data processed when you use the Orderbook testnet. It
         does not cover data held by third parties you interact with
-        independently — your wallet provider, your browser, or the public
+        independently - your wallet provider, your browser, or the public
         blockchain itself.
       </p>
 
@@ -48,8 +48,8 @@ export function DataRetention() {
       <h2>3. What is processed</h2>
       <h3>On-chain data</h3>
       <p>
-        Transactions you submit — deposits, withdrawals, orders, trades and
-        transfers — are recorded on a public blockchain. This data is{" "}
+        Transactions you submit - deposits, withdrawals, orders, trades and
+        transfers - are recorded on a public blockchain. This data is{" "}
         <strong>public and permanent</strong>: it is replicated across network
         nodes and cannot be edited or deleted by us or by you. Wallet addresses
         are pseudonymous but may be linkable to you by third parties.
@@ -61,7 +61,7 @@ export function DataRetention() {
         acknowledgement of the testnet notice) are stored locally in your
         browser. Trading account keys, if you create a browser wallet, are
         stored in your browser&apos;s storage in encrypted form. Clearing site
-        data removes all of this — including any browser wallet, which cannot
+        data removes all of this - including any browser wallet, which cannot
         then be recovered unless you have backed up the mnemonic.
       </p>
 
@@ -86,20 +86,20 @@ export function DataRetention() {
       <h2>4. Retention periods</h2>
       <ul>
         <li>
-          <strong>On-chain data</strong> — permanent and outside our control,
+          <strong>On-chain data</strong> - permanent and outside our control,
           for as long as the network exists. Note that testnet state may be
           reset, in which case the history is discarded entirely.
         </li>
         <li>
-          <strong>Browser storage</strong> — retained until you clear it. We
+          <strong>Browser storage</strong> - retained until you clear it. We
           cannot delete it for you.
         </li>
         <li>
-          <strong>Server and CDN logs</strong> — retained for a short
+          <strong>Server and CDN logs</strong> - retained for a short
           operational period, then deleted or aggregated.
         </li>
         <li>
-          <strong>Error monitoring</strong> — retained according to the
+          <strong>Error monitoring</strong> - retained according to the
           provider&apos;s configured retention window, then deleted.
         </li>
       </ul>
@@ -107,8 +107,8 @@ export function DataRetention() {
       <h2>5. Sharing</h2>
       <p>
         We do not sell personal data. Data is processed by infrastructure
-        providers acting on our behalf — hosting, CDN, RPC endpoints, indexing
-        and error monitoring — each only to the extent needed to operate the
+        providers acting on our behalf - hosting, CDN, RPC endpoints, indexing
+        and error monitoring - each only to the extent needed to operate the
         service. Public blockchain data is, by nature, available to everyone.
       </p>
 

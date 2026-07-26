@@ -27,7 +27,7 @@ export const EXTERNAL_LINKS = {
 export type ExternalLinkKey = keyof typeof EXTERNAL_LINKS;
 
 /**
- * Centralised exchanges listing PDEX. Mainnet only — see config/network.ts.
+ * Centralised exchanges listing PDEX. Mainnet only - see config/network.ts.
  * Previously duplicated as two hand-maintained lists (one inline JSX, one an
  * array), which is how they drift.
  */

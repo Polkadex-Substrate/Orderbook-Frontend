@@ -73,7 +73,7 @@ export function Template({ id }: { id: string }) {
           // returning user keeps their saved split and NEVER sees a changed
           // defaultSize. Bump the suffix whenever the defaults below change,
           // otherwise the fix ships but nobody who has used the app sees it.
-          // Each group also needs its OWN id — they all shared "persistence".
+          // Each group also needs its OWN id - they all shared "persistence".
           autoSaveId="trading-vertical-v2"
           vaul-drawer-wrapper=""
         >

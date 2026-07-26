@@ -36,7 +36,7 @@ services:
         - DEFAULT_THEA_DESTINATION_CHAIN=${DEFAULT_THEA_DESTINATION_CHAIN}
         - DISABLED_THEA_CHAINS=${DISABLED_THEA_CHAINS}
         - NEXT_PUBLIC_HYPERBRIDGE_URL=${NEXT_PUBLIC_HYPERBRIDGE_URL}
-        # WalletConnect — app throws at boot without it
+        # WalletConnect - app throws at boot without it
         - NEXT_PUBLIC_PROJECT_ID=${NEXT_PUBLIC_PROJECT_ID}
         # Chart
         - NEXT_PUBLIC_NATIVE_CHART=${NEXT_PUBLIC_NATIVE_CHART}
@@ -56,7 +56,7 @@ services:
         - NEXT_PUBLIC_FAUCET_URL=${NEXT_PUBLIC_FAUCET_URL}
         - NEXT_PUBLIC_FAUCET_API_KEY=${NEXT_PUBLIC_FAUCET_API_KEY}
     # Runtime env only. Build args above are interpolated by compose from the
-    # shell or a ROOT .env — NOT from this file. Build with:
+    # shell or a ROOT .env - NOT from this file. Build with:
     #   docker compose --env-file apps/hestia/.env build
     # or just use scripts/build-release.sh, which handles it.
     env_file:

@@ -1,6 +1,6 @@
 "use client";
 
-// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
+// COMING SOON - preserved as reference for HyperbridgeHistory implementation.
 // Real implementation is commented out below. Do not delete.
 
 import { forwardRef } from "react";

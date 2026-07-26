@@ -40,7 +40,7 @@ export const Markets = ({ favorite }: { favorite: boolean }) => {
             market: market?.quoteAsset?.ticker,
             change: Math.abs(ticker.priceChangePercent24Hr),
             // Display-only: a market with no recent trades has a genuinely
-            // null price — show 0 in this scrolling ticker rather than
+            // null price - show 0 in this scrolling ticker rather than
             // propagate null into this purely cosmetic display.
             price: ticker.currentPrice ?? 0,
             positive,

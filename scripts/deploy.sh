@@ -16,7 +16,7 @@
 # Configuration, in order of precedence:
 #   command-line flags  >  scripts/deploy.conf  >  defaults
 #
-# scripts/deploy.conf is gitignored — copy deploy.conf.example and edit, then
+# scripts/deploy.conf is gitignored - copy deploy.conf.example and edit, then
 # deploying is just:  sudo scripts/deploy.sh
 #
 # Options:
@@ -41,6 +41,8 @@ DO_BUILD=1
 HARDEN=1
 CLOUDFLARE=1
 DRY_RUN=0
+KEEP_BACKUPS=3
+REPLACE_ENV=0
 EXTRA_INSTALL_ARGS=""
 
 # shellcheck disable=SC1091
@@ -55,6 +57,8 @@ while [ $# -gt 0 ]; do
     --no-harden)  HARDEN=0; shift ;;
     --plain-tls)  CLOUDFLARE=0; shift ;;
     --dry-run)    DRY_RUN=1; shift ;;
+    --keep-backups) KEEP_BACKUPS="$2"; shift 2 ;;
+    --replace-env)  REPLACE_ENV=1; shift ;;
     -h|--help)    sed -n '2,36p' "$0"; exit 0 ;;
     *)            echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -78,7 +82,7 @@ TAG="$(node -p "require('./apps/hestia/package.json').version" 2>/dev/null || ec
 # ── 1. Pull ─────────────────────────────────────────────────────────────
 if [ "$DO_PULL" -eq 1 ]; then
   step "1/5  Updating source"
-  git pull --ff-only || die "git pull failed — resolve manually and re-run with --no-pull"
+  git pull --ff-only || die "git pull failed - resolve manually and re-run with --no-pull"
 else
   step "1/5  Skipping git pull"
 fi
@@ -105,7 +109,7 @@ TARBALL="$(ls -1t dist/orderbook-fe-*.tar.gz 2>/dev/null | head -1)"
 # check whose absence let a build with no .next/static reach production.
 CHUNKS="$(tar tzf "$TARBALL" | grep -c 'apps/hestia/\.next/static/.*\.js' || true)"
 [ "$CHUNKS" -gt 0 ] || die \
-  "tarball contains no static JS — refusing to deploy.
+  "tarball contains no static JS - refusing to deploy.
   $TARBALL
 The app would serve HTML and 400 on every chunk."
 log "Artifact OK: $(basename "$TARBALL") ($CHUNKS static JS files)"
@@ -115,10 +119,11 @@ step "4/5  Installing"
 rm -rf dist/orderbook-fe
 tar -C dist -xzf "$TARBALL"
 
-INSTALL_ARGS="--domain $DOMAIN --env $ENV_FILE"
-[ "$CLOUDFLARE" -eq 1 ] && INSTALL_ARGS="$INSTALL_ARGS --cloudflare"
-[ "$HARDEN" -eq 1 ]     && INSTALL_ARGS="$INSTALL_ARGS --harden"
-[ "$DRY_RUN" -eq 1 ]    && INSTALL_ARGS="$INSTALL_ARGS --dry-run"
+INSTALL_ARGS="--domain $DOMAIN --env $ENV_FILE --keep-backups $KEEP_BACKUPS"
+[ "$CLOUDFLARE" -eq 1 ]  && INSTALL_ARGS="$INSTALL_ARGS --cloudflare"
+[ "$HARDEN" -eq 1 ]      && INSTALL_ARGS="$INSTALL_ARGS --harden"
+[ "$DRY_RUN" -eq 1 ]     && INSTALL_ARGS="$INSTALL_ARGS --dry-run"
+[ "$REPLACE_ENV" -eq 1 ] && INSTALL_ARGS="$INSTALL_ARGS --replace-env"
 [ -n "$EXTRA_INSTALL_ARGS" ] && INSTALL_ARGS="$INSTALL_ARGS $EXTRA_INSTALL_ARGS"
 
 # shellcheck disable=SC2086
@@ -127,7 +132,7 @@ $SUDO dist/orderbook-fe/install.sh $INSTALL_ARGS
 # ── 5. Verify ───────────────────────────────────────────────────────────
 step "5/5  Verifying"
 if [ "$DRY_RUN" -eq 1 ]; then
-  log "Dry run — nothing was changed."
+  log "Dry run - nothing was changed."
   exit 0
 fi
 
@@ -154,13 +159,13 @@ echo
 if [ "$fail" -eq 0 ]; then
   log "Deployed  →  https://$DOMAIN"
   echo
-  echo "  Origin checks passed. Verify the public path from ANOTHER machine —"
+  echo "  Origin checks passed. Verify the public path from ANOTHER machine -"
   echo "  curling the hostname from this host short-circuits over loopback and"
   echo "  tests nothing:"
   echo "      curl -sSI https://$DOMAIN/ | grep -iE '^HTTP|^server|cf-ray'"
   echo
   echo "  If assets 404/400 in the browser but pass here, purge the CDN cache."
 else
-  die "post-deploy checks failed — see above.
+  die "post-deploy checks failed - see above.
   journalctl -u orderbook-fe -n 50 --no-pager"
 fi

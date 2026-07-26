@@ -14,3 +14,12 @@ DO_PULL=1        # git pull before building
 # Anything extra to pass straight to install.sh, e.g.:
 # EXTRA_INSTALL_ARGS="--cf-origin-pull --ssh-port 2222"
 EXTRA_INSTALL_ARGS=""
+
+# Old installs are moved to /opt/orderbook-fe.bak.<timestamp>. Each is ~140 MB,
+# so they are pruned to this many. 0 = keep none (no rollback target).
+KEEP_BACKUPS=3
+
+# 0 = keep the runtime env already on the server (hand-edits survive; changes
+#     to the source env file are ignored, with a warning).
+# 1 = overwrite it from ENV_FILE on every deploy.
+REPLACE_ENV=0

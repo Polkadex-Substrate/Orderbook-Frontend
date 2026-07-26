@@ -123,7 +123,7 @@ export function useHyperbridgeFees({
           })) as bigint;
         } catch {
           console.warn(
-            "quote() reverted — destination may not be configured yet in HFT contract."
+            "quote() reverted - destination may not be configured yet in HFT contract."
           );
         }
 

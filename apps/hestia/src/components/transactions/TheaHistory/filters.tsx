@@ -1,7 +1,7 @@
-// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
+// COMING SOON - preserved as reference for HyperbridgeHistory implementation.
 // Real implementation is commented out below. Do not delete.
 
-// Noop stub — TheaHistory/index.tsx shows "Coming Soon" and does not render Filters.
+// Noop stub - TheaHistory/index.tsx shows "Coming Soon" and does not render Filters.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
 export const Filters = (_props: any) => null;
 

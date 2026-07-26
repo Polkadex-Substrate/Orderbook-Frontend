@@ -110,7 +110,7 @@ export const RecentTrades = ({ id }: { id: string }) => {
           </table>
         ) : (
           /* Compact empty state: on a thin/new market this panel is empty
-             most of the time — a full illustration reads as broken. */
+             most of the time - a full illustration reads as broken. */
           <div className="flex-1 h-full flex flex-col gap-1 items-center justify-center bg-level-0 py-6 px-4 text-center">
             <Typography.Text appearance="primary" size="xs">
               No trades yet on this pair

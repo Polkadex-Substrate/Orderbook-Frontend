@@ -25,7 +25,7 @@ const responsiveKeys = ["mmScore", "tradingScore"];
 const actionKeys = ["mmScore", "tradingScore", "rewards"];
 
 // Plain component: was forwardRef but ignored the ref and no caller
-// passed one — triggered React's forwardRef-arity warning on mount.
+// passed one - triggered React's forwardRef-arity warning on mount.
 export const TableLeaderboard = ({ maxHeight, market }: Props) => {
   const { width } = useWindowSize();
   const { accounts, isLoading } = useLeaderBoard(market);

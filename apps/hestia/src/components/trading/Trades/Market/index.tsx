@@ -19,7 +19,7 @@ import { Tickers } from "./tickers";
 import { Filters } from "./filters";
 
 // Module-scoped: clicking a pair navigates to a new /trading/[id] route,
-// which remounts this component and would reset the list to the top —
+// which remounts this component and would reset the list to the top -
 // losing the user's place. Component state and refs die with the unmount;
 // this survives it (per tab, which is exactly the scope we want).
 let savedScrollTop = 0;

@@ -1,6 +1,6 @@
 "use client";
 /**
- * GraphV2 — orderbook-native chart (no external datafeed gateway).
+ * GraphV2 - orderbook-native chart (no external datafeed gateway).
  *
  * Candles come from the exchange's own AppSync klines via @orderbook/core
  * (fetchCandles) with live updates over the kline subscription; depth from

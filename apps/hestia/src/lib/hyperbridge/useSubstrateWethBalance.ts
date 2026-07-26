@@ -13,7 +13,7 @@ interface UseSubstrateAssetBalanceOptions {
   decimals?: number;
 }
 
-// Per-URL singleton connections — supports multiple Substrate chains
+// Per-URL singleton connections - supports multiple Substrate chains
 const apiInstances = new Map<string, ApiPromise>();
 const connectingUrls = new Set<string>();
 const apiQueues = new Map<string, Array<(api: ApiPromise) => void>>();

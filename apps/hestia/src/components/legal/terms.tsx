@@ -3,7 +3,7 @@
 import { LegalLayout } from "./layout";
 
 /**
- * Terms of Use — testnet edition.
+ * Terms of Use - testnet edition.
  *
  * Adapted from Polkadex_Terms_of_Use.pdf (26/10/2022). Substantive changes:
  *  - scoped to the testnet: no real value, no consideration, resettable state
@@ -23,21 +23,21 @@ export function Terms() {
       <h2>1. Definitions</h2>
       <ul>
         <li>
-          <strong>User</strong> — the individual accessing or using the
+          <strong>User</strong> - the individual accessing or using the
           Orderbook testnet (&quot;you&quot;, &quot;your&quot;).
         </li>
         <li>
-          <strong>Test Token</strong> — a valueless token issued on the testnet
+          <strong>Test Token</strong> - a valueless token issued on the testnet
           for evaluation and development purposes only. Test Tokens are not
           securities, commodities, money, or a store of value, and are not
           redeemable for anything.
         </li>
         <li>
-          <strong>Orderbook</strong> — the decentralised exchange interface made
+          <strong>Orderbook</strong> - the decentralised exchange interface made
           available at this domain, operating against a test network.
         </li>
         <li>
-          <strong>Sanction</strong> — any punitive or coercive measure
+          <strong>Sanction</strong> - any punitive or coercive measure
           administered by OFAC or another United States authority, the United
           Nations Security Council, the European Union, His Majesty&apos;s
           Treasury of the United Kingdom, or the authorities of the country in
@@ -171,7 +171,7 @@ export function Terms() {
 
       <h2>11. Third parties</h2>
       <p>
-        The Orderbook may integrate third-party services — including wallet
+        The Orderbook may integrate third-party services - including wallet
         extensions, RPC and indexing providers, bridges and analytics tools.
         Your use of those services may be governed by their own terms, over
         which we have no control, and we are not responsible for their conduct

@@ -30,7 +30,7 @@ export const getOrderbook =
     APITypes.GetOrderbookQueryVariables,
     APITypes.GetOrderbookQuery
   >;
-// NB: from/to are declared String! (ISO 8601), not AWSDateTime! — the
+// NB: from/to are declared String! (ISO 8601), not AWSDateTime! - the
 // self-hosted Rust GraphQL server (orderbook/server, async-graphql) has no
 // AWSDateTime scalar and rejects the whole query with 'Unknown type
 // "AWSDateTime"'. Values were always ISO strings; only the declaration

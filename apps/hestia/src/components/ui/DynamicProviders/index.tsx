@@ -112,8 +112,8 @@ const queryClient = new QueryClient({
     },
   },
   // react-query v5 removed the per-query `onError` callback (it only remains on
-  // useMutation). The hooks that used it all did the same thing — surface the
-  // message as an error toast — so that behaviour now lives here, once, for
+  // useMutation). The hooks that used it all did the same thing - surface the
+  // message as an error toast - so that behaviour now lives here, once, for
   // every query. Mirrors SettingProvider's defaultToast.onError below.
   queryCache: new QueryCache({
     onError: (error) => {

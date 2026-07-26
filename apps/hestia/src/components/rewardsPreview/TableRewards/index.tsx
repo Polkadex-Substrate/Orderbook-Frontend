@@ -28,7 +28,7 @@ import { Icons } from "@/components/ui";
 type Props = { maxHeight: string; market: string };
 
 // Plain component: was forwardRef but ignored the ref and no caller
-// passed one — triggered React's forwardRef-arity warning on mount.
+// passed one - triggered React's forwardRef-arity warning on mount.
 export const TableRewards = ({ maxHeight, market }: Props) => {
   const titleRef = useRef(null);
 

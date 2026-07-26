@@ -4,22 +4,28 @@ import { useState, useEffect } from "react";
 import { Button, Checkbox, Modal, Separator, Typography } from "@mitrabook/ux";
 import { RiFlaskLine } from "@remixicon/react";
 
-const SESSION_KEY = "testnet-notice-acknowledged";
-const isTestnet = process.env.NEXT_PUBLIC_ENABLE_FAUCET === "true";
+import {
+  IS_TESTNET,
+  TESTNET_ACK_EVENT,
+  TESTNET_ACK_KEY,
+} from "@/config/network";
 
 export const TestnetModal = () => {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (isTestnet && !sessionStorage.getItem(SESSION_KEY)) {
+    if (IS_TESTNET && !sessionStorage.getItem(TESTNET_ACK_KEY)) {
       setOpen(true);
     }
   }, []);
 
   const handleClose = () => {
-    sessionStorage.setItem(SESSION_KEY, "1");
+    sessionStorage.setItem(TESTNET_ACK_KEY, "1");
     setOpen(false);
+    // Let the product tour know the viewport is clear. Without this it would
+    // run behind the backdrop and highlight nothing visible.
+    window.dispatchEvent(new Event(TESTNET_ACK_EVENT));
   };
 
   return (

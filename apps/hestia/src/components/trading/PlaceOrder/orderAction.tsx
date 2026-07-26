@@ -7,7 +7,7 @@ import { PropsWithChildren } from "react";
  *
  * The Buy/Sell button must stay on screen no matter how short the panel is.
  * The form scrolls inside PlaceOrder's `overflow-auto` container, so a button
- * sitting in normal flow at the end of the form scrolls out of view — and
+ * sitting in normal flow at the end of the form scrolls out of view - and
  * because the scrollbar is hidden (`scrollbar-hide`) there is no visual hint
  * that anything is below the fold. On a wide-but-short viewport (4K desktops
  * are typically 16:9, so height is the scarce axis, and the root font scales

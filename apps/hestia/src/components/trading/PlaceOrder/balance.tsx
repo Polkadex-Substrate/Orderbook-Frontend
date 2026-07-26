@@ -12,7 +12,7 @@ export const Balance = ({
   const chainName = getChainFromTicker(baseTicker);
   return (
     <div className=" self-end flex items-center gap-1">
-      {/* The balance itself links to the transfer page — moving funds between
+      {/* The balance itself links to the transfer page - moving funds between
           funding and trading accounts was only reachable through the tiny
           dropdown icon (whose onClick was a leftover window.alert("...")). */}
       <Link

@@ -1,4 +1,4 @@
-// COMING SOON — preserved as reference for HyperbridgeHistory implementation.
+// COMING SOON - preserved as reference for HyperbridgeHistory implementation.
 // Real implementation is commented out below. Do not delete.
 
 // Stub exports so dependents (direct/History, TheaHistory sub-components) don't break.

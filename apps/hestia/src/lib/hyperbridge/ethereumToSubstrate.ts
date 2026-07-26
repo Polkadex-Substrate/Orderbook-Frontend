@@ -198,7 +198,7 @@ export async function transferTokens(params: BridgeTransferParams) {
   const destBytes = toHex(Destination.chainId);
 
   // ── Step 1: Check if contract uses native ETH (isWeth mode) ──────────────
-  // When isWeth=true the contract wraps native ETH itself — no ERC20 approval.
+  // When isWeth=true the contract wraps native ETH itself - no ERC20 approval.
   // When isWeth=false the underlying ERC20 must be approved to the HFT contract.
   const isWeth = (await publicClient.readContract({
     address: hftAddress,
@@ -233,7 +233,7 @@ export async function transferTokens(params: BridgeTransferParams) {
     }
   } else {
     console.log(
-      "isWeth=true — no ERC20 approval needed, sending native ETH ✅"
+      "isWeth=true - no ERC20 approval needed, sending native ETH ✅"
     );
   }
 
@@ -253,7 +253,7 @@ export async function transferTokens(params: BridgeTransferParams) {
 
   // quote() may revert if the destination chain isn't configured yet in the
   // HFT contract. Treat that as 0 native fee (same behaviour as the SDK).
-  // The ABI marks quote() as nonpayable, but it's a pure read — use an inline
+  // The ABI marks quote() as nonpayable, but it's a pure read - use an inline
   // view ABI so viem's readContract accepts it.
   const QUOTE_ABI = [
     {
@@ -290,7 +290,7 @@ export async function transferTokens(params: BridgeTransferParams) {
     console.log("Native cost (wei):", nativeValue.toString());
   } catch (e) {
     console.warn(
-      "quote() reverted — destination may not be configured yet. Proceeding with 0 native fee.",
+      "quote() reverted - destination may not be configured yet. Proceeding with 0 native fee.",
       e
     );
   }

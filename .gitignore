@@ -79,7 +79,7 @@ amplifytools.xcconfig
 # That last one is almost certainly behind the version drift this repo kept
 # hitting (react-query pin lost, typescript "latest" resolving to 7.x, Radix
 # 1.0 vs 1.1 prop renames).
-# package-lock.json stays ignored on purpose — this is a yarn workspace, and a
+# package-lock.json stays ignored on purpose - this is a yarn workspace, and a
 # stray npm lockfile would silently compete with yarn.lock.
 package-lock.json
 

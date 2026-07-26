@@ -100,7 +100,7 @@ export function CandleChart({
   const [failed, setFailed] = useState(false);
   // A market that has never traded resolves successfully with zero bars.
   // That is NOT a failure, but without its own state it rendered as a blank
-  // chart with no explanation at all — indistinguishable from a broken one.
+  // chart with no explanation at all - indistinguishable from a broken one.
   const [empty, setEmpty] = useState(false);
 
   const showRsi = !!indicators?.rsi;
