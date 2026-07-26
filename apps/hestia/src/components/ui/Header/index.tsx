@@ -83,53 +83,31 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             <HeaderLink.Single href="/faucet" disabled={isFaucetDisabled}>
               Faucet
             </HeaderLink.Single>
+            {/* Analytics is a product feature and was buried under "More"
+                between five legal documents. Promoted to a top-level link. */}
+            <HeaderLink.Single href={EXTERNAL_LINKS.analytics}>
+              Analytics
+            </HeaderLink.Single>
+            {/* Was "Support", which duplicated Discord with the Community menu
+                below. Help is now purely documentation; Discord lives once, in
+                Community, where people look for it. */}
             <HeaderLink.Dropdown
               items={[
                 {
-                  href: EXTERNAL_LINKS.discord,
-                  label: "Community support",
-                },
-                {
-                  href: "https://polkadex.ee/testnet-guide",
+                  href: EXTERNAL_LINKS.testnetGuide,
                   label: "Orderbook guide",
                 },
                 {
                   href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
                   label: "FAQ",
                 },
-              ]}
-            >
-              Support
-            </HeaderLink.Dropdown>
-            <HeaderLink.Dropdown
-              items={[
                 {
-                  href: "https://explorer.polkadex.ee/analytics",
-                  label: "Analytics",
-                },
-                {
-                  href: "/legal/terms",
-                  label: "Terms of use",
-                },
-                {
-                  href: "/legal/privacy",
-                  label: "Privacy policy",
-                },
-                {
-                  href: "/legal/disclaimer",
-                  label: "Disclaimer",
-                },
-                {
-                  href: "/legal/excluded-jurisdictions",
-                  label: "Excluded Jurisdictions",
-                },
-                {
-                  href: "/legal/data-retention",
-                  label: "Data Retention Policy",
+                  href: EXTERNAL_LINKS.docs,
+                  label: "Documentation",
                 },
               ]}
             >
-              More
+              Help
             </HeaderLink.Dropdown>
             <HeaderLink.Dropdown
               items={[

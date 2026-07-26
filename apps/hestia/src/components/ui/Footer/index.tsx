@@ -13,6 +13,7 @@ import { useWindowSize } from "usehooks-ts";
 import { Markets } from "./markets";
 
 import { EXTERNAL_LINKS } from "@/config/links";
+import { LEGAL_LINKS } from "@/config/legalLinks";
 
 export const Footer = forwardRef<
   HTMLDivElement,
@@ -67,7 +68,24 @@ export const Footer = forwardRef<
         ) : (
           <div />
         )}
-        <div className="col-span-1 flex flex-1 gap-3 bg-level-1 px-2 py border-l border-secondary w-full justify-end">
+        <div className="col-span-1 flex flex-1 items-center gap-3 bg-level-1 px-2 py border-l border-secondary w-full justify-end">
+          {/* Legal moved out of the header's "More" dropdown, where it sat
+              alongside Analytics and made a compliance list compete with a
+              product feature. The footer is where these are conventionally
+              found, and it keeps them one click from every page.
+
+              Hidden below xl only because this bar is narrow: the responsive
+              menu carries the same list from the same source array, so the
+              documents stay reachable at every width. */}
+          <div className="hidden xl:flex items-center gap-3">
+            {LEGAL_LINKS.map(({ href, label }) => (
+              <Typography.Text key={href} appearance="primary" size="xs">
+                <Link href={href} className="hover:text-current">
+                  {label}
+                </Link>
+              </Typography.Text>
+            ))}
+          </div>
           <div className="flex items-center gap-1">
             <div
               className={classNames(

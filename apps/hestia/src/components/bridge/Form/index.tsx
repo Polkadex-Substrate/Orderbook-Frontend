@@ -11,7 +11,6 @@ import {
   RiArrowDownSLine,
   RiArrowLeftRightLine,
   RiLoader2Line,
-  RiWalletLine,
 } from "@remixicon/react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -162,11 +161,17 @@ export const Form = () => {
     | { label: string; blocked: true } => {
     if (!sourceChain || !destinationChain)
       return { label: "Select networks", blocked: true };
+    // Wording must match the account row beneath it. "Connect a wallet" and
+    // "choose an account" are different asks, and which one applies depends on
+    // whether an extension is already connected - not on which side of the
+    // bridge you are looking at.
     if (!sourceAccount)
       return isEvmSource
         ? { label: `Connect ${sourceChain.name} wallet`, onClick: () => open() }
         : {
-            label: `Connect ${sourceChain.name} account`,
+            label: hasSubstrateAccounts
+              ? "Choose a source account"
+              : `Connect ${sourceChain.name} wallet`,
             onClick: () => setOpenSourceModal(true),
           };
     if (!selectedAsset)
@@ -346,10 +351,20 @@ export const Form = () => {
           <div className="flex flex-col gap-3">
             <Typography.Heading>Networks</Typography.Heading>
             {/* Both sides need an account. Stating that up front stops the
-                second request reading like the first one failed. */}
+                second request reading like the first one failed.
+
+                The noun follows the CHAIN, not the position: an EVM side is a
+                browser "wallet" you connect, a Substrate side is an "account"
+                you pick from the extension. Tying it to position meant a
+                flipped bridge asked for a "Polkadex wallet" and a "Sepolia
+                account", which is backwards on both counts. */}
             <ConnectionSteps
-              sourceLabel={`${sourceChain?.name ?? "Source"} wallet`}
-              destinationLabel={`${destinationChain?.name ?? "Destination"} account`}
+              sourceLabel={`${sourceChain?.name ?? "Source"} ${
+                isEvmSource ? "wallet" : "account"
+              }`}
+              destinationLabel={`${destinationChain?.name ?? "Destination"} ${
+                isEvmSource ? "account" : "wallet"
+              }`}
               sourceDone={!!sourceAccount}
               destinationDone={!!destinationAccount}
             />
@@ -393,27 +408,20 @@ export const Form = () => {
                     {sourceAccount.address}
                   </WalletCard>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
-                      <Typography.Text>
-                        No source account selected
-                      </Typography.Text>
-                    </div>
-                    <Button.Solid
-                      appearance="secondary"
-                      size="xs"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setOpenSourceModal(true);
-                      }}
-                    >
-                      {hasSubstrateAccounts
-                        ? "Select account"
-                        : "Connect wallet"}
-                    </Button.Solid>
-                  </div>
+                  // Mirrors the destination row exactly. This block was the
+                  // last one still using a solid button and position-based
+                  // wording ("source account"), so flipping the bridge showed
+                  // two different control styles and two different vocabularies
+                  // for the same job.
+                  <PendingAccountRow
+                    message={
+                      hasSubstrateAccounts
+                        ? `Choose which ${sourceChain?.name ?? "Polkadex"} account to send from`
+                        : `No ${sourceChain?.name ?? "Polkadex"} wallet connected`
+                    }
+                    actionLabel={hasSubstrateAccounts ? "Choose" : "Connect"}
+                    onAction={() => setOpenSourceModal(true)}
+                  />
                 )}
                 {/* Asset & amount live with the SOURCE: what you send is a
                           source-side fact - the destination receives the same token. */}

@@ -21,16 +21,23 @@ export type FaucetToken = {
 const SelectToken = ({
   selected,
   disabled = false,
+  open,
+  onOpenChange,
   children,
 }: PropsWithChildren<{
   selected?: FaucetToken;
   disabled?: boolean;
+  /** Controlled-open pair, so the form's primary button can say "Select a
+   *  token" and actually open this - matching the bridge, where every
+   *  actionable step performs its own action instead of sitting disabled. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }>) => {
   const [ref, bounds] = useMeasure<HTMLButtonElement>();
 
   return (
     <div className={classNames(disabled && "pointer-events-none opacity-40")}>
-      <Dropdown>
+      <Dropdown open={open} onOpenChange={onOpenChange}>
         <Dropdown.Trigger asChild ref={ref}>
           <Button.Outline
             asChild

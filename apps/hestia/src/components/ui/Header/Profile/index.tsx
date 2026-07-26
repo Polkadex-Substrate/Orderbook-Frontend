@@ -3,7 +3,6 @@
 import { Button, Popover, Tooltip } from "@mitrabook/ux";
 import { useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   TradeAccountType,
   useConnectWalletProvider,
@@ -36,8 +35,6 @@ export const Profile = ({
   unreadNotifications: number;
 }) => {
   const { width } = useWindowSize();
-  const pathname = usePathname();
-  const isBridgeRoute = pathname?.startsWith("/bridge") ?? false;
   const {
     selectedWallet,
     browserAccountPresent,
@@ -124,12 +121,12 @@ export const Profile = ({
   return (
     <div data-tour="connect-wallet-btn" className="flex items-center gap-2">
       <Button.Solid size="2sm" className="font-medium" onClick={onClick}>
-        {/* On /bridge this competes with two other "Connect wallet" controls
-            that mean different chains. Naming the network here is the cheapest
-            way to disambiguate, and it is accurate everywhere - this button
-            has only ever connected the Polkadex account. Left generic on
-            other routes, where there is nothing to confuse it with. */}
-        {isBridgeRoute ? "Connect Polkadex wallet" : "Connect wallet"}
+        {/* Always names the chain, on every route. This button has only ever
+            connected the Polkadex account, and both /bridge and /faucet also
+            offer a Sepolia wallet - so a bare "Connect wallet" is ambiguous
+            wherever it matters. Making it route-dependent meant the header
+            changed wording as you navigated, which is its own confusion. */}
+        Connect Polkadex wallet
       </Button.Solid>
       <Button.Icon variant="ghost" onClick={onOpenMenu}>
         <RiMenuLine className="h-full w-full" />

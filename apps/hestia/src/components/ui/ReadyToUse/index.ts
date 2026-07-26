@@ -25,3 +25,4 @@ export * from "./filledCard";
 export * from "./genericHorizontalItem";
 export * from "./terms";
 export * from "./attentionAccountCard";
+export * from "./pasteButton";

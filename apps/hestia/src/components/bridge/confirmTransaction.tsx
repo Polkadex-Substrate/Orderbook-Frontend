@@ -68,6 +68,7 @@ export const ConfirmTransaction = ({
     selectedAssetIdPolkadex,
     isEvmSource,
     substrateAssetIds,
+    sourceChain,
   } = useBridgeProvider();
   const { destinationFee, sourceFee, sourceFeeBalance, sourceFeeExistential } =
     transferConfig ?? {};
@@ -293,7 +294,9 @@ export const ConfirmTransaction = ({
                       const account = getAccount(wagmiConfig);
                       if (!account.isConnected || !account.address) {
                         throw new Error(
-                          "Connect an EVM wallet before submitting."
+                          // Name the chain, not the family: "EVM" appears
+                          // nowhere else the user can see.
+                          `Connect a ${sourceChain?.name ?? "Sepolia Testnet"} wallet before submitting.`
                         );
                       }
 

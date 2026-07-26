@@ -18,14 +18,19 @@ export const FAUCET_NETWORKS: FaucetNetwork[] = [
 export const SelectNetwork = ({
   selected,
   onSelect,
+  open,
+  onOpenChange,
 }: {
   selected?: FaucetNetwork;
   onSelect: (network: FaucetNetwork) => void;
+  /** Controlled-open pair, so the form's primary button can open this. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) => {
   const [ref, bounds] = useMeasure<HTMLButtonElement>();
 
   return (
-    <Dropdown>
+    <Dropdown open={open} onOpenChange={onOpenChange}>
       <Dropdown.Trigger asChild ref={ref}>
         <Button.Outline
           asChild

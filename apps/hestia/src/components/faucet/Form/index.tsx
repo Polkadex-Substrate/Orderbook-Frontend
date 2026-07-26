@@ -14,6 +14,8 @@ import { faucetRegister, faucetDrip, faucetDripSepolia } from "../api";
 import { SelectToken, type FaucetToken } from "./selectToken";
 import { SelectNetwork, type FaucetNetwork } from "./selectNetwork";
 
+import { PasteButton } from "@/components/ui/ReadyToUse";
+
 const POLKADEX_TOKENS: FaucetToken[] = [
   { id: "pdex", ticker: "PDEX", name: "Polkadex" },
   { id: "weth", ticker: "WETH", name: "Wrapped Ethereum" },
@@ -38,6 +40,10 @@ const SEPOLIA_TOKENS: FaucetToken[] = [
 
 const EVM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
+/** Input.Vertical does not forward refs, so the primary button focuses the
+ *  address field by id rather than through a ref. */
+const ADDRESS_FIELD_ID = "faucet-wallet-address";
+
 const initialValues = {
   walletAddress: "",
   tokenId: "",
@@ -49,6 +55,8 @@ export const Form = () => {
     FaucetNetwork | undefined
   >();
   const [selectedToken, setSelectedToken] = useState<FaucetToken | undefined>();
+  const [tokenOpen, setTokenOpen] = useState(false);
+  const [networkOpen, setNetworkOpen] = useState(false);
   const { onHandleAlert, onHandleError } = useSettingsProvider();
   const { selectedAddresses } = useProfile();
   // Connected EVM wallet (wagmi) - lets Sepolia requests autofill the same
@@ -66,18 +74,21 @@ export const Form = () => {
       ? "e.g. 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
       : "e.g. 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 
-  const addressLabel =
-    selectedNetwork?.id === "sepolia"
-      ? "Ethereum Wallet Address"
-      : "Substrate Wallet Address";
+  // Derived from the network the user just picked, so this label always
+  // matches the dropdown above it. It used to name the chain FAMILY
+  // ("Substrate Wallet Address"), which is developer vocabulary the rest of
+  // the app never shows: every other surface says "Polkadex Testnet".
+  const addressLabel = selectedNetwork
+    ? `${selectedNetwork.name} Wallet Address`
+    : "Wallet Address";
 
   const {
     handleSubmit,
     errors,
     getFieldProps,
-    isValid,
-    dirty,
+    values,
     setFieldValue,
+    setFieldTouched,
     touched,
     isSubmitting,
     resetForm,
@@ -169,18 +180,40 @@ export const Form = () => {
     setFieldValue("tokenId", token.id);
   };
 
-  /** Primary button states the next required step (same pattern as the
-   *  bridge form) instead of a mute disabled state. */
-  const primaryLabel = !selectedNetwork
-    ? "Select a network"
-    : !selectedToken
-      ? "Select a token"
-      : errors.walletAddress === "Wallet address is required"
-        ? "Enter a wallet address"
-        : errors.walletAddress
-          ? errors.walletAddress
-          : "Request Tokens";
-  const disabled = !isValid || !dirty || isSubmitting;
+  /**
+   * Primary button states the next required step AND performs it, matching
+   * the bridge form.
+   *
+   * Previously it only did the first half: the label advanced but the button
+   * stayed `disabled`, so "Select a token" rendered grey and did nothing when
+   * clicked. Beside the bridge - where the equivalent step is a live pink
+   * button - it read as though the faucet was broken. An actionable step is
+   * now enabled; only a genuine validation failure is disabled.
+   */
+  const primaryAction = useMemo(():
+    | { label: string; onClick: () => void }
+    | { label: string; submit: true }
+    | { label: string; blocked: true } => {
+    if (!selectedNetwork)
+      return { label: "Select a network", onClick: () => setNetworkOpen(true) };
+    if (!selectedToken)
+      return { label: "Select a token", onClick: () => setTokenOpen(true) };
+    if (!values.walletAddress)
+      return {
+        label: "Enter a wallet address",
+        onClick: () => document.getElementById(ADDRESS_FIELD_ID)?.focus(),
+      };
+    if (errors.walletAddress)
+      return { label: errors.walletAddress, blocked: true };
+    if (isSubmitting) return { label: "Requesting...", blocked: true };
+    return { label: "Request Tokens", submit: true };
+  }, [
+    selectedNetwork,
+    selectedToken,
+    values.walletAddress,
+    errors.walletAddress,
+    isSubmitting,
+  ]);
 
   return (
     <form
@@ -197,11 +230,18 @@ export const Form = () => {
               <SelectNetwork
                 selected={selectedNetwork}
                 onSelect={handleNetworkSelect}
+                open={networkOpen}
+                onOpenChange={setNetworkOpen}
               />
             </div>
             <div className="flex flex-col gap-2 flex-1">
               <Typography.Text appearance="primary">Token</Typography.Text>
-              <SelectToken selected={selectedToken} disabled={!selectedNetwork}>
+              <SelectToken
+                selected={selectedToken}
+                disabled={!selectedNetwork}
+                open={tokenOpen}
+                onOpenChange={setTokenOpen}
+              >
                 {availableTokens.map((token) => (
                   <SelectToken.Card
                     key={token.id}
@@ -240,7 +280,16 @@ export const Form = () => {
                   autoComplete="off"
                   placeholder={addressPlaceholder}
                   {...getFieldProps("walletAddress")}
+                  id={ADDRESS_FIELD_ID}
                   className="max-sm:focus:text-[16px] w-full pl-4 py-4"
+                />
+                {/* Addresses are always pasted, never typed. Sits inside the
+                    field border so it reads as part of the control. */}
+                <PasteButton
+                  onPaste={(text) => {
+                    setFieldValue("walletAddress", text);
+                    setFieldTouched("walletAddress", true);
+                  }}
                 />
               </div>
               {touched.walletAddress && errors.walletAddress && (
@@ -276,10 +325,13 @@ export const Form = () => {
         <Button.Solid
           className="w-full py-5"
           size="md"
-          disabled={disabled}
-          type="submit"
+          type={"submit" in primaryAction ? "submit" : "button"}
+          disabled={"blocked" in primaryAction}
+          onClick={
+            "onClick" in primaryAction ? primaryAction.onClick : undefined
+          }
         >
-          {primaryLabel}
+          {primaryAction.label}
         </Button.Solid>
       )}
     </form>

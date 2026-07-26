@@ -21,6 +21,7 @@ import QrCode from "../../../../public/img/qrCode.png";
 import { HeaderLink } from "./headerLink";
 
 import { EXTERNAL_LINKS } from "@/config/links";
+import { LEGAL_LINKS } from "@/config/legalLinks";
 export const ResponsiveMenuModal = ({
   open,
   onOpenChange,
@@ -95,54 +96,31 @@ export const ResponsiveMenuModal = ({
                   >
                     Faucet
                   </HeaderLink.Single>
+                  {/* Analytics promoted out of "More"; mirrors the desktop
+                      header so the two navs stay the same shape. */}
+                  <HeaderLink.Single
+                    href={EXTERNAL_LINKS.analytics}
+                    className="text-lg"
+                  >
+                    Analytics
+                  </HeaderLink.Single>
                   <HeaderLink.Accordion
                     items={[
                       {
-                        href: EXTERNAL_LINKS.discord,
-                        label: "Community support",
-                      },
-                      {
-                        href: "https://polkadex.ee/testnet-guide",
+                        href: EXTERNAL_LINKS.testnetGuide,
                         label: "Orderbook guide",
                       },
                       {
                         href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
                         label: "FAQ",
                       },
+                      { href: EXTERNAL_LINKS.docs, label: "Documentation" },
                     ]}
                   >
                     Help
                   </HeaderLink.Accordion>
-                  <HeaderLink.Accordion
-                    items={[
-                      { href: "/", label: "Listings" },
-                      {
-                        href: "/legal/terms",
-                        label: "Terms of use",
-                      },
-                      {
-                        href: "/legal/privacy",
-                        label: "Privacy policy",
-                      },
-                      {
-                        href: "/legal/disclaimer",
-                        label: "Disclaimer",
-                      },
-                      {
-                        href: "/legal/excluded-jurisdictions",
-                        label: "Excluded Jurisdictions",
-                      },
-                      {
-                        href: "/legal/data-retention",
-                        label: "Data Retention Policy",
-                      },
-                      {
-                        href: "https://explorer.polkadex.ee/analytics",
-                        label: "Analytics",
-                      },
-                    ]}
-                  >
-                    More
+                  <HeaderLink.Accordion items={[...LEGAL_LINKS]}>
+                    Legal
                   </HeaderLink.Accordion>
                   <HeaderLink.Accordion
                     items={[
