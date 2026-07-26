@@ -351,8 +351,14 @@ nginx_hardening_snippet() {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     # Deny device APIs the app doesn't use.
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
-    # Isolate the browsing context.
-    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    # Isolate the browsing context, but ALLOW POPUPS to keep talking to us.
+    # Plain "same-origin" severs window.opener for cross-origin popups, which
+    # breaks every wallet that authenticates in a popup — Coinbase Smart
+    # Wallet logs an explicit error, and WalletConnect's popup flow silently
+    # never returns. "same-origin-allow-popups" keeps the isolation that
+    # matters (other origins still cannot reference this window) while
+    # letting our own popups post back.
+    add_header Cross-Origin-Opener-Policy "same-origin-allow-popups" always;
 
     # NOTE: no Content-Security-Policy here. A wallet dApp loads scripts and
     # opens sockets to wallet extensions, RPC endpoints and indexers; a CSP
@@ -364,6 +370,12 @@ nginx_hardening_snippet() {
     client_body_timeout 15s;
     client_header_timeout 15s;
     send_timeout 30s;
+
+    # Cloudflare stacks CF-Connecting-IP, CF-Ray, CF-Visitor, CF-IPCountry and
+    # X-Forwarded-For on top of the browser's cookies. Past nginx's default
+    # (4 8k) the response is a bare 400 with no explanation — which shows up
+    # as random static assets failing while the HTML loads fine.
+    large_client_header_buffers 8 32k;
 EOF
 }
 

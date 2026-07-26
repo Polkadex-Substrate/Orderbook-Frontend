@@ -190,9 +190,45 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 for cand in "$SRC_DIR/lib/harden.sh" "$SRC_DIR/harden.sh"; do
   [ -r "$cand" ] && { HARDEN_LIB="$cand"; break; }
 done
-[ -f "$SRC_DIR/apps/hestia/server.js" ] || die \
+# ── Payload validation ──────────────────────────────────────────────────
+# Checking only for server.js is not enough: a truncated or partially-built
+# payload has it while missing the compiled assets, and the app then starts,
+# serves HTML, and returns 400 for every JS chunk — which looks like a proxy
+# or CDN fault and is miserable to trace back to packaging. Verify the pieces
+# Next actually needs before overwriting a working install.
+A="$SRC_DIR/apps/hestia"
+[ -f "$A/server.js" ] || die \
   "apps/hestia/server.js not found next to this script.
 Run install.sh from inside an unpacked release tarball."
+
+payload_missing=""
+[ -d "$A/.next" ]                || payload_missing="$payload_missing .next/"
+[ -d "$A/.next/static" ]         || payload_missing="$payload_missing .next/static/"
+[ -f "$A/.next/BUILD_ID" ]       || payload_missing="$payload_missing .next/BUILD_ID"
+[ -d "$A/.next/server" ]         || payload_missing="$payload_missing .next/server/"
+[ -d "$A/public" ]               || payload_missing="$payload_missing public/"
+
+if [ -n "$payload_missing" ]; then
+  die "Release payload is incomplete — refusing to install.
+
+  Missing:$payload_missing
+  Looked in: $A
+
+The app would start and serve HTML, then fail every chunk request with a 400.
+Rebuild the artifact:
+
+  scripts/build-release.sh --tarball                          # from source
+  scripts/build-release.sh --tarball --from-image <image>     # from an image
+
+then unpack the NEW tarball and run its install.sh — not a leftover directory
+from an earlier attempt."
+fi
+
+# A build with no chunks is technically 'present' but useless.
+chunk_count="$(find "$A/.next/static" -name '*.js' 2>/dev/null | wc -l)"
+[ "$chunk_count" -gt 0 ] || die \
+  "$A/.next/static contains no JavaScript — the build output is empty."
+log "Payload OK ($chunk_count static JS files)"
 
 # ── 1. Identify the distribution ────────────────────────────────────────
 OS_ID=""; OS_LIKE=""; OS_NAME="unknown"
