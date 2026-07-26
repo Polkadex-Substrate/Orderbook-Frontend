@@ -137,40 +137,48 @@ pkg_install() {
   esac
 }
 
-# ── 2. Node.js 20+ ──────────────────────────────────────────────────────
+# ── 2. Node.js 22+ ──────────────────────────────────────────────────────
+# 22, not 20: @hyperbridge/sdk declares engines.node ">=22.x.x". Node 20 also
+# reached end of life in April 2026, so it receives no security patches —
+# don't install it on a host we just spent an installer hardening.
+NODE_MIN=22
 need_node=1
 if command -v node >/dev/null; then
   cur="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
-  if [ "$cur" -ge 20 ]; then
+  if [ "$cur" -ge "$NODE_MIN" ]; then
     log "Node $(node -v) already present"
     need_node=0
   else
-    warn "Node $(node -v) is too old (need 20+); installing a newer one"
+    warn "Node $(node -v) is too old (need ${NODE_MIN}+); installing a newer one"
   fi
 fi
 
 if [ "$need_node" -eq 1 ]; then
-  log "Installing Node.js 20"
+  log "Installing Node.js $NODE_MIN"
   case "$PKG" in
     apt)
       pkg_install curl ca-certificates gnupg
-      run "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"
+      run "curl -fsSL https://deb.nodesource.com/setup_${NODE_MIN}.x | bash -"
       pkg_install nodejs
       ;;
     dnf|yum)
       # Prefer the distro module where available; fall back to NodeSource.
-      if run "$PKG module -y enable nodejs:20" 2>/dev/null; then
+      if run "$PKG module -y enable nodejs:$NODE_MIN" 2>/dev/null; then
         pkg_install nodejs
       else
-        run "curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -"
+        run "curl -fsSL https://rpm.nodesource.com/setup_${NODE_MIN}.x | bash -"
         pkg_install nodejs
       fi
       ;;
-    zypper) pkg_install nodejs20 || pkg_install nodejs ;;
+    zypper) pkg_install "nodejs${NODE_MIN}" || pkg_install nodejs ;;
     pacman) pkg_install nodejs npm ;;
     apk)    pkg_install nodejs npm ;;
   esac
   command -v node >/dev/null || die "Node installation failed"
+  # Arch/Alpine install "whatever is current" — verify rather than assume.
+  got="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+  [ "$got" -ge "$NODE_MIN" ] || die \
+    "Installed Node $(node -v) is older than ${NODE_MIN}; install Node ${NODE_MIN}+ manually and re-run."
 fi
 
 # ── 3. Service account ──────────────────────────────────────────────────

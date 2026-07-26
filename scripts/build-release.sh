@@ -163,7 +163,9 @@ fi
 # ════════════════════════════════════════════════════════════════════════
 command -v node >/dev/null || die "node is not installed"
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-[ "$NODE_MAJOR" -ge 20 ] || die "Node 20+ required, found $(node -v)"
+# 22, not 20: @hyperbridge/sdk declares engines.node ">=22.x.x", so yarn
+# refuses to install on 20. Node 20 also went EOL in April 2026.
+[ "$NODE_MAJOR" -ge 22 ] || die "Node 22+ required (@hyperbridge/sdk), found $(node -v)"
 command -v yarn >/dev/null \
   || die "yarn is not installed (corepack enable; corepack prepare yarn@1.22.19 --activate)"
 
