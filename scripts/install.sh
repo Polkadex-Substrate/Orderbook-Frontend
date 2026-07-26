@@ -102,18 +102,85 @@ case "$PREFIX" in /*) : ;; *) die "--prefix must be an absolute path: $PREFIX" ;
 if [ -n "$DOMAIN" ]; then
   echo "$DOMAIN" | grep -Eq '^[A-Za-z0-9._-]+$' || die "invalid --domain: $DOMAIN"
 fi
+# Does any SAN in $2 (newline-separated) cover hostname $1?
+# TLS wildcards match EXACTLY ONE label: *.example.com covers a.example.com
+# but neither example.com nor a.b.example.com. Getting this wrong is what
+# produces Cloudflare 526 "Invalid SSL certificate", which names neither the
+# certificate nor the hostname and is therefore miserable to debug.
+cert_san_covers() {
+  local host="$1" san suffix head rest
+  while IFS= read -r san; do
+    [ -n "$san" ] || continue
+    case "$san" in
+      \*.*)
+        suffix="${san#\*.}"
+        head="${host%%.*}"
+        rest="${host#*.}"
+        # `head != host` rules out a bare apex matching *.apex
+        [ "$rest" = "$suffix" ] && [ "$head" != "$host" ] && return 0
+        ;;
+      *)
+        [ "$san" = "$host" ] && return 0
+        ;;
+    esac
+  done <<EOF
+$2
+EOF
+  return 1
+}
+
 if [ "$CLOUDFLARE" -eq 1 ]; then
   [ -n "$DOMAIN" ] || die "--cloudflare requires --domain (the cert is issued for a hostname)"
   case "$CF_CERT" in /*) : ;; *) die "--cf-cert must be an absolute path: $CF_CERT" ;; esac
   case "$CF_KEY"  in /*) : ;; *) die "--cf-key must be an absolute path: $CF_KEY" ;; esac
   if [ "$DRY_RUN" -eq 0 ]; then
-    # Fail here rather than after nginx is already reconfigured and reloaded.
+    # Everything below fails BEFORE nginx is reconfigured, so a bad cert can
+    # never take the site down — you get a named error instead of a 526.
     [ -r "$CF_CERT" ] || die "Cloudflare origin certificate not readable: $CF_CERT
 Create one in the Cloudflare dashboard (SSL/TLS -> Origin Server -> Create
 Certificate), save the certificate and key to that path, then re-run."
     [ -r "$CF_KEY" ]  || die "Cloudflare origin key not readable: $CF_KEY"
     openssl x509 -in "$CF_CERT" -noout >/dev/null 2>&1 \
       || die "$CF_CERT is not a valid PEM certificate"
+
+    # 1. Cert and key must be a pair. Compared via public key so this works
+    #    for ECDSA origin certs as well as RSA.
+    cert_pub="$(openssl x509 -in "$CF_CERT" -noout -pubkey 2>/dev/null | openssl md5)"
+    key_pub="$(openssl pkey -in "$CF_KEY" -pubout 2>/dev/null | openssl md5)"
+    [ -n "$key_pub" ] || die "$CF_KEY is not a valid private key"
+    [ "$cert_pub" = "$key_pub" ] || die \
+      "Certificate and private key do not match.
+They must come from the SAME 'Create Certificate' screen — Cloudflare shows
+the private key only once, at creation, so a regenerated cert needs its key
+copied at the same time."
+
+    # 2. Not expired.
+    openssl x509 -in "$CF_CERT" -noout -checkend 0 >/dev/null 2>&1 || die \
+      "$CF_CERT has expired ($(openssl x509 -in "$CF_CERT" -noout -enddate | cut -d= -f2))"
+
+    # 3. SAN must cover --domain, or Cloudflare rejects the origin with 526.
+    CERT_SANS="$(openssl x509 -in "$CF_CERT" -noout -ext subjectAltName 2>/dev/null \
+      | tr ',' '\n' | sed -n 's/.*DNS:[[:space:]]*\([^[:space:],]*\).*/\1/p')"
+    if [ -z "$CERT_SANS" ]; then
+      warn "Certificate has no subjectAltName — cannot verify it covers $DOMAIN."
+    elif ! cert_san_covers "$DOMAIN" "$CERT_SANS"; then
+      die "Origin certificate does not cover $DOMAIN.
+
+  Certificate covers : $(echo "$CERT_SANS" | tr '\n' ' ')
+  Needed             : $DOMAIN
+
+TLS wildcards match exactly one label, so *.$(echo "$DOMAIN" | cut -d. -f2-)
+does NOT cover $DOMAIN if that name has an extra level.
+
+Create a new origin certificate (SSL/TLS -> Origin Server -> Create
+Certificate) listing the exact hostname, e.g.:
+
+  $DOMAIN, *.$(echo "$DOMAIN" | cut -d. -f2-)
+
+and copy BOTH the certificate and the private key from that same screen."
+    else
+      log "Origin certificate covers $DOMAIN"
+    fi
   fi
 fi
 

@@ -202,6 +202,24 @@ Set the Cloudflare SSL mode to **Full (strict)**. An Origin CA certificate is
 trusted only by Cloudflare, so any other mode either fails or silently
 downgrades the edge-to-origin hop.
 
+**Wildcards match exactly one label — at both ends.** This bites twice:
+
+- *At the edge*, Cloudflare's free Universal SSL covers only `example.com` and
+  `*.example.com`. A third-level name like `testnet.orderbook.example.com` has
+  **no edge certificate**, and the TLS handshake fails outright. Fix: use a
+  second-level hostname, or buy Advanced Certificate Manager (with Total TLS
+  to auto-issue for every proxied hostname).
+- *At the origin*, a `*.example.com` cert likewise fails to cover a
+  third-level name. Cloudflare then returns **526 Invalid SSL certificate**,
+  which names neither the certificate nor the hostname.
+
+The installer now refuses to proceed unless the origin certificate actually
+covers `--domain`, and prints what it covers versus what is needed. It also
+verifies the certificate and key are a matching pair (they must be copied from
+the same "Create Certificate" screen — Cloudflare shows the private key only
+once) and that the certificate has not expired. All three checks run *before*
+nginx is reconfigured, so a bad certificate cannot take the site down.
+
 Add `--cf-origin-pull` for Authenticated Origin Pulls: nginx then requires a
 client certificate that only Cloudflare holds, so a direct connection to the
 origin is refused even from an allowed IP range. Strongest option; verify the
