@@ -71,7 +71,16 @@ amplifytools.xcconfig
 !/apps/hestia/public/static/charting_library/charting_library.min.js
 /apps/hestia/public/static/datafeeds
 
-yarn.lock
+# yarn.lock MUST be committed. It was ignored here, which meant:
+#   - `yarn install --frozen-lockfile` could never work on a clean clone
+#   - the Docker build's `COPY package.json yarn.lock .npmrc ./` failed outright
+#   - every machine resolved semver ranges independently, at build time, so no
+#     two builds were guaranteed to contain the same dependency tree
+# That last one is almost certainly behind the version drift this repo kept
+# hitting (react-query pin lost, typescript "latest" resolving to 7.x, Radix
+# 1.0 vs 1.1 prop renames).
+# package-lock.json stays ignored on purpose — this is a yarn workspace, and a
+# stray npm lockfile would silently compete with yarn.lock.
 package-lock.json
 
 .agent
