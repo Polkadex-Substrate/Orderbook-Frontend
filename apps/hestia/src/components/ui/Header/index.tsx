@@ -23,6 +23,8 @@ import { ResponsiveMenuModal } from "./responsiveMenuModal";
 import { NotificationsModal } from "./NotificationsModal";
 import { FundWalletModal } from "./fundWalletModal";
 
+import { EXTERNAL_LINKS } from "@/config/links";
+
 export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const [menu, setMenu] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -83,7 +85,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             <HeaderLink.Dropdown
               items={[
                 {
-                  href: "https://discord.gg/QNfwPevNG",
+                  href: EXTERNAL_LINKS.discord,
                   label: "Community support",
                 },
                 {
@@ -131,31 +133,31 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             <HeaderLink.Dropdown
               items={[
                 {
-                  href: "https://t.me/Polkadex",
+                  href: EXTERNAL_LINKS.telegram,
                   label: "Telegram",
                   svg: (
                     <RiTelegramFill className="bg-sky-500 rounded-full w-5 h-5" />
                   ),
                 },
                 {
-                  href: "https://discord.com/invite/Uvua83QAzk/",
+                  href: EXTERNAL_LINKS.discord,
                   label: "Discord",
                   svg: (
                     <RiDiscordFill className="bg-blue-700 rounded-full w-5 h-5 p-0.5" />
                   ),
                 },
                 {
-                  href: "https://twitter.com/polkadex",
-                  label: "Twitter",
+                  href: EXTERNAL_LINKS.twitter,
+                  label: "X",
                   svg: <RiTwitterXFill className="rounded-full w-5 h-5" />,
                 },
                 {
-                  href: "https://github.com/Polkadex-Substrate",
+                  href: EXTERNAL_LINKS.github,
                   label: "Github",
                   svg: <RiGithubFill className="rounded-full w-5 h-5" />,
                 },
                 {
-                  href: "https://www.reddit.com/r/polkadex/",
+                  href: EXTERNAL_LINKS.reddit,
                   label: "Reddit",
                   svg: (
                     <RiRedditFill className="bg-red-500 rounded-full w-5 h-5" />

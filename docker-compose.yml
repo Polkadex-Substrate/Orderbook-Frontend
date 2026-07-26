@@ -53,11 +53,15 @@ services:
         - NEXT_PUBLIC_ENABLE_FAUCET=${NEXT_PUBLIC_ENABLE_FAUCET}
         - NEXT_PUBLIC_FAUCET_URL=${NEXT_PUBLIC_FAUCET_URL}
         - NEXT_PUBLIC_FAUCET_API_KEY=${NEXT_PUBLIC_FAUCET_API_KEY}
+    # Runtime env only. Build args above are interpolated by compose from the
+    # shell or a ROOT .env — NOT from this file. Build with:
+    #   docker compose --env-file apps/hestia/.env build
+    # or just use scripts/build-release.sh, which handles it.
     env_file:
       - apps/hestia/.env
-    # You can set ECR_REGISTRY in your .env file
-    # Example: ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
-    image: 907213364062.dkr.ecr.ap-south-1.amazonaws.com/polkadex-orderbook-fe:latest
+    # Previously hardcoded to the Polkadex ECR account, under a comment
+    # claiming ECR_REGISTRY was configurable. Now it actually is.
+    image: ${IMAGE_REPO:-orderbook-fe}:${IMAGE_TAG:-latest}
     container_name: polkadex-orderbook-fe
     ports:
       - "8000:3000"

@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { Button, Logo, Typography } from "@mitrabook/ux";
 import Image from "next/image";
-import { RiDiscordLine, RiTelegramLine, RiTwitterLine } from "@remixicon/react";
+import {
+  RiDiscordLine,
+  RiTelegramLine,
+  RiTwitterXFill,
+} from "@remixicon/react";
 
 import AccessDeniedIllustration from "../../../public/img/accessDenied.webp";
+
+import { EXTERNAL_LINKS } from "@/config/links";
 
 export function Template() {
   return (
@@ -60,10 +66,7 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link
-                    target="_blank"
-                    href="https://discord.com/invite/Uvua83QAzk"
-                  >
+                  <Link target="_blank" href={EXTERNAL_LINKS.discord}>
                     <RiDiscordLine className="w-4 h-4" />
                     <Typography.Text>Discord</Typography.Text>
                   </Link>
@@ -73,7 +76,7 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link target="_blank" href="https://t.me/Polkadex">
+                  <Link target="_blank" href={EXTERNAL_LINKS.telegram}>
                     <RiTelegramLine className="w-4 h-4" />
                     <Typography.Text>Telegram</Typography.Text>
                   </Link>
@@ -83,9 +86,9 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link target="_blank" href="https://twitter.com/polkadex">
-                    <RiTwitterLine className="w-4 h-4" />
-                    <Typography.Text>Twitter</Typography.Text>
+                  <Link target="_blank" href={EXTERNAL_LINKS.twitter}>
+                    <RiTwitterXFill className="w-4 h-4" />
+                    <Typography.Text>X</Typography.Text>
                   </Link>
                 </Button.Solid>
               </div>

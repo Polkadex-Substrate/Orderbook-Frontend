@@ -5,6 +5,9 @@ import Link from "next/link";
 
 import { FundHorizontalCard } from "../ReadyToUse/fundHorizontalCard";
 
+import { PDEX_EXCHANGES } from "@/config/links";
+import { IS_TESTNET } from "@/config/network";
+
 export const FundWalletModal = ({
   open,
   onOpenChange,
@@ -73,104 +76,91 @@ export const FundWalletModal = ({
             />
           </div>
         </div>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 px-4">
-            <Typography.Text appearance="secondary">
-              I have crypto assets on CEXs
-            </Typography.Text>
+        {/* Everything below funds an account with REAL PDEX. On the testnet
+            none of it works — a CEX withdrawal, a Simplex card purchase and
+            the cede.store on-ramp all deliver mainnet tokens, so they are
+            dead ends that send a new user off-site and lose them. The faucet
+            replaces the lot. Gated rather than deleted so mainnet is intact. */}
+        {IS_TESTNET ? (
+          <div className="flex flex-col gap-3">
+            <div className="px-4">
+              <Typography.Text appearance="secondary">
+                I don&apos;t have testnet assets yet
+              </Typography.Text>
+            </div>
+            <div className="flex flex-col gap-2">
+              <FundHorizontalCard
+                icon="FreeCoin"
+                title="Testnet faucet"
+                description="Claim free testnet tokens and start trading."
+                href="/faucet"
+                onClick={() => onOpenChange(false)}
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <FundHorizontalCard
-              icon="CexOnRamp"
-              title="CEX On-Ramp"
-              description="Transfer from Kucoin or Gate.io via cede.store"
-              href="/cexOnRamp"
-              target="_blank"
-            />
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <div className="px-4">
-            <Typography.Text appearance="secondary">
-              I don&apos;t have crypto assets yet
-            </Typography.Text>
-          </div>
-          <div className="flex flex-col gap-2">
-            <FundHorizontalCard
-              disabled
-              icon="FreeCoin"
-              title="Get 1 PDEX for free"
-              description="Complete some tasks and get 1 free PDEX"
-              href="/"
-            />
-            <FundHorizontalCard
-              icon="CreditCard"
-              title="Credit card"
-              description="Buy PDEX with our credit card partner Simplex"
-              href="https://buy.simplex.com"
-              target="_blank"
-            />
-            <FundHorizontalCard
-              icon="CentralizedExchange"
-              title="Centralized exchanges"
-            >
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button.Solid
-                  appearance="secondary"
-                  size="sm"
-                  className="flex-1"
-                  asChild
-                >
-                  <Link
-                    href="https://www.kucoin.com/trade/PDEX-USDT"
-                    target="_blank"
-                  >
-                    Kucoin
-                  </Link>
-                </Button.Solid>
-                <Button.Solid
-                  appearance="secondary"
-                  size="sm"
-                  className="flex-1"
-                  asChild
-                >
-                  <Link
-                    href="https://www.gate.io/trade/PDEX_USDT"
-                    target="_blank"
-                  >
-                    Gate.io
-                  </Link>
-                </Button.Solid>
-                <Button.Solid
-                  appearance="secondary"
-                  size="sm"
-                  className="flex-1"
-                  asChild
-                >
-                  <Link
-                    href="https://ascendex.com/en/cashtrade-spottrading/usdt/pdex"
-                    target="_blank"
-                  >
-                    AscendEX
-                  </Link>
-                </Button.Solid>
-                <Button.Solid
-                  appearance="secondary"
-                  size="sm"
-                  className="flex-1"
-                  asChild
-                >
-                  <Link
-                    href="https://coindcx.com/trade/PDEXINR"
-                    target="_blank"
-                  >
-                    CoinDCX
-                  </Link>
-                </Button.Solid>
+        ) : (
+          <>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 px-4">
+                <Typography.Text appearance="secondary">
+                  I have crypto assets on CEXs
+                </Typography.Text>
               </div>
-            </FundHorizontalCard>
-          </div>
-        </div>
+              <div className="flex flex-col gap-2">
+                <FundHorizontalCard
+                  icon="CexOnRamp"
+                  title="CEX On-Ramp"
+                  description="Transfer from Kucoin or Gate.io via cede.store"
+                  href="/cexOnRamp"
+                  target="_blank"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="px-4">
+                <Typography.Text appearance="secondary">
+                  I don&apos;t have crypto assets yet
+                </Typography.Text>
+              </div>
+              <div className="flex flex-col gap-2">
+                <FundHorizontalCard
+                  disabled
+                  icon="FreeCoin"
+                  title="Get 1 PDEX for free"
+                  description="Complete some tasks and get 1 free PDEX"
+                  href="/"
+                />
+                <FundHorizontalCard
+                  icon="CreditCard"
+                  title="Credit card"
+                  description="Buy PDEX with our credit card partner Simplex"
+                  href="https://buy.simplex.com"
+                  target="_blank"
+                />
+                <FundHorizontalCard
+                  icon="CentralizedExchange"
+                  title="Centralized exchanges"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {PDEX_EXCHANGES.map((e) => (
+                      <Button.Solid
+                        key={e.name}
+                        appearance="secondary"
+                        size="sm"
+                        className="flex-1"
+                        asChild
+                      >
+                        <Link href={e.href} target="_blank">
+                          {e.name}
+                        </Link>
+                      </Button.Solid>
+                    ))}
+                  </div>
+                </FundHorizontalCard>
+              </div>
+            </div>
+          </>
+        )}
       </Modal.Content>
     </Modal>
   );

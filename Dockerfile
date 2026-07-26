@@ -1,8 +1,13 @@
 # ============================================================================
 # OFE (apps/hestia) production image. The @aksumite/* and @mitrabook/*
 # libraries are consumed from npm, so a plain `docker build .` is all that's
-# needed. (packages/mitra/ holds their SOURCE and is not part of the build —
-# see packages/mitra/MIGRATION.md.)
+# needed.
+#
+# Build via scripts/build-release.sh (default mode), which loads the env file
+# and passes every ARG below. A bare `docker compose build` does NOT pick up
+# apps/hestia/.env — compose only interpolates from the shell or a ROOT .env,
+# and `env_file:` applies at runtime only. Use:
+#     docker compose --env-file apps/hestia/.env build
 # ============================================================================
 
 # ============================================
@@ -61,6 +66,16 @@ ARG GOOGLE_CLIENT_ID
 ARG DEFAULT_THEA_SOURCE_CHAIN
 ARG DEFAULT_THEA_DESTINATION_CHAIN
 ARG DISABLED_THEA_CHAINS
+# These six are read by next.config.js `env:` and were passed by
+# docker-compose, but had no matching ARG here — so Docker discarded them and
+# every image was built with them empty. Feature flags failing silently open.
+ARG SIGNUP_DISABLED
+ARG SHOW_SHUTDOWN_POPUP
+ARG UNDER_MAINTENACE
+ARG IDENTITY_POOL_ID
+ARG USER_POOL_ID
+ARG USER_WEB_CLIENT_ID
+ARG PIN_POINT_CLIENT_ID
 # WalletConnect — app THROWS AT BOOT without it (src/config/wagmi.ts)
 ARG NEXT_PUBLIC_PROJECT_ID
 # Chart
@@ -105,6 +120,13 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
     DEFAULT_THEA_SOURCE_CHAIN=$DEFAULT_THEA_SOURCE_CHAIN \
     DEFAULT_THEA_DESTINATION_CHAIN=$DEFAULT_THEA_DESTINATION_CHAIN \
     DISABLED_THEA_CHAINS=$DISABLED_THEA_CHAINS \
+    SIGNUP_DISABLED=$SIGNUP_DISABLED \
+    SHOW_SHUTDOWN_POPUP=$SHOW_SHUTDOWN_POPUP \
+    UNDER_MAINTENACE=$UNDER_MAINTENACE \
+    IDENTITY_POOL_ID=$IDENTITY_POOL_ID \
+    USER_POOL_ID=$USER_POOL_ID \
+    USER_WEB_CLIENT_ID=$USER_WEB_CLIENT_ID \
+    PIN_POINT_CLIENT_ID=$PIN_POINT_CLIENT_ID \
     NEXT_PUBLIC_PROJECT_ID=$NEXT_PUBLIC_PROJECT_ID \
     NEXT_PUBLIC_NATIVE_CHART=$NEXT_PUBLIC_NATIVE_CHART \
     NEXT_PUBLIC_SERVER_BASE_URL=$NEXT_PUBLIC_SERVER_BASE_URL \

@@ -97,7 +97,7 @@ Template                            (template.tsx)
 │   │   └── Input.Vertical          (@polkadex/ux — wallet address field)
 │   └── Help                        (Help.tsx)
 │       ├── HelpCard "How to use the Faucet" → https://docs.polkadex.ee
-│       └── HelpCard "Having Trouble?" → https://discord.gg/G4KMw2sGGe
+│       └── HelpCard "Having Trouble?" → https://discord.gg/QNfwPevNG
 ├── Footer                          (desktop only, ui/Footer)
 └── ResponsiveProfile               (mobile only, when wallet is connected)
 ```

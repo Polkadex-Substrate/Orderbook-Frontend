@@ -3,6 +3,7 @@ import Link from "next/link";
 import React from "react";
 
 import { Icons } from "@/components/ui";
+import { EXTERNAL_LINKS } from "@/config/links";
 
 export const Footer = () => {
   return (
@@ -112,12 +113,12 @@ const data = [
     links: [
       {
         title: "Github Repository",
-        href: "https://github.com/Polkadex-Substrate",
+        href: EXTERNAL_LINKS.github,
         target: "_blank",
       },
       {
         title: "Tutorials",
-        href: "https://www.youtube.com/channel/UC6fXRDT4lLKlXG3gP0PP06Q",
+        href: EXTERNAL_LINKS.youtube,
         target: "_blank",
       },
       {
@@ -132,12 +133,12 @@ const data = [
     links: [
       {
         title: "Help center",
-        href: "https://discord.com/invite/Uvua83QAzk",
+        href: EXTERNAL_LINKS.discord,
         target: "_blank",
       },
       {
         title: "Report issues",
-        href: "https://t.me/Polkadex",
+        href: EXTERNAL_LINKS.telegram,
         target: "_blank",
       },
       {
@@ -151,33 +152,33 @@ const data = [
 
 const socialMedia = [
   {
-    alt: "Twitter logo",
+    alt: "X logo",
     iconName: "Twitter",
-    href: "https://twitter.com/polkadex",
+    href: EXTERNAL_LINKS.twitter,
     target: "_blank",
   },
   {
     alt: "Telegram logo",
     iconName: "Telegram",
-    href: "https://t.me/Polkadex",
+    href: EXTERNAL_LINKS.telegram,
     target: "_blank",
   },
   {
     alt: "Medium logo",
     iconName: "Medium",
-    href: "https://polkadex.medium.com/",
+    href: EXTERNAL_LINKS.medium,
     target: "_blank",
   },
   {
     alt: "Reddit logo",
     iconName: "Reddit",
-    href: "https://www.reddit.com/r/polkadex",
+    href: EXTERNAL_LINKS.reddit,
     target: "_blank",
   },
   {
     alt: "Discord logo",
     iconName: "Discord",
-    href: "https://discord.com/invite/Uvua83QAzk/",
+    href: EXTERNAL_LINKS.discord,
     target: "_blank",
   },
 ];

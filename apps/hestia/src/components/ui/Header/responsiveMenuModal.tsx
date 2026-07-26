@@ -19,6 +19,8 @@ import { defaultConfig } from "@orderbook/core/config";
 import QrCode from "../../../../public/img/qrCode.png";
 
 import { HeaderLink } from "./headerLink";
+
+import { EXTERNAL_LINKS } from "@/config/links";
 export const ResponsiveMenuModal = ({
   open,
   onOpenChange,
@@ -96,7 +98,7 @@ export const ResponsiveMenuModal = ({
                   <HeaderLink.Accordion
                     items={[
                       {
-                        href: "https://discord.gg/QNfwPevNG",
+                        href: EXTERNAL_LINKS.discord,
                         label: "Community support",
                       },
                       {
@@ -145,35 +147,35 @@ export const ResponsiveMenuModal = ({
                   <HeaderLink.Accordion
                     items={[
                       {
-                        href: "https://t.me/Polkadex",
+                        href: EXTERNAL_LINKS.telegram,
                         label: "Telegram",
                         svg: (
                           <RiTelegramFill className="bg-sky-500 text-textBase rounded-full w-5 h-5" />
                         ),
                       },
                       {
-                        href: "https://discord.com/invite/Uvua83QAzk/",
+                        href: EXTERNAL_LINKS.discord,
                         label: "Discord",
                         svg: (
                           <RiDiscordFill className="bg-blue-700  text-textBase rounded-full w-5 h-5 p-0.5" />
                         ),
                       },
                       {
-                        href: "https://twitter.com/polkadex",
-                        label: "Twitter",
+                        href: EXTERNAL_LINKS.twitter,
+                        label: "X",
                         svg: (
                           <RiTwitterXFill className="rounded-full text-textBase w-5 h-5" />
                         ),
                       },
                       {
-                        href: "https://github.com/Polkadex-Substrate",
+                        href: EXTERNAL_LINKS.github,
                         label: "Github",
                         svg: (
                           <RiGithubFill className="rounded-full text-textBase w-5 h-5" />
                         ),
                       },
                       {
-                        href: "https://www.reddit.com/r/polkadex/",
+                        href: EXTERNAL_LINKS.reddit,
                         label: "Reddit",
                         svg: (
                           <RiRedditFill className="bg-red-500 text-textBase rounded-full w-5 h-5" />

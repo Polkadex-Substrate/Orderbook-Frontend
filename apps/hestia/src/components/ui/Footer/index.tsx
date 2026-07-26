@@ -12,6 +12,8 @@ import { useWindowSize } from "usehooks-ts";
 
 import { Markets } from "./markets";
 
+import { EXTERNAL_LINKS } from "@/config/links";
+
 export const Footer = forwardRef<
   HTMLDivElement,
   {
@@ -78,7 +80,7 @@ export const Footer = forwardRef<
             </Typography.Text>
           </div>
           <Typography.Text appearance="primary">
-            <Link href="https://discord.com/invite/Uvua83QAzk" target="_blank">
+            <Link href={EXTERNAL_LINKS.discord} target="_blank">
               <RiLifebuoyLine className="h-3 w-3 inline-block mr-1" />
               Help & Support
             </Link>

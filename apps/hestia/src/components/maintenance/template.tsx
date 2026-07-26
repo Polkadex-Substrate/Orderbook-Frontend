@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { Button, Logo, Typography } from "@mitrabook/ux";
 import Image from "next/image";
-import { RiTelegramFill, RiTwitterFill, RiMailFill } from "@remixicon/react";
+import { RiTelegramFill, RiTwitterXFill, RiMailFill } from "@remixicon/react";
 
 import MaintenanceIllustration from "../../../public/img/maintenance.webp";
+
+import { EXTERNAL_LINKS } from "@/config/links";
 
 export function Template() {
   return (
@@ -50,7 +52,7 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link target="_blank" href="https://t.me/Polkadex">
+                  <Link target="_blank" href={EXTERNAL_LINKS.telegram}>
                     <RiTelegramFill className="w-full h-full" />
                   </Link>
                 </Button.Icon>
@@ -60,8 +62,8 @@ export function Template() {
                   className="gap-2 w-fit"
                   appearance="secondary"
                 >
-                  <Link target="_blank" href="https://twitter.com/polkadex">
-                    <RiTwitterFill className="w-full h-full" />
+                  <Link target="_blank" href={EXTERNAL_LINKS.twitter}>
+                    <RiTwitterXFill className="w-full h-full" />
                   </Link>
                 </Button.Icon>
               </div>

@@ -5,6 +5,8 @@ import { forwardRef } from "react";
 import { RiExternalLinkLine } from "@remixicon/react";
 import Link from "next/link";
 
+import { EXTERNAL_LINKS } from "@/config/links";
+
 export const Help = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div
@@ -12,7 +14,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       className="flex items-start max-md:flex-col max-md:gap-4 w-full max-lg:pb-4 border-t border-primary p-4 hover:bg-level-0 transition-colors duration-300"
     >
       <Link
-        href="https://discord.gg/QNfwPevNG"
+        href={EXTERNAL_LINKS.discord}
         target="_blank"
         className="w-full flex items-center justify-between"
       >

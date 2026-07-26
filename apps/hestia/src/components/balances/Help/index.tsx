@@ -7,6 +7,8 @@ import Link from "next/link";
 
 import { Card } from "./card";
 
+import { EXTERNAL_LINKS } from "@/config/links";
+
 export const Help = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div
@@ -14,7 +16,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       className="flex items-center max-md:flex-col border-t border-primary"
     >
       <Card title="Having Trouble?" description="Feel free to get in touch.">
-        <Link href="https://discord.gg/QNfwPevNG" target="_blank">
+        <Link href={EXTERNAL_LINKS.discord} target="_blank">
           <Button.Icon variant="outline">
             <RiExternalLinkLine className="w-full h-full" />
           </Button.Icon>

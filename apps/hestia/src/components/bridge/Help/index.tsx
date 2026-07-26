@@ -6,6 +6,8 @@ import { RiBookOpenLine, RiFeedbackLine } from "@remixicon/react";
 
 import { Card } from "./card";
 
+import { EXTERNAL_LINKS } from "@/config/links";
+
 export const Help = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div
@@ -28,7 +30,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       <Card
         title="Having Trouble?"
         description="Feel free to get in touch."
-        href="https://discord.gg/QNfwPevNG"
+        href={EXTERNAL_LINKS.discord}
         target="_blank"
       >
         <Button.Icon

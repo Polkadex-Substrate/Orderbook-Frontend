@@ -8,4 +8,4 @@ __test__
 .env*
 changed_files.txt
 diff_*.txt
-packages/mitra
+dist
