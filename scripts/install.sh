@@ -189,8 +189,22 @@ if [ "$need_node" -eq 1 ]; then
   case "$PKG" in
     apt)
       pkg_install curl ca-certificates gnupg
-      run "curl -fsSL https://deb.nodesource.com/setup_${NODE_MIN}.x | bash -"
-      pkg_install nodejs
+      # Prefer the distro package when it is already new enough. Recent Ubuntu
+      # and Debian ship Node 22+, and NodeSource often has no repository for a
+      # freshly released distro — adding it would fail where the built-in
+      # package would have worked perfectly.
+      apt_node_major=""
+      if command -v apt-cache >/dev/null; then
+        apt_node_major="$(apt-cache policy nodejs 2>/dev/null \
+          | awk '/Candidate:/ {print $2}' | sed -E 's/^[0-9]+://; s/[^0-9].*//')"
+      fi
+      if [ -n "$apt_node_major" ] && [ "$apt_node_major" -ge "$NODE_MIN" ] 2>/dev/null; then
+        log "Distro package provides Node $apt_node_major — using it instead of NodeSource"
+        pkg_install nodejs npm
+      else
+        run "curl -fsSL https://deb.nodesource.com/setup_${NODE_MIN}.x | bash -"
+        pkg_install nodejs
+      fi
       ;;
     dnf|yum)
       # Prefer the distro module where available; fall back to NodeSource.
@@ -205,11 +219,17 @@ if [ "$need_node" -eq 1 ]; then
     pacman) pkg_install nodejs npm ;;
     apk)    pkg_install nodejs npm ;;
   esac
-  command -v node >/dev/null || die "Node installation failed"
-  # Arch/Alpine install "whatever is current" — verify rather than assume.
-  got="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
-  [ "$got" -ge "$NODE_MIN" ] || die \
-    "Installed Node $(node -v) is older than ${NODE_MIN}; install Node ${NODE_MIN}+ manually and re-run."
+
+  # These verify the *result* of the installs above, so they must not run in
+  # dry-run mode — nothing was installed, and they would fail on a host where
+  # the real run would have succeeded.
+  if [ "$DRY_RUN" -eq 0 ]; then
+    command -v node >/dev/null || die "Node installation failed"
+    # Arch/Alpine install "whatever is current" — verify rather than assume.
+    got="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+    [ "$got" -ge "$NODE_MIN" ] || die \
+      "Installed Node $(node -v) is older than ${NODE_MIN}; install Node ${NODE_MIN}+ manually and re-run."
+  fi
 fi
 
 # ── 3. Service account ──────────────────────────────────────────────────
@@ -402,7 +422,11 @@ if [ "$WITH_NGINX" -eq 1 ]; then
   # `http2 on;` is nginx >= 1.25.1 only. On older builds (Debian 11, Ubuntu
   # 20.04, RHEL 8) it is an unknown directive and `nginx -t` fails outright,
   # so fall back to the deprecated-but-working `listen ... http2` form.
-  NGINX_VER="$(nginx -v 2>&1 | sed -E 's|.*/([0-9.]+).*|\1|')"
+  NGINX_VER="$(command -v nginx >/dev/null && nginx -v 2>&1 | sed -E 's|.*/([0-9.]+).*|\1|' || true)"
+  if [ -z "$NGINX_VER" ] && [ "$DRY_RUN" -eq 1 ]; then
+    warn "nginx not installed yet — previewing the pre-1.25 http2 syntax.
+     The real run will detect the installed version and may use 'http2 on;'."
+  fi
   if [ -n "$NGINX_VER" ] && \
      [ "$(printf '%s\n1.25.1\n' "$NGINX_VER" | sort -V | head -1)" = "1.25.1" ]; then
     HTTP2_DIRECTIVE="    http2 on;"
@@ -593,6 +617,28 @@ cat <<EOF
   Listen  : http://127.0.0.1:$PORT
   Files   : $PREFIX
   Env     : $ENV_FILE
+EOF
+
+# Cloudflare posture, restated at the end: the mid-run warning scrolls past,
+# and "restricted to Cloudflare" vs "open to the internet" is exactly the
+# thing an operator must not be wrong about.
+if [ "$CLOUDFLARE" -eq 1 ]; then
+  echo
+  echo "  TLS     : Cloudflare Origin CA ($CF_CERT)"
+  echo "            Set the Cloudflare SSL mode to 'Full (strict)'."
+  if [ "$HARDEN" -eq 1 ]; then
+    if [ -s "${CF_IP_CACHE:-/nonexistent}" ]; then
+      echo "  Origin  : 80/443 restricted to $(wc -l < "$CF_IP_CACHE") Cloudflare prefixes"
+    else
+      warn "Cloudflare IP ranges could not be fetched, so 80/443 are OPEN TO THE
+     INTERNET. Anyone who finds this server's IP can bypass Cloudflare's WAF
+     and rate limiting by sending the right Host header. Re-run the installer
+     once the host can reach https://www.cloudflare.com/ips-v4."
+    fi
+  fi
+fi
+
+cat <<EOF
 
 Manage it with:
 EOF

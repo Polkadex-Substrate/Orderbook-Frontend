@@ -74,9 +74,21 @@ EOF
 # and a stale baked-in list silently locks out real visitors. Cached under
 # /etc so nginx and the firewall use the same snapshot.
 CF_IP_CACHE=/etc/orderbook-fe/cloudflare-ips
+CF_IPS_FETCHED=0
 cloudflare_fetch_ips() {
+  # Fetch once per run — called from both the nginx and firewall stages.
+  [ "$CF_IPS_FETCHED" = "1" ] && return 0
+
+  # In dry-run, still fetch (it is a read-only GET) but write to a temp file
+  # instead of /etc. Skipping the fetch would make the preview claim 80/443
+  # are opened to the world when the real run restricts them to Cloudflare —
+  # a dry-run that misrepresents the firewall is worse than no dry-run.
+  if [ "$DRY_RUN" -eq 1 ]; then
+    CF_IP_CACHE="$(mktemp)"
+    echo "  [dry-run] fetch Cloudflare IP ranges -> $CF_IP_CACHE"
+  fi
+
   local dir; dir="$(dirname "$CF_IP_CACHE")"
-  [ "$DRY_RUN" -eq 1 ] && { echo "  [dry-run] fetch Cloudflare IP ranges"; return 0; }
   mkdir -p "$dir"
   local v4 v6
   v4="$(curl -fsS --max-time 20 https://www.cloudflare.com/ips-v4 2>/dev/null || true)"
@@ -88,6 +100,7 @@ cloudflare_fetch_ips() {
     return 1
   fi
   printf '%s\n%s\n' "$v4" "$v6" | grep -E '^[0-9a-fA-F:.]+/[0-9]+$' > "$CF_IP_CACHE"
+  CF_IPS_FETCHED=1
   log "Cloudflare ranges cached: $(wc -l < "$CF_IP_CACHE") prefixes"
   return 0
 }
