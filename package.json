@@ -6,7 +6,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "release": "scripts/build-release.sh"
+    "release": "scripts/build-release.sh",
+    "deploy": "scripts/deploy.sh"
   },
   "devDependencies": {
     "@orderbook/eslint-config": "*",

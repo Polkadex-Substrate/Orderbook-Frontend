@@ -87,3 +87,5 @@ package-lock.json
 
 CLAUDE.md
 CLAUDE.local.md
+# Host-specific deploy settings (see scripts/deploy.conf.example)
+scripts/deploy.conf

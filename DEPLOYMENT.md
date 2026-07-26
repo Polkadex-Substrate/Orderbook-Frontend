@@ -34,6 +34,40 @@ without it.
 
 ---
 
+## Deploying (one command)
+
+On the target host, once:
+
+```bash
+cp scripts/deploy.conf.example scripts/deploy.conf
+$EDITOR scripts/deploy.conf          # set DOMAIN, TLS mode, hardening
+```
+
+Thereafter, every deploy:
+
+```bash
+sudo scripts/deploy.sh               # or: sudo yarn deploy
+sudo scripts/deploy.sh --dry-run     # preview, changes nothing
+```
+
+It chains pull → build image → repack as tarball (from that image, so there is
+no second compile) → verify the artifact → install → health-check, and stops at
+the first failure.
+
+The verification is the point. Running these steps by hand is how a payload
+missing `.next/static` reached production: each step succeeded in isolation, the
+app served HTML, and every JS chunk returned 400 — which looks like a proxy or
+CDN fault, not a packaging one. `deploy.sh` counts the static JS files in the
+tarball **before** the installer can overwrite a working install, then checks a
+real asset URL afterwards, not just `/`.
+
+Useful flags: `--no-pull`, `--no-build` (reuse the local image), `--no-harden`,
+`--plain-tls`, `--domain`, `--env`.
+
+`scripts/deploy.conf` is gitignored — it describes one host, not the project.
+
+---
+
 ## Building
 
 One script, two modes, one env file:
