@@ -69,8 +69,20 @@ const Single = ({
       asChild
       size={size}
       bold={largeText}
-      appearance={largeText ? "base" : "primary"}
+      // Enabled links use textBase (#FFFFFF) rather than the muted #8B909A.
+      // Primary nav is the app's main wayfinding: it was rendering dimmer than
+      // the body copy it sits above, which reads as disabled. Genuinely
+      // disabled items keep the muted colour AND the opacity below, so the
+      // enabled/disabled distinction gets clearer, not weaker.
+      appearance={disabled ? "primary" : "base"}
       className={classNames(
+        // Tailwind sizes are rem-based, so the root-font scaling in
+        // globals.scss already grows these on wide screens. It is not enough
+        // on its own: nav links start at the smallest step (text-sm), so they
+        // stay the smallest thing on a 4K display even after scaling. This
+        // moves them up a step at the same 1680px threshold the root scaling
+        // uses, so there is a single breakpoint to reason about.
+        "min-[1680px]:text-base",
         !disabled &&
           "transition-colors ease-out duration-300 hover:text-primary-base",
         disabled && "cursor-not-allowed opacity-50"
@@ -86,8 +98,12 @@ const DropdownMenu = ({
   children,
 }: PropsWithChildren<DropdownProps>) => (
   <Dropdown>
-    <Dropdown.Trigger className="gap-2 items-center inline-flex opacity-50 transition-opacity ease-out duration-300 hover:opacity-100 w-full">
-      <Typography.Text className="text-sm whitespace-nowrap">
+    {/* opacity-50 put these well below the plain links beside them, so the
+        same menu bar had two different text brightnesses for no reason. */}
+    <Dropdown.Trigger className="gap-2 items-center inline-flex opacity-80 transition-opacity ease-out duration-300 hover:opacity-100 w-full">
+      {/* Matches Single above so the dropdown triggers do not end up smaller
+          than the plain links sitting beside them. */}
+      <Typography.Text className="text-sm min-[1680px]:text-base whitespace-nowrap">
         {children as string}
       </Typography.Text>
       <Dropdown.Icon />
@@ -98,7 +114,7 @@ const DropdownMenu = ({
           <Link
             href={href}
             target="_blank"
-            className="text-left flex items-center gap-2 text-sm w-full"
+            className="text-left flex items-center gap-2 text-sm min-[1680px]:text-base w-full"
           >
             {svg}
             {label}

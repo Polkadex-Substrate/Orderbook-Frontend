@@ -27,6 +27,8 @@ import { ConnectAccount } from "../connectAccount";
 import { ConfirmTransaction } from "../confirmTransaction";
 
 import { WalletCard } from "./walletCard";
+import { PendingAccountRow } from "./pendingAccountRow";
+import { ConnectionSteps } from "./connectionSteps";
 import { SelectNetwork } from "./selectNetwork";
 
 import { createQueryString, formatAmount } from "@/helpers";
@@ -274,10 +276,16 @@ export const Form = () => {
   ]);
 
   // ── Reusable EVM wallet connect row ───────────────────────────────────────
+  // Rendered for the EVM side of the bridge, which is the SOURCE normally and
+  // the DESTINATION once the direction is flipped. The chain name must be
+  // passed in rather than read from sourceChain, or a flipped bridge labels
+  // the EVM row with the Polkadot chain's name.
   const EvmWalletRow = ({
     account,
+    chainName,
   }: {
     account?: { name?: string; address: string } | null;
+    chainName?: string;
   }) => {
     if (account) {
       return (
@@ -293,24 +301,15 @@ export const Form = () => {
         </WalletCard>
       );
     }
+    // Names the network, not just "wallet": one row needs an Ethereum-family
+    // wallet and the other a Polkadot one, and confusing the two is the single
+    // most common mistake on this screen.
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2">
-          <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
-          <Typography.Text>No wallet connected</Typography.Text>
-        </div>
-        <Button.Solid
-          appearance="secondary"
-          size="xs"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            open();
-          }}
-        >
-          Connect wallet
-        </Button.Solid>
-      </div>
+      <PendingAccountRow
+        message={`No ${chainName ?? "Ethereum"} wallet connected`}
+        actionLabel="Connect"
+        onAction={open}
+      />
     );
   };
 
@@ -346,6 +345,14 @@ export const Form = () => {
         <div className="flex flex-col gap-6 border border-primary rounded-md bg-level-0 p-6 max-sm:p-4">
           <div className="flex flex-col gap-3">
             <Typography.Heading>Networks</Typography.Heading>
+            {/* Both sides need an account. Stating that up front stops the
+                second request reading like the first one failed. */}
+            <ConnectionSteps
+              sourceLabel={`${sourceChain?.name ?? "Source"} wallet`}
+              destinationLabel={`${destinationChain?.name ?? "Destination"} account`}
+              sourceDone={!!sourceAccount}
+              destinationDone={!!destinationAccount}
+            />
             <div className="flex flex-col gap-2">
               {/* ── FROM ───────────────────────────────────────────────── */}
               <div className="flex flex-col gap-2 flex-1">
@@ -370,7 +377,10 @@ export const Form = () => {
                     they sign the send. Same owned-accounts-only modal as the
                     destination; no pasted addresses. */}
                 {isEvmSource ? (
-                  <EvmWalletRow account={sourceAccount} />
+                  <EvmWalletRow
+                    account={sourceAccount}
+                    chainName={sourceChain?.name}
+                  />
                 ) : sourceAccount ? (
                   <WalletCard
                     name={sourceAccount.name}
@@ -548,30 +558,24 @@ export const Form = () => {
                     {destinationAccount.address}
                   </WalletCard>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
-                      <Typography.Text>
-                        No destination account selected
-                      </Typography.Text>
-                    </div>
-                    <Button.Solid
-                      appearance="secondary"
-                      size="xs"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setOpenDestModal(true);
-                      }}
-                    >
-                      {hasSubstrateAccounts
-                        ? "Select account"
-                        : "Connect wallet"}
-                    </Button.Solid>
-                  </div>
+                  // Distinguishes "you have accounts, pick one" from "you have
+                  // no Polkadot wallet at all" - two very different next steps
+                  // that both used to read "Connect wallet".
+                  <PendingAccountRow
+                    message={
+                      hasSubstrateAccounts
+                        ? `Choose which ${destinationChain?.name ?? "Polkadex"} account receives the funds`
+                        : `No ${destinationChain?.name ?? "Polkadex"} wallet connected`
+                    }
+                    actionLabel={hasSubstrateAccounts ? "Choose" : "Connect"}
+                    onAction={() => setOpenDestModal(true)}
+                  />
                 )
               ) : (
-                <EvmWalletRow account={destinationAccount} />
+                <EvmWalletRow
+                  account={destinationAccount}
+                  chainName={destinationChain?.name}
+                />
               )}
             </div>
           </div>

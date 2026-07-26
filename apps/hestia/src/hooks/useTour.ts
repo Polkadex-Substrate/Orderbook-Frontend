@@ -38,7 +38,10 @@ const BASE_CONFIG: Omit<Config, "steps"> = {
   animate: true,
   smoothScroll: true,
   allowClose: true,
-  overlayOpacity: 0.65,
+  // The ONLY correct way to tint the overlay. Styling .driver-overlay in CSS
+  // covers the spotlight cutout - see the note in styles/tour.css.
+  overlayColor: "#06070A",
+  overlayOpacity: 0.7,
   stagePadding: 6,
   stageRadius: 6,
   popoverClass: "polkadex-tour-popover",

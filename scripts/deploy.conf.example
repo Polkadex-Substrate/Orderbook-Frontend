@@ -8,8 +8,15 @@ IMAGE_REPO="orderbook-fe"
 
 # 1 = on, 0 = off
 CLOUDFLARE=1     # Cloudflare origin cert + real-IP + CF-only firewall
-HARDEN=1         # sysctl, firewall, fail2ban, auto-updates
 DO_PULL=1        # git pull before building
+
+# Host hardening is NOT part of a routine deploy: it resets the firewall and
+# reinstalls fail2ban, which is right once and wrong on every push.
+#   auto (default) = skip if /etc/orderbook-fe/.hardened exists, else offer it
+#                    once interactively
+#   1              = always apply
+#   0              = never apply, never ask (set this in CI)
+HARDEN=auto
 
 # Anything extra to pass straight to install.sh, e.g.:
 # EXTRA_INSTALL_ARGS="--cf-origin-pull --ssh-port 2222"

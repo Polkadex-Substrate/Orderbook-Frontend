@@ -102,10 +102,18 @@
   border-right-color: #111318;
 }
 
-/* Overlay */
-.driver-overlay {
-  background: rgba(0, 0, 0, 0.65) !important;
-}
+/* Overlay
+ *
+ * Do NOT set `background` on .driver-overlay. In driver.js v1 that element is
+ * an <svg>, and the dimming plus the spotlight cutout are both drawn by a
+ * single <path> inside it using fill-rule: evenodd. A CSS background paints
+ * across the SVG's whole bounding box (the viewport) *behind* that path, so
+ * it fills the cutout straight back in: the entire page goes dark and the
+ * highlight is invisible, while the popover still points at the element.
+ *
+ * Control the dimming through the driver() config instead - `overlayColor`
+ * and `overlayOpacity`, both set in hooks/useTour.ts.
+ */
 
 /* Active element highlight ring */
 .driver-active-element {

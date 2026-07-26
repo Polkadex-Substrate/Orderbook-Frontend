@@ -8,8 +8,10 @@ import {
   ReactNode,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import { useAccount, useBalance } from "wagmi";
+import { useExtensionAccounts } from "@aksumite/react-providers";
 
 import { useHyperbridgeFees } from "@/lib/hyperbridge/useHyperbridgeFees";
 import { useSubstrateNativeBalance } from "@/lib/hyperbridge/useSubstrateNativeBalance";
@@ -139,7 +141,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // Sync wagmi connected EVM wallet → evmAccount
+  // Sync wagmi connected EVM wallet -> evmAccount
   const { address, isConnected, connector } = useAccount();
   useEffect(() => {
     if (isConnected && address) {
@@ -148,6 +150,27 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       setEvmAccount(null);
     }
   }, [isConnected, address, connector?.name]);
+
+  // Auto-select the Polkadot account when there is exactly one.
+  //
+  // The EVM side above connects itself, so making the user open a modal to
+  // pick from a list of one was the only manual step left, and it read as a
+  // second "connect your wallet" demand when the wallet was already connected.
+  //
+  // Only fires for a single account: with several, picking one for the user
+  // risks sending funds to the wrong address. The ref makes this a one-shot
+  // per address, so clearing the selection deliberately is not undone on the
+  // next render.
+  const { extensionAccounts } = useExtensionAccounts();
+  const autoPickedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const only = extensionAccounts?.length === 1 ? extensionAccounts[0] : null;
+    if (!only) return;
+    if (substrateAccount) return;
+    if (autoPickedRef.current === only.address) return;
+    autoPickedRef.current = only.address;
+    setSubstrateAccount(only);
+  }, [extensionAccounts, substrateAccount]);
 
   // ── Balances (EVM side) ───────────────────────────────────────────────────
   const evmAddress = evmAccount?.address;

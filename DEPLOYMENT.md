@@ -61,8 +61,24 @@ CDN fault, not a packaging one. `deploy.sh` counts the static JS files in the
 tarball **before** the installer can overwrite a working install, then checks a
 real asset URL afterwards, not just `/`.
 
-Useful flags: `--no-pull`, `--no-build` (reuse the local image), `--no-harden`,
-`--plain-tls`, `--domain`, `--env`, `--keep-backups <n>`, `--replace-env`.
+Useful flags: `--no-pull`, `--no-build` (reuse the local image), `--harden`,
+`--no-harden`, `--plain-tls`, `--domain`, `--env`, `--keep-backups <n>`,
+`--replace-env`.
+
+**Hardening is not part of a routine deploy.** It resets the firewall,
+reinstalls fail2ban and rewrites sysctl, which is correct once on a new server
+and wrong on every push. By default `deploy.sh`:
+
+- skips it silently if `/etc/orderbook-fe/.hardened` exists (written by
+  `install.sh` when hardening last ran);
+- offers it once, interactively, if the host has never been hardened;
+- skips it with a warning when there is no terminal, so CI never blocks on a
+  prompt or reconfigures a firewall unattended.
+
+`--harden` forces it; `--no-harden` suppresses both the action and the prompt.
+The marker records *what* was applied, so keying off it is more accurate than
+"is this the first deploy" - a host can be redeployed many times and still
+never have been hardened.
 
 `scripts/deploy.conf` is gitignored - it describes one host, not the project.
 

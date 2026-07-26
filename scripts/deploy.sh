@@ -24,9 +24,15 @@
 #   --env <file>        build+runtime env file   (default apps/hestia/.env)
 #   --no-pull           skip git pull
 #   --no-build          reuse the existing image, just repack and install
-#   --no-harden         skip host hardening (firewall/fail2ban/sysctl)
 #   --plain-tls         do not use the Cloudflare origin-cert path
 #   --dry-run           run the installer in preview mode; changes nothing
+#
+# Host hardening is NOT part of a normal deploy. It resets the firewall,
+# reinstalls fail2ban and rewrites sysctl - fine once, wrong on every push.
+#   (default)           skip it if this host has been hardened before;
+#                       otherwise offer it once, interactively
+#   --harden            apply it regardless
+#   --no-harden         never apply it, and never ask (use this in CI)
 #
 set -euo pipefail
 
@@ -38,8 +44,10 @@ ENV_FILE="apps/hestia/.env"
 IMAGE_REPO="orderbook-fe"
 DO_PULL=1
 DO_BUILD=1
-HARDEN=1
+# auto = decide at run time (see below). 1 = always, 0 = never.
+HARDEN=auto
 CLOUDFLARE=1
+SERVICE_NAME=orderbook-fe
 DRY_RUN=0
 KEEP_BACKUPS=3
 REPLACE_ENV=0
@@ -54,6 +62,7 @@ while [ $# -gt 0 ]; do
     --env)        ENV_FILE="$2"; shift 2 ;;
     --no-pull)    DO_PULL=0; shift ;;
     --no-build)   DO_BUILD=0; shift ;;
+    --harden)     HARDEN=1; shift ;;
     --no-harden)  HARDEN=0; shift ;;
     --plain-tls)  CLOUDFLARE=0; shift ;;
     --dry-run)    DRY_RUN=1; shift ;;
@@ -64,8 +73,9 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-step() { printf '\n\033[1;35m━━ %s\033[0m\n' "$*"; }
+step() { printf '\n\033[1;35m== %s\033[0m\n' "$*"; }
 log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33mWARN:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 [ -n "$DOMAIN" ] || die "no --domain given (and none in scripts/deploy.conf)"
@@ -113,6 +123,44 @@ CHUNKS="$(tar tzf "$TARBALL" | grep -c 'apps/hestia/\.next/static/.*\.js' || tru
   $TARBALL
 The app would serve HTML and 400 on every chunk."
 log "Artifact OK: $(basename "$TARBALL") ($CHUNKS static JS files)"
+
+# ── Resolve the hardening decision ──────────────────────────────────────
+# Deliberately before the install step: if this asks a question, it should ask
+# before anything on the host has changed, not halfway through.
+#
+# install.sh writes /etc/<svc>/.hardened once host hardening has run. Keying
+# off that rather than "is this the first deploy" is what we actually mean -
+# a host can be redeployed many times and still never have been hardened.
+HARDEN_MARKER="/etc/$SERVICE_NAME/.hardened"
+if [ "$HARDEN" = "auto" ]; then
+  if [ -f "$HARDEN_MARKER" ]; then
+    HARDEN=0
+    log "Host already hardened ($(sed -n 's/^hardened_at=//p' "$HARDEN_MARKER" 2>/dev/null || echo 'date unknown')) - skipping"
+  elif [ "$DRY_RUN" -eq 1 ]; then
+    HARDEN=0
+    log "Host not hardened yet. A real run would offer it here."
+  elif [ -t 0 ]; then
+    echo
+    echo "  This host has not been hardened yet. Hardening applies:"
+    echo "    - default-deny firewall (ssh/80/443 only, Cloudflare-scoped if --cloudflare)"
+    echo "    - fail2ban, automatic security updates, kernel/sysctl tightening"
+    echo "    - binds the app to 127.0.0.1 so only the proxy can reach it"
+    echo
+    echo "  It resets the firewall, so do not run it over a link you cannot"
+    echo "  afford to lose. It is a one-time step, not part of each deploy."
+    echo
+    printf '  Apply host hardening now? [y/N] '
+    read -r reply
+    case "$reply" in
+      [yY]*) HARDEN=1 ;;
+      *)     HARDEN=0; log "Skipping. Apply later with: sudo scripts/deploy.sh --harden" ;;
+    esac
+  else
+    HARDEN=0
+    warn "Host is not hardened and this is not an interactive shell, so it was
+     skipped. Run 'sudo scripts/deploy.sh --harden' from a terminal."
+  fi
+fi
 
 # ── 4. Install ──────────────────────────────────────────────────────────
 step "4/5  Installing"

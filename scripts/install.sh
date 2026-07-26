@@ -748,6 +748,17 @@ if [ "$HARDEN" -eq 1 ]; then
      HOSTNAME=127.0.0.1 in $ENV_FILE."
     fi
     [ "$HARDEN_SSH" -eq 1 ] && harden_ssh
+
+    # Record that this host has been hardened, so deploy.sh can skip it on
+    # subsequent runs instead of resetting the firewall on every deploy.
+    if [ "$DRY_RUN" -eq 0 ]; then
+      {
+        echo "hardened_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "ssh_hardened=$HARDEN_SSH"
+        echo "cloudflare_only=$CLOUDFLARE"
+      } > "$ENV_DIR/.hardened"
+      chmod 0640 "$ENV_DIR/.hardened"
+    fi
   else
     warn "harden.sh not found next to install.sh - skipping host hardening"
   fi
