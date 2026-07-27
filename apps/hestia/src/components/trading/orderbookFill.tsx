@@ -76,6 +76,17 @@ export const useNotifyFill = () => useContext(OrderbookFillContext).notifyFill;
  *
  * Fires on every fill, including one that writes an identical value, because
  * the user still clicked and still needs to see that it landed.
+ *
+ * Consumers render this as a Tailwind `transition-colors` class swap, and a
+ * CSS transition only animates on CHANGE. Clicking again inside the flash
+ * window would leave the class already applied, so there was nothing to
+ * animate and the second click looked ignored - worst exactly when the user
+ * is clicking repeatedly and most wants the feedback.
+ *
+ * So drop the flash for a single frame before re-applying it. The browser
+ * paints the un-flashed state once, which gives the transition somewhere to
+ * start from. requestAnimationFrame rather than setTimeout(0) because it is
+ * tied to the paint, and a macrotask can be starved on a busy orderbook.
  */
 export function useFlashOnFill(field: FillField, duration = 800) {
   const { counters } = useContext(OrderbookFillContext);
@@ -87,9 +98,15 @@ export function useFlashOnFill(field: FillField, duration = 800) {
     // Skip the initial render: mounting is not a fill.
     if (count === seen.current) return;
     seen.current = count;
-    setFlash(true);
+
+    setFlash(false);
+    const raf = requestAnimationFrame(() => setFlash(true));
     const t = setTimeout(() => setFlash(false), duration);
-    return () => clearTimeout(t);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
   }, [count, duration]);
 
   return flash;

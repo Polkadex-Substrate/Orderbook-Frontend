@@ -14,12 +14,18 @@
 # build for staging and production, run this twice with different --env files.
 # Only genuinely runtime settings (PORT, HOSTNAME, NODE_ENV) can differ later.
 #
-# Why this script rather than a bare `docker compose build`: compose
-# interpolates ${VAR} in the compose file from the shell or a ROOT .env only.
-# `env_file:` applies to the running container, NOT to build args. So a plain
-# `docker compose build` silently bakes EMPTY values - including
-# NEXT_PUBLIC_PROJECT_ID, without which the app throws at boot. This script
-# exports the env file before building, which is the fix.
+# This script exports the env file and passes every ARG explicitly, because
+# NEXT_PUBLIC_* values are baked in at build time and a missing one does not
+# fail the build - it bakes an empty string. NEXT_PUBLIC_PROJECT_ID is the
+# sharpest example: empty, and the app throws at boot.
+#
+# There was a docker-compose.yml here that duplicated the ARG list by hand. It
+# was deleted: nothing ran it (the deploy installs the extracted artifact under
+# systemd, not a container), it drifted from the Dockerfile every time an ARG
+# was added, and compose only interpolates ${VAR} from the shell or a ROOT .env
+# - `env_file:` applies to the running container, NOT to build args - so it
+# silently baked empty values, which is exactly the failure this script exists
+# to prevent.
 #
 # Usage:
 #   scripts/build-release.sh                        # docker image (default)
@@ -175,11 +181,11 @@ if [ "$MODE" = docker ]; then
   echo "  Also  : ${IMAGE_REPO}:latest"
   echo "  Size  : ${SIZE:-unknown}"
   echo
-  echo "Run it:"
+  echo "Run it (ad-hoc, for a smoke test):"
   echo "  docker run --rm -p 3000:3000 --env-file $ENV_FILE ${IMAGE_REPO}:${IMAGE_TAG}"
   echo
-  echo "Or via compose:"
-  echo "  IMAGE_REPO=$IMAGE_REPO IMAGE_TAG=$IMAGE_TAG docker compose up -d"
+  echo "Deploy it (extracts the artifact and installs it under systemd):"
+  echo "  sudo scripts/deploy.sh"
   exit 0
 fi
 

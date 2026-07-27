@@ -148,12 +148,17 @@ usefully continue in the current shell.
 It warns about any Dockerfile `ARG` that has no value in your env file, so a
 silently-empty build var shows up at build time rather than in production.
 
-> **Do not run `docker compose build` on its own.** Compose interpolates
-> `${VAR}` from the shell or a *root* `.env` - `env_file:` applies only to the
-> running container, not to build args. A bare `docker compose build` bakes
-> every value empty, including `NEXT_PUBLIC_PROJECT_ID`, without which the app
-> throws at boot. Use the script, or
-> `docker compose --env-file apps/hestia/.env build`.
+> **Build through the script, not `docker build` by hand.** There are ~46
+> build args, and a missing `NEXT_PUBLIC_*` does not fail the build - it bakes
+> an empty string. `NEXT_PUBLIC_PROJECT_ID` is the sharpest case: empty, and
+> the app throws at boot.
+>
+> There was a `docker-compose.yml` that duplicated the arg list; it has been
+> deleted. Nothing ran it (the deploy installs the extracted artifact under
+> systemd, not a container), it drifted from the Dockerfile whenever an `ARG`
+> was added, and compose only interpolates `${VAR}` from the shell or a *root*
+> `.env` - `env_file:` applies to the running container, not to build args - so
+> it silently baked empty values.
 
 ---
 
@@ -307,12 +312,14 @@ site still loads immediately after enabling it.
 
 ## Option B - Docker (default)
 
-The repo ships a multi-stage `Dockerfile` and `docker-compose.yml`. The build
-context is the **repo root**.
+The repo ships a multi-stage `Dockerfile`. The build context is the **repo
+root**. Note that the image is a **build sandbox, not the runtime**:
+`deploy.sh` extracts the standalone output from it and `install.sh` runs that
+under systemd on the host.
 
 ```bash
 scripts/build-release.sh                       # -> orderbook-fe:<version>-<sha> + :latest
-IMAGE_REPO=orderbook-fe IMAGE_TAG=latest docker compose up -d
+sudo scripts/deploy.sh                         # extract, install, restart, health-check
 ```
 
 `IMAGE_REPO` and `IMAGE_TAG` are read from the environment and default to
@@ -322,8 +329,11 @@ IMAGE_REPO=orderbook-fe IMAGE_TAG=latest docker compose up -d
 scripts/build-release.sh --repo <registry>/orderbook-fe --push
 ```
 
-Serves on host port **8000** → container 3000 (change in `docker-compose.yml`).
-Health check hits `/` every 30s; `docker compose ps` shows healthy/unhealthy.
+To smoke-test the image directly without deploying it:
+
+```bash
+docker run --rm -p 3000:3000 --env-file apps/hestia/.env orderbook-fe:latest
+```
 
 The final image is ~94 MB and contains no build-time secrets - the `ARG`/`ENV`
 block lives in the `builder` stage and `runner` is a separate `FROM` that only
@@ -580,8 +590,7 @@ Docker:
 
 ```bash
 git pull
-scripts/build-release.sh
-IMAGE_REPO=orderbook-fe IMAGE_TAG=latest docker compose up -d
+sudo scripts/deploy.sh
 ```
 
 ## Notes

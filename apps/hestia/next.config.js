@@ -44,16 +44,17 @@ const nextConfig = {
     // direct per-icon module paths at build time.
     optimizePackageImports: ["@remixicon/react"],
 
-    // Static generation forks one worker per CPU, and every worker inherits
-    // NODE_OPTIONS - so --max_old_space_size is a PER-WORKER budget, not a
-    // total. On a 4-vCPU / 7 GB VPS that authorises ~16 GB and the kernel OOM
-    // killer ends the build with a bare SIGKILL and no error message, which
-    // looks like a compiler crash rather than memory exhaustion.
+    // Static generation forks workers that each inherit NODE_OPTIONS, so
+    // --max_old_space_size is a per-worker budget rather than a build total.
+    // Pinning this to 1 keeps that budget meaningful as the build hosts change
+    // - the default scales with core count, so moving to a bigger machine
+    // would otherwise silently multiply peak memory rather than just going
+    // faster. Cheap for this app: it is a client-rendered trading UI with very
+    // few static pages, so there is little to parallelise.
     //
-    // Capping workers is what makes the heap limit mean something. Cheap here:
-    // this app is a client-rendered trading UI with very few static pages, so
-    // there is little to parallelise. Override with NEXT_BUILD_CPUS on a
-    // bigger machine.
+    // On the current 2-core builder this is roughly what Next would pick
+    // anyway; it matters on wider machines. Raise with NEXT_BUILD_CPUS only
+    // alongside NODE_HEAP_MB (see Dockerfile) - they have to be sized together.
     cpus: Number(process.env.NEXT_BUILD_CPUS) || 1,
   },
   reactStrictMode: false,
@@ -67,6 +68,19 @@ const nextConfig = {
   },
   // NOTE: Next 16 removed the `eslint` config key (and `next lint`). Linting is
   // no longer part of `next build` at all - run `yarn lint` (eslint directly).
+  // WARNING: every value here is inlined into the client bundle at build time,
+  // exactly like a NEXT_PUBLIC_* variable, but without the prefix that makes
+  // that obvious. Treat this list as public. Never add a credential.
+  //
+  // Docker's build linter flags READ_ONLY_TOKEN, GOOGLE_API_KEY and
+  // DEFAULT_TRANSFER_TOKEN as secrets-in-ENV. Those warnings are expected:
+  //   - READ_ONLY_TOKEN is the unauthenticated AppSync token the browser must
+  //     hold to open orderbook subscriptions - public by design.
+  //   - GOOGLE_API_KEY is a browser API key; restrict it by HTTP referrer in
+  //     the Google console, which is the only control that means anything for
+  //     a key that ships to clients.
+  //   - DEFAULT_TRANSFER_TOKEN is a currency ticker ("USDT"). Not a credential;
+  //     the linter matched on the word "TOKEN".
   env: {
     POLKADEX_CHAIN: process.env.POLKADEX_CHAIN,
     GOOGLE_ANALYTICS: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
@@ -89,7 +103,11 @@ const nextConfig = {
     DEFAULT_TRANSFER_TOKEN: process.env.DEFAULT_TRANSFER_TOKEN,
     SUBSCAN_API: process.env.SUBSCAN_API,
     SENTRY_DSN: process.env.SENTRY_DSN,
-    SENTRY_AUTH: process.env.SENTRY_AUTH,
+    // SENTRY_AUTH removed: everything in this `env` block is inlined into the
+    // CLIENT bundle at build time, so a write-scoped upload token was being
+    // served to every visitor. Nothing read it. Source-map upload happens in
+    // the build process, which reads process.env directly and never needed it
+    // here.
     DISABLED_FEATURES: process.env.DISABLED_FEATURES,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,

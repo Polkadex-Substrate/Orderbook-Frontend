@@ -7,10 +7,12 @@
 # needed.
 #
 # Build via scripts/build-release.sh (default mode), which loads the env file
-# and passes every ARG below. A bare `docker compose build` does NOT pick up
-# apps/hestia/.env - compose only interpolates from the shell or a ROOT .env,
-# and `env_file:` applies at runtime only. Use:
-#     docker compose --env-file apps/hestia/.env build
+# and passes every ARG below. Building by hand means passing ~46 --build-arg
+# flags yourself; a missing NEXT_PUBLIC_* does not fail the build, it bakes an
+# empty string, and the app throws at boot.
+#
+# This image is a build sandbox, not the runtime. deploy.sh extracts the
+# standalone output and install.sh runs it under systemd on the host.
 # ============================================================================
 
 # ============================================
@@ -66,16 +68,23 @@ ARG SUBSCAN_API
 ARG SUBQUERY_URL
 ARG READ_ONLY_TOKEN
 ARG SENTRY_DSN
-ARG SENTRY_AUTH
+# SENTRY_AUTH deliberately absent. It is a write-scoped Sentry token, and as an
+# ARG/ENV it was recoverable from `docker history` by anyone holding the image,
+# as well as being inlined into the browser bundle by next.config.js's `env`
+# block. No source file reads it. Source-map upload is the only thing that
+# needs it - reintroduce it as a BuildKit secret if that is ever wanted:
+#   RUN --mount=type=secret,id=sentry_auth ...
+# which never lands in a layer.
 ARG DISABLED_FEATURES
 ARG GOOGLE_API_KEY
 ARG GOOGLE_CLIENT_ID
 ARG DEFAULT_THEA_SOURCE_CHAIN
 ARG DEFAULT_THEA_DESTINATION_CHAIN
 ARG DISABLED_THEA_CHAINS
-# These six are read by next.config.js `env:` and were passed by
-# docker-compose, but had no matching ARG here - so Docker discarded them and
-# every image was built with them empty. Feature flags failing silently open.
+# These six are read by next.config.js `env:` and were being passed at build
+# time, but had no matching ARG here - so Docker discarded them and every image
+# was built with them empty. Feature flags failing silently open. Any new entry
+# in that `env:` block needs an ARG here too, or it silently becomes "".
 ARG SIGNUP_DISABLED
 ARG SHOW_SHUTDOWN_POPUP
 ARG UNDER_MAINTENACE
@@ -122,7 +131,6 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
     SUBQUERY_URL=$SUBQUERY_URL \
     READ_ONLY_TOKEN=$READ_ONLY_TOKEN \
     SENTRY_DSN=$SENTRY_DSN \
-    SENTRY_AUTH=$SENTRY_AUTH \
     DISABLED_FEATURES=$DISABLED_FEATURES \
     GOOGLE_API_KEY=$GOOGLE_API_KEY \
     GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
@@ -154,14 +162,21 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
 
 # 2 GB is not enough once @polkadot/api + the chart libs are in the graph.
 #
-# Read this together with experimental.cpus in next.config.js. This limit is
-# applied PER PROCESS, and Next forks a worker per CPU for static generation,
-# so the real ceiling is (workers + 1) x this value. Raising it without also
-# capping workers is what makes a build die on SIGKILL: V8 is told it may grow
-# to 4 GB, so it declines to GC under pressure, and the kernel kills it first.
-# A bare SIGKILL means the kernel; V8's own limit says "JavaScript heap out of
-# memory" and prints a stack.
-ARG NODE_HEAP_MB=4096
+# This limit is PER PROCESS, not per build, and a Next build runs several Node
+# processes at once - the webpack compile, a forked TypeScript checker, and the
+# static-generation worker(s). The real ceiling is roughly (concurrent
+# processes) x this value.
+#
+# 4096 on the 2-core / 7.3 GB testnet box was over-subscribed: two processes
+# were each permitted 4 GB against 7.3 GB of RAM, and because V8 defers GC
+# until it approaches its own limit, the kernel OOM killer arrived first. The
+# symptom is a bare SIGKILL with no error text. (V8 hitting its OWN limit looks
+# different: "JavaScript heap out of memory" plus a stack trace. If you see
+# that, this number is too LOW.)
+#
+# 3072 leaves headroom for two concurrent processes plus the OS. Confirm any
+# OOM with: dmesg -T | grep -i 'killed process'
+ARG NODE_HEAP_MB=3072
 ENV NODE_OPTIONS="--max_old_space_size=$NODE_HEAP_MB"
 ENV NEXT_TELEMETRY_DISABLED=1
 

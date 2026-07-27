@@ -49,33 +49,31 @@ export const Table = ({
   // silently missed those clicks and the flash looked random.
   const notifyFill = useNotifyFill();
 
-  const onChangePrice: GenericAction = (selectedIndex) => {
-    changeMarketPrice(selectedIndex, isSell ? "asks" : "bids");
-    notifyFill("price");
-  };
-
-  const onChangeAmount: GenericAction = (selectedIndex) => {
-    changeMarketAmount(selectedIndex, isSell ? "asks" : "bids");
-    notifyFill("amount");
-  };
-
-  const onChangeTotal: GenericAction = (selectedIndex) => {
-    changeMarketAmountSumClick(selectedIndex);
-    notifyFill("total");
-  };
-
-  // Row click loads BOTH price and amount - "take this order" is the common
-  // intent, and typing a smaller size over the amount is quicker than typing
-  // a size from scratch. Safe now that an over-balance amount surfaces as an
-  // inline error plus the "Move X & Buy/Sell" action rather than a wall of
-  // red. Clicking the amount or total cell still copies just that value.
+  // Price and Amount have NO cell-level handler: both bubble to the row, so
+  // "take this order" is one rule that holds wherever you click in those two
+  // columns.
+  //
+  // They used to handle their own clicks, which was unpredictable in practice.
+  // Amount carried `justify-self-end`, shrinking the hit area to the width of
+  // its digits - so a click landed on the cell or fell through to the row
+  // depending on how many digits that row happened to render. Same pixel
+  // column, different outcome per row, and it misfilled the form rather than
+  // just misfiring the highlight.
   const onChangeAllValues: GenericAction = (selectedIndex) => {
     changeMarketPrice(selectedIndex, isSell ? "asks" : "bids");
     changeMarketAmount(selectedIndex, isSell ? "asks" : "bids");
     // Both fields, so a row click highlights both even if one value is
-    // unchanged. Previously a row sharing its price with the form flashed
-    // only the amount, which read as a half-broken control.
+    // unchanged.
     notifyFill("price", "amount");
+  };
+
+  // Total is the one genuinely different action: it sweeps the book to this
+  // depth (onSetCurrentTotal with the cumulative volume) rather than taking a
+  // single order, so it keeps its own handler and stops propagation. It spans
+  // its whole column so the hit area does not depend on digit count.
+  const onChangeTotal: GenericAction = (selectedIndex) => {
+    changeMarketAmountSumClick(selectedIndex);
+    notifyFill("total");
   };
 
   if (!active) return null;
@@ -130,30 +128,19 @@ export const Table = ({
               size="xs"
               bold
               className="pl-2"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onChangePrice(i);
-              }}
             >
               <Decimal fixed={pricePrecision} thousSep=",">
                 {price}
               </Decimal>
             </Typography.Text>
-            <Typography.Text
-              size="xs"
-              bold
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onChangeAmount(i);
-              }}
-              className="justify-self-end"
-            >
+            <Typography.Text size="xs" bold className="w-full text-right">
               <Decimal fixed={qtyPrecision} thousSep=",">
                 {amount}
               </Decimal>
             </Typography.Text>
+            {/* w-full + text-right, NOT justify-self-end: the latter shrinks a
+                grid item to its content, leaving the rest of the column as
+                bare row. Looks identical, behaves consistently. */}
             <Typography.Text
               size="xs"
               bold
@@ -162,7 +149,7 @@ export const Table = ({
                 event.stopPropagation();
                 onChangeTotal(i);
               }}
-              className="justify-self-end pr-2"
+              className="w-full text-right pr-2"
             >
               <Decimal fixed={pricePrecision} thousSep=",">
                 {total[i]}
