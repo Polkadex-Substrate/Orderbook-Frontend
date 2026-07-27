@@ -62,8 +62,29 @@ const Single = ({
   size = "sm",
   disabled = false,
   children,
+  target,
+  rel,
+  className,
 }: PropsWithChildren<SingleProps>) => {
   const largeText = size === "lg";
+
+  // Analytics sits in the nav between Bridge, Rewards and Faucet but points at
+  // explorer.polkadex.ee, and this component previously dropped every prop
+  // except href/size/disabled/children - so `target` could not be passed at
+  // all, despite SingleProps extending ComponentProps<"a"> and advertising it.
+  // Clicking it replaced the trading view, and getting back meant the browser
+  // Back button plus a full remount: markets refetched, subscriptions
+  // reopened, chart rebuilt.
+  //
+  // Inferred from the href rather than set per call site, so a future external
+  // link cannot forget it. An explicit target still wins, in case an outbound
+  // link ever genuinely should navigate in place.
+  const isExternal = typeof href === "string" && /^https?:\/\//i.test(href);
+  const resolvedTarget = target ?? (isExternal ? "_blank" : undefined);
+  // noreferrer alongside noopener: modern browsers imply noopener for
+  // target=_blank, but not every in-app webview does.
+  const resolvedRel =
+    rel ?? (resolvedTarget === "_blank" ? "noopener noreferrer" : undefined);
   return (
     <Typography.Text
       asChild
@@ -85,10 +106,21 @@ const Single = ({
         "min-[1680px]:text-base",
         !disabled &&
           "transition-colors ease-out duration-300 hover:text-primary-base",
-        disabled && "cursor-not-allowed opacity-50"
+        disabled && "cursor-not-allowed opacity-50",
+        // Forwarded last so a call site can override. The mobile menu passes
+        // className="text-lg" on several items and it was being dropped along
+        // with target, leaving those entries a size smaller than the ones that
+        // happened to use the `size` prop instead.
+        className
       )}
     >
-      <Link href={disabled ? "#" : (href as Url)}>{children}</Link>
+      <Link
+        href={disabled ? "#" : (href as Url)}
+        target={disabled ? undefined : resolvedTarget}
+        rel={disabled ? undefined : resolvedRel}
+      >
+        {children}
+      </Link>
     </Typography.Text>
   );
 };
