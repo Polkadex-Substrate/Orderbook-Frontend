@@ -483,6 +483,74 @@ Two reasons this is not just about firewalls:
   closed. Always bind published ports to `127.0.0.1` unless a port is
   genuinely meant to be public.
 
+## Caching: what must and must not be cached
+
+There are three caching layers between a build and a user, and they fail in the
+same way: someone sees yesterday's app and reports a bug that no longer exists.
+
+**1. Content-hashed assets - cache forever.** Everything under
+`/_next/static/*` has a content hash in its filename, so it is safe to cache
+indefinitely. The nginx vhost already sets
+`Cache-Control: public, max-age=31536000, immutable` for that path.
+
+**2. The HTML document - never cache.** The document names the chunk hashes for
+the build that produced it. Cache it, and after the next deploy it keeps asking
+for chunks that no longer exist. Next already sends `no-store` for it; the risk
+is a Cloudflare rule that overrides that.
+
+Add two Cache Rules in Cloudflare. **Both must be scoped to the hostname**:
+Cache Rules apply to the whole zone, so a rule matching only on URI path would
+also hit `polkadex.ee`, `explorer.polkadex.ee`, `docs.` and every other
+subdomain in the account.
+
+**Rule 1 - hashed assets, cache hard**
+
+```
+(http.host eq "testnet.polkadex.ee" and starts_with(http.request.uri.path, "/_next/static/"))
+```
+- Cache eligibility: **Eligible for cache**
+- Edge TTL: **1 year** (or "Respect origin" - nginx already sends `immutable`)
+- Browser TTL: Respect origin
+
+**Rule 2 - everything else on that host, never cache**
+
+```
+(http.host eq "testnet.polkadex.ee" and not starts_with(http.request.uri.path, "/_next/static/"))
+```
+- Cache eligibility: **Bypass cache**
+
+The two expressions are deliberately **mutually exclusive**, so they produce
+the same result regardless of the order they sit in. Rules that overlap depend
+on precedence, which is easy to get wrong and hard to notice.
+
+Rule 2 matters more than it looks. Cloudflare caches common static extensions
+by default, which includes `/sw.js` - and a stale *service worker* is the worst
+version of this problem, because it then serves stale everything else from the
+browser's own cache long after the CDN is correct.
+
+Bypassing the rest costs nothing here: the app is client-rendered with no
+cacheable server responses. The only losses are `/manifest.json` and the PWA
+icons, which are a handful of small requests.
+
+For a second environment, duplicate both rules with the new hostname, or widen
+the match once the pattern is proven:
+`http.host in {"testnet.polkadex.ee" "staging.polkadex.ee"}`.
+
+**Purge after every deploy** until those rules are in place. On a multi-tenant
+zone use a targeted purge rather than Purge Everything, which would also evict
+the marketing site and explorer: Caching → Configuration → Custom Purge →
+**Hostname** → `testnet.polkadex.ee`.
+
+**3. The service worker.** `@ducanh2912/next-pwa` v10 defaults to
+`skipWaiting: true`, `clientsClaim: true` and `cleanupOutdatedCaches: true`, so
+a new build takes over on the next reload rather than waiting for every tab to
+close. No configuration needed - but if the PWA plugin is ever swapped or
+downgraded (`next-pwa` v5 defaults differ), check those three before shipping.
+
+If a user reports something stale, the order to check is: hard reload (Shift +
+reload, which bypasses the SW), then Cloudflare purge, then the deployed build
+itself. Two of this project's longest debugging sessions were caching, not code.
+
 ## Post-deploy checks
 
 1. `curl -I https://your-domain/` → 200, and `/` redirects to

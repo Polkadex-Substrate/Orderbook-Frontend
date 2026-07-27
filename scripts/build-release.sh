@@ -220,7 +220,7 @@ else
   # refuses to install on 20. Node 20 also went EOL in April 2026.
   [ "$NODE_MAJOR" -ge 22 ] || die "Node 22+ required (@hyperbridge/sdk), found $(node -v)"
   command -v yarn >/dev/null \
-    || die "yarn is not installed (corepack enable; corepack prepare yarn@1.22.19 --activate)"
+    || die "yarn is not installed (corepack enable; corepack prepare yarn@1.22.22 --activate)"
 
   if [ "$SKIP_INSTALL" -eq 0 ]; then
     log "Installing dependencies (frozen lockfile)"
