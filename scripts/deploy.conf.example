@@ -7,7 +7,14 @@ ENV_FILE="apps/hestia/.env"
 IMAGE_REPO="orderbook-fe"
 
 # 1 = on, 0 = off
-CLOUDFLARE=1     # Cloudflare origin cert + real-IP + CF-only firewall
+#
+# CLOUDFLARE only affects the origin cert and nginx's real_ip config. It does
+# NOT touch the firewall on its own - it just makes the CF edge ranges
+# available, so that HARDEN (below) can scope 80/443 to them when it does run.
+# Every deploy re-fetches those ranges and rewrites the nginx real_ip snippet,
+# which is deliberate: Cloudflare adds prefixes, and a stale list silently
+# turns every visitor into 172.71.x.x in the access log and rate limiter.
+CLOUDFLARE=1     # Cloudflare origin cert + nginx real-IP restoration
 DO_PULL=1        # git pull before building
 
 # Host hardening is NOT part of a routine deploy: it resets the firewall and

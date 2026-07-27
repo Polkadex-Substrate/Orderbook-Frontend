@@ -96,12 +96,18 @@ cloudflare_fetch_ips() {
   # Sanity-check rather than trust: a captive portal or error page would
   # otherwise be written straight into a firewall rule.
   if ! echo "$v4" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$'; then
-    warn "Could not fetch Cloudflare IPv4 ranges - leaving 80/443 open to all."
+    # Only the firewall stage can leave ports open, and it may not be running
+    # at all - so do not claim it will.
+    warn "Could not fetch Cloudflare IP ranges. Real client IPs will not be
+     restored, and if host hardening runs it will leave 80/443 open to all."
     return 1
   fi
   printf '%s\n%s\n' "$v4" "$v6" | grep -E '^[0-9a-fA-F:.]+/[0-9]+$' > "$CF_IP_CACHE"
   CF_IPS_FETCHED=1
-  log "Cloudflare ranges cached: $(wc -l < "$CF_IP_CACHE") prefixes"
+  # Say what this is for. The list feeds nginx real_ip on every deploy and the
+  # firewall only when hardening runs, and reading "Cloudflare ranges cached"
+  # on a routine deploy makes it look like the firewall is being rewritten.
+  log "Cloudflare ranges cached for nginx real_ip: $(wc -l < "$CF_IP_CACHE") prefixes (firewall not modified)"
   return 0
 }
 

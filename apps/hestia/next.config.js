@@ -43,6 +43,18 @@ const nextConfig = {
     // service worker's precache size limit). This rewrites barrel imports to
     // direct per-icon module paths at build time.
     optimizePackageImports: ["@remixicon/react"],
+
+    // Static generation forks one worker per CPU, and every worker inherits
+    // NODE_OPTIONS - so --max_old_space_size is a PER-WORKER budget, not a
+    // total. On a 4-vCPU / 7 GB VPS that authorises ~16 GB and the kernel OOM
+    // killer ends the build with a bare SIGKILL and no error message, which
+    // looks like a compiler crash rather than memory exhaustion.
+    //
+    // Capping workers is what makes the heap limit mean something. Cheap here:
+    // this app is a client-rendered trading UI with very few static pages, so
+    // there is little to parallelise. Override with NEXT_BUILD_CPUS on a
+    // bigger machine.
+    cpus: Number(process.env.NEXT_BUILD_CPUS) || 1,
   },
   reactStrictMode: false,
   generateBuildId: async () => {
@@ -113,6 +125,16 @@ const sentryWebpackPluginOptions = {
   // https://github.com/getsentry/sentry-webpack-plugin#options.
 };
 
-module.exports = withBundleAnalyzer(
-  withSentryConfig(withPWA(nextConfig), sentryWebpackPluginOptions),
+// Sentry's webpack plugin instruments every module and generates source maps
+// for the whole bundle - minutes of work and a large chunk of the build's peak
+// memory. With no DSN configured that work is thrown away, and this repo has
+// no sentry.*.config.ts files at all, so nothing initialises the SDK either.
+// Only pay for it when it is actually wired up.
+const sentryEnabled = Boolean(
+  process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
 );
+
+const withSentryIfEnabled = (cfg) =>
+  sentryEnabled ? withSentryConfig(cfg, sentryWebpackPluginOptions) : cfg;
+
+module.exports = withBundleAnalyzer(withSentryIfEnabled(withPWA(nextConfig)));

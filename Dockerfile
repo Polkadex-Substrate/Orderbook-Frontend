@@ -153,7 +153,16 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
     NEXT_PUBLIC_FAUCET_API_KEY=$NEXT_PUBLIC_FAUCET_API_KEY
 
 # 2 GB is not enough once @polkadot/api + the chart libs are in the graph.
-ENV NODE_OPTIONS="--max_old_space_size=4096"
+#
+# Read this together with experimental.cpus in next.config.js. This limit is
+# applied PER PROCESS, and Next forks a worker per CPU for static generation,
+# so the real ceiling is (workers + 1) x this value. Raising it without also
+# capping workers is what makes a build die on SIGKILL: V8 is told it may grow
+# to 4 GB, so it declines to GC under pressure, and the kernel kills it first.
+# A bare SIGKILL means the kernel; V8's own limit says "JavaScript heap out of
+# memory" and prints a stack.
+ARG NODE_HEAP_MB=4096
+ENV NODE_OPTIONS="--max_old_space_size=$NODE_HEAP_MB"
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Serial by default because the Next build alone peaks near 4 GB and a parallel
