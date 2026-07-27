@@ -81,10 +81,23 @@ export const Footer = forwardRef<
               which nobody looks in for a privacy policy. Below xl they
               collapse into one dropdown instead, so the links are visible at
               every width. */}
+          {/* target="_blank" even though these are internal routes. Reading the
+              privacy policy should not cost you the trading view: navigating in
+              place unmounted the whole app, and coming back re-ran market
+              fetches, reopened subscriptions and rebuilt the chart. A legal
+              document is a reference lookup, not a destination.
+
+              The mobile menu's accordion already opened these in a new tab, so
+              the two navs disagreed depending on viewport width. */}
           <div className="hidden xl:flex items-center gap-3">
             {LEGAL_LINKS.map(({ href, label }) => (
               <Typography.Text key={href} appearance="primary" size="xs">
-                <Link href={href} className="hover:text-current">
+                <Link
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-current"
+                >
                   {label}
                 </Link>
               </Typography.Text>
@@ -99,7 +112,12 @@ export const Footer = forwardRef<
               <Dropdown.Content>
                 {LEGAL_LINKS.map(({ href, label }) => (
                   <Dropdown.Item key={href}>
-                    <Link href={href} className="text-left block w-full">
+                    <Link
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-left block w-full"
+                    >
                       {label}
                     </Link>
                   </Dropdown.Item>
