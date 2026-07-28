@@ -6,12 +6,9 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { Amplify } from "aws-amplify";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
-
-import awsconfig from "../../../../aws-exports";
 
 const Progress = dynamic(
   () => import("../Progress").then((mod) => mod.Progress),
@@ -103,7 +100,10 @@ const Toaster = dynamic(
   }
 );
 
-Amplify.configure(awsconfig);
+// Amplify.configure(awsconfig) used to run here at module scope. Both are gone:
+// the Orderbook GraphQL backend is reached through Apollo, configured from
+// GRAPHQL_URL / GRAPHQL_WS_URL in @orderbook/core's config/graphql.ts. There is
+// no global client to initialise at import time any more.
 
 const queryClient = new QueryClient({
   defaultOptions: {

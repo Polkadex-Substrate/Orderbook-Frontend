@@ -1,22 +1,23 @@
 "use client";
 /**
- * GraphV2 - orderbook-native chart (no external datafeed gateway).
+ * The trading chart.
  *
- * Candles come from the exchange's own AppSync klines via @orderbook/core
- * (fetchCandles) with live updates over the kline subscription; depth from
- * useOrderbook; the user's open orders and fills are drawn on the chart.
+ * Candles come from the REST datafeed gateway (datafeed.polkadex.ee, UDF
+ * protocol - see ./datafeed.ts); depth from useOrderbook; the user's open
+ * orders and fills are drawn on the chart.
  *
- * Enabled with NEXT_PUBLIC_NATIVE_CHART=true (see Graph/index.tsx).
+ * History previously came from the exchange's own klines over GraphQL
+ * (fetchCandles) with live bars over the kline subscription. The datafeed is
+ * the intended source, so both were replaced - see the note on `subscribe`
+ * below for why live bars now poll rather than stream.
  */
 import { useMemo, useState } from "react";
 import { useWindowSize } from "react-use";
-import { fetchCandles } from "@orderbook/core/helpers";
 import {
   useOpenOrders,
   useOrderbook,
   useTradeHistory,
 } from "@orderbook/core/hooks";
-import { useSubscription } from "@orderbook/core/providers/user/subscription";
 import { Market } from "@orderbook/core/utils/orderbookService";
 import {
   CandleChart,
@@ -30,10 +31,24 @@ import {
   OrderMark,
   Resolution,
   Toolbar,
+  resolutionToMs,
 } from "@orderbook/chart";
+
+import { fetchUdfHistory } from "./datafeed";
 
 const DEPTH_LEVELS = 40;
 const FILLS_LIMIT = 30;
+
+/**
+ * How often to re-poll the datafeed for the current bar.
+ *
+ * The gateway is REST-only, so there is nothing to stream. Capped at 15s so a
+ * 1-week resolution does not mean a week between updates, and floored at the
+ * bar length so a 1-minute chart is not polled pointlessly often.
+ */
+const POLL_CEILING_MS = 15_000;
+const pollIntervalFor = (r: Resolution) =>
+  Math.min(resolutionToMs(r), POLL_CEILING_MS);
 
 export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
   const marketId = currentMarket?.id ?? "";
@@ -44,30 +59,65 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
   const [indicators, setIndicators] = useState<IndicatorConfig>({});
   const [showDepth, setShowDepth] = useState(false);
 
-  const { onCandleSubscribe } = useSubscription();
-
   // Ultrawide/4K: enough room to dock the depth chart beside the candles
   // permanently instead of hiding it behind the toolbar toggle.
   const { width } = useWindowSize();
   const superWide = width >= 2200;
 
-  /** Adapter: @orderbook/core primitives -> CandleFeed. */
+  /** Adapter: REST datafeed gateway -> CandleFeed. */
   const feed = useMemo<CandleFeed>(
     () => ({
       getCandles: ({ market, resolution: r, from, to }) =>
-        fetchCandles({ market, resolution: r, from, to }),
+        fetchUdfHistory({ market, resolution: r, from, to }),
+
+      /**
+       * Poll for the latest bar rather than stream.
+       *
+       * The datafeed is REST-only. The previous implementation streamed live
+       * bars from the exchange's own kline subscription while loading history
+       * from elsewhere - two different price series on one chart, which shows
+       * up as the last candle jumping away from the ones before it the moment
+       * a trade lands. One source is worth the polling.
+       *
+       * Only the trailing window is re-fetched, not the whole history, and
+       * CandleChart already tolerates a bar it has seen before: it matches on
+       * `time` and replaces in place.
+       */
       subscribe: ({ market, resolution: r, onBar }) => {
-        onCandleSubscribe({
-          market,
-          interval: r,
-          onUpdateTradingViewRealTime: onBar,
-        });
-        // core's subscription API exposes no teardown; CandleChart guards
-        // against stale ticks itself (checks bar.time against loaded data).
-        return () => undefined;
+        let cancelled = false;
+
+        const tick = async () => {
+          try {
+            const barMs = resolutionToMs(r);
+            // Two bars back: enough to catch a bucket rollover between polls
+            // without refetching history every time.
+            const bars = await fetchUdfHistory({
+              market,
+              resolution: r,
+              from: new Date(Date.now() - barMs * 2),
+              to: new Date(),
+            });
+            if (cancelled || !bars.length) return;
+            onBar(bars[bars.length - 1]);
+          } catch {
+            // Swallow: getCandles surfaces load failures to the user already,
+            // and a failed poll should not tear down a working chart. The next
+            // tick retries.
+          }
+        };
+
+        // Fire once immediately so the current bar is not up to one interval
+        // stale on mount.
+        tick();
+        const id = setInterval(tick, pollIntervalFor(r));
+
+        return () => {
+          cancelled = true;
+          clearInterval(id);
+        };
       },
     }),
-    [onCandleSubscribe]
+    []
   );
 
   /* Depth (useOrderbook returns [price, qty] strings ASC; depth chart wants

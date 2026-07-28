@@ -85,14 +85,14 @@ const nextConfig = {
     POLKADEX_CHAIN: process.env.POLKADEX_CHAIN,
     GOOGLE_ANALYTICS: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
     ANALYZE: process.env.NEXT_PUBLIC_ANALYZE,
-    API_REGION: process.env.API_REGION,
+    // Removed with AWS Amplify: API_REGION, IDENTITY_POOL_ID, USER_POOL_ID,
+    // USER_WEB_CLIENT_ID, PIN_POINT_CLIENT_ID (Cognito/Pinpoint config, read
+    // only by the deleted aws-exports.js) and USE_NEW_BACKEND (the AppSync vs
+    // Orderbook-backend flag - there is one backend now). None had any other
+    // reader in src.
     GRAPHQL_URL: process.env.GRAPHQL_URL,
-    IDENTITY_POOL_ID: process.env.IDENTITY_POOL_ID,
-    USER_POOL_ID: process.env.USER_POOL_ID,
-    USER_WEB_CLIENT_ID: process.env.USER_WEB_CLIENT_ID,
     LANDING_PAGE: process.env.LANDING_PAGE,
     SIGNUP_DISABLED: process.env.SIGNUP_DISABLED,
-    PIN_POINT_CLIENT_ID: process.env.PIN_POINT_CLIENT_ID,
     MAINTENACE_MODE: process.env.MAINTENACE_MODE,
     SHOW_SHUTDOWN_POPUP: process.env.SHOW_SHUTDOWN_POPUP,
     UNDER_MAINTENACE: process.env.UNDER_MAINTENACE,
@@ -112,7 +112,6 @@ const nextConfig = {
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GRAPHQL_WS_URL: process.env.GRAPHQL_WS_URL,
-    USE_NEW_BACKEND: process.env.USE_NEW_BACKEND,
     SUBQUERY_URL: process.env.SUBQUERY_URL,
     READ_ONLY_TOKEN: process.env.READ_ONLY_TOKEN,
     DEFAULT_THEA_SOURCE_CHAIN: process.env.DEFAULT_THEA_SOURCE_CHAIN,

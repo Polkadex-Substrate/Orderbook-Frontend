@@ -1,6 +1,12 @@
 export const defaultConfig = {
   polkadexFeature: process.env.POLKADEX_FEATURE,
-  polkadexChain: process.env.POLKADEX_CHAIN || "wss://mainnet.polkadex.ee",
+  // No mainnet default. This read `|| "wss://mainnet.polkadex.ee"`, so a
+  // testnet build with POLKADEX_CHAIN missing - which is easy, since it is
+  // baked at build time and an empty value does not fail the build - would
+  // connect to Polkadex MAINNET and look like it was working. Empty is the
+  // safer failure: the chain provider errors visibly instead of quietly
+  // pointing the UI at real funds.
+  polkadexChain: process.env.POLKADEX_CHAIN || "",
   gaTrackerKey: process.env.GA_MEASUREMENT_ID ?? "G-PWZK8JEFLX",
   landingPageMarket: process.env.LANDING_PAGE || "PDEXCUSDT",
   defaultTransferToken: process.env.DEFAULT_TRANSFER_TOKEN || "USDT",

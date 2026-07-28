@@ -1,10 +1,6 @@
-import { isNewBackendEnabled } from "../../../helpers";
-
-// Factory below picks the subscription strategy from the feature flag.
 import { appsyncOperations } from "./writeStrategy";
 import { appsyncReader } from "./readStrategy";
 import { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
-import { appsyncSubscriptions } from "./subscriptionStrategy";
 import {
   OrderbookOperationStrategy,
   OrderbookReadStrategy,
@@ -15,26 +11,14 @@ export * from "./readStrategy";
 export * from "./writeStrategy";
 export * from "./constants";
 
-// Export both subscription strategies
-export { appsyncSubscriptions } from "./subscriptionStrategy";
 export { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
 
-/**
- * Get the appropriate subscription strategy based on feature flag
- * @returns OrderbookSubscriptionStrategy instance
- */
-export function getSubscriptionStrategy() {
-  if (isNewBackendEnabled()) {
-    console.log("[Subscriptions] Using new GraphQL WebSocket strategy");
-    return new GraphQLWebSocketSubscriptions(appsyncReader);
-  } else {
-    console.log("[Subscriptions] Using legacy AppSync MQTT strategy");
-    return appsyncSubscriptions;
-  }
-}
-
-// Export default instance (will use feature flag)
-export const orderbookSubscriptions = getSubscriptionStrategy();
+// There is one subscription transport now: graphql-ws against the Orderbook
+// backend. The factory that chose between this and AppSync's MQTT/`/realtime`
+// protocol is gone along with the USE_NEW_BACKEND flag that drove it.
+export const orderbookSubscriptions = new GraphQLWebSocketSubscriptions(
+  appsyncReader
+);
 
 type ConstructorArgs = {
   operation: OrderbookOperationStrategy;

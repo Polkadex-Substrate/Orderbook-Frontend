@@ -2,7 +2,6 @@
 /* eslint-disable spaced-comment */
 // TODO: wrong @polkadex/polkadex-api polkadot api version
 
-import { GraphQLResult } from "@aws-amplify/api";
 import BigNumber from "bignumber.js";
 import { UNIT_BN } from "@orderbook/core/constants";
 import { ISubmittableResult } from "@polkadot/types/types";
@@ -16,7 +15,12 @@ import {
 } from "../../../API";
 import * as mutation from "../../../graphql/mutations";
 
-import { sendQueryToAppSync } from "./helpers";
+// GraphQLResponse aliased to GraphQLResult so the usages below read unchanged;
+// same GraphQL envelope, declared locally now that Amplify is gone.
+import {
+  sendQueryToAppSync,
+  GraphQLResponse as GraphQLResult,
+} from "./helpers";
 import {
   ClaimRewardArgs,
   ClaimWithdrawArgs,

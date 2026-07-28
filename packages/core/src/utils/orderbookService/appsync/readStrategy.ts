@@ -1,4 +1,3 @@
-import { GraphQLResult } from "@aws-amplify/api";
 import { unknownAsset } from "@orderbook/core/utils/orderbookService/appsync/constants";
 import {
   DEFAULT_BATCH_LIMIT,
@@ -50,6 +49,9 @@ import {
   fetchFullListFromAppSync,
   sendQueryToAppSync,
   toNullableNumber,
+  // Aliased so the ~8 usages below read unchanged: same two-field GraphQL
+  // envelope, declared locally now that Amplify is gone.
+  GraphQLResponse as GraphQLResult,
 } from "./helpers";
 
 class AppsyncV1Reader implements OrderbookReadStrategy {
