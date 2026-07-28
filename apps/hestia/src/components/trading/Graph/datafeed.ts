@@ -103,8 +103,15 @@ export const fetchUdfHistory = async ({
   });
 
   if (!response.ok) {
+    // Include the full query string. It carries no secret (auth is a header),
+    // and without it a 404 is ambiguous between an unsupported resolution, an
+    // unknown symbol and an unsupported vs_currency - three different fixes.
+    // Response body too: gateways often explain the 404 in it.
+    const body = await response.text().catch(() => "");
     throw new Error(
-      `Datafeed history failed: HTTP ${response.status} from ${SERVER_BASE_URL}/gateway/history (resolution=${resolution})`
+      `Datafeed history failed: HTTP ${response.status}\n  GET ${url}\n  body: ${
+        body.slice(0, 300) || "(empty)"
+      }`
     );
   }
 

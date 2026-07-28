@@ -106,6 +106,25 @@ STAMP="${VERSION}-${GITSHA}${DIRTY}"
 [ -n "$IMAGE_TAG" ] || IMAGE_TAG="$STAMP"
 
 # ── Load the env file ───────────────────────────────────────────────────
+# Syntax-check before sourcing. Because the file is sourced, the SHELL parses
+# every line - so a value containing an apostrophe, a double quote, a backtick
+# or a `$` is a syntax error unless it is quoted. The classic case is a
+# user-facing sentence:
+#
+#   NEXT_PUBLIC_HYPERBRIDGE_MAINTENANCE_MESSAGE=... We'll notify you ...
+#
+# which aborts the build with a bare
+#   apps/hestia/.env: line 109: unexpected EOF while looking for matching `''
+# and no indication that the env file is what is wrong, let alone which value.
+if ! bash -n "$ENV_FILE" 2>/dev/null; then
+  echo "Shell syntax error in $ENV_FILE:" >&2
+  bash -n "$ENV_FILE" 2>&1 | sed 's/^/  /' >&2
+  die "This file is sourced, so values containing ' \" \` or \$ must be quoted:
+    KEY=\"a value with an apostrophe like We'll\"
+  The line number above points at where the quote was left open, which is
+  usually the line with the unquoted character."
+fi
+
 # `set -a` exports everything sourced, which is what makes the values visible
 # to `docker build --build-arg` below and to `next build` in tarball mode.
 set -a

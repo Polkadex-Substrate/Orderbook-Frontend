@@ -93,6 +93,9 @@ ARG SHOW_SHUTDOWN_POPUP
 ARG UNDER_MAINTENACE
 # WalletConnect - app THROWS AT BOOT without it (src/config/wagmi.ts)
 ARG NEXT_PUBLIC_PROJECT_ID
+# Origin reported to WalletConnect. Unset falls back to a hardcoded mainnet URL,
+# which mismatches the deployment and can fail WalletConnect's domain check.
+ARG NEXT_PUBLIC_APP_URL
 # Chart datafeed (UDF REST gateway). Both required - see .env.example.
 # NEXT_PUBLIC_NATIVE_CHART removed: it selected between two chart components
 # reading from two different backends, and the server and dev envs disagreed.
@@ -139,6 +142,7 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
     SHOW_SHUTDOWN_POPUP=$SHOW_SHUTDOWN_POPUP \
     UNDER_MAINTENACE=$UNDER_MAINTENACE \
     NEXT_PUBLIC_PROJECT_ID=$NEXT_PUBLIC_PROJECT_ID \
+    NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
     NEXT_PUBLIC_SERVER_BASE_URL=$NEXT_PUBLIC_SERVER_BASE_URL \
     NEXT_PUBLIC_GATEWAY_SECRET=$NEXT_PUBLIC_GATEWAY_SECRET \
     NEXT_PUBLIC_SUBQUERY_URL=$NEXT_PUBLIC_SUBQUERY_URL \
