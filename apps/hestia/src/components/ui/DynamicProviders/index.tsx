@@ -10,6 +10,8 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 
+import { defaultConfig } from "@/config";
+
 const Progress = dynamic(
   () => import("../Progress").then((mod) => mod.Progress),
   { ssr: false }
@@ -157,8 +159,14 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
                     <NativeApiProvider>
                       <OrderbookServiceProvider>
                         <SessionProvider>
+                          {/* Fallback was "DOTUSDT", a pair that does not
+                              exist here, so any route without an :id param
+                              subscribed to a nonexistent market. */}
                           <SubscriptionProvider
-                            marketId={(params.id as string) ?? "DOTUSDT"}
+                            marketId={
+                              (params.id as string) ??
+                              defaultConfig.landingPageMarket
+                            }
                           >
                             <TransactionManagerProvider>
                               <ConnectWalletProvider>

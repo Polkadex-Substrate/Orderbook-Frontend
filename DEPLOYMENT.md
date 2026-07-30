@@ -90,11 +90,104 @@ running twice leaves the same result as running once. Four caveats, all
 deliberate:
 
 - **Old installs are moved aside, not deleted.** `/opt/orderbook-fe` becomes
-  `/opt/orderbook-fe.bak.<timestamp>`, and each is ~140 MB. They are pruned to
-  the 3 most recent (`--keep-backups`, `0` disables). Pruning runs *early*, at
+  `/opt/orderbook-fe.bak.<timestamp>`, and each is ~140 MB. Only the **most
+  recent** is kept (`--keep-backups N`, `0` disables). Pruning runs *early*, at
   the moment the old tree is moved, so the newest backup is always retained
   even if the deploy fails afterwards - a rollback target survives every
   outcome.
+
+  The log reports how much was reclaimed and the free space left on `/opt`,
+  because silent deletion of 140 MB directories gives no way to distinguish
+  pruning from pruning being broken. To clear the lot right now without waiting
+  for a deploy:
+
+  ```bash
+  sudo rm -rf /opt/orderbook-fe.bak.*
+  ```
+
+  Safe while the service is running - systemd executes from `/opt/orderbook-fe`,
+  not from a backup - but it leaves you with no rollback until the next deploy.
+
+## Announcements (no rebuild required)
+
+The in-app notification pane reads announcements from a JSON file on the server,
+served by `/api/announcements`. Because that is a route handler it runs at
+**request** time, so editing the file publishes or retracts an announcement with
+no rebuild and no restart:
+
+```bash
+sudo nano /etc/orderbook-fe/announcements.json
+```
+
+An array of entries; see `scripts/announcements.example.json`:
+
+```json
+[
+  {
+    "id": "trading-paused-undefined-arithmetic",
+    "category": "Announcements",
+    "type": "Attention",
+    "message": "Trading is paused",
+    "description": "Trading is temporarily paused while we fix an arithmetic error on the chain. Your balances are unaffected.",
+    "date": 1785369600000,
+    "active": true
+  }
+]
+```
+
+- `id` — **must be unique and must change when the message changes.** It is the
+  dismissal key in each user's `localStorage`, so reusing an id means anyone who
+  dismissed the old announcement never sees the new one.
+- `type` — `Attention` | `Information` | `Error` | `Success` | `Loading`
+- `date` — epoch **milliseconds**; drives sort order
+- `active` — `true` = unread
+- `href` — optional link target
+
+`[]` means nothing to announce, which is the state `install.sh` seeds. The file
+is never overwritten by a deploy: it holds operational state, and it lives in
+`/etc/orderbook-fe` rather than under `/opt` precisely because `deploy.sh`
+replaces the install tree wholesale.
+
+Malformed entries are skipped individually rather than failing the response, and
+the reason is logged - a broken announcements file cannot take down the trading
+UI. Check `journalctl -u orderbook-fe` if an announcement is not appearing:
+
+```
+[announcements] skipped "foo": "date" must be epoch milliseconds (a number)
+```
+
+Responses carry `Cache-Control: max-age=60`, so allow up to a minute plus your
+Cloudflare TTL for a change to be visible.
+
+## Maintenance mode (no rebuild, no restart)
+
+```bash
+sudo touch /etc/orderbook-fe/maintenance     # site offline
+sudo rm -f /etc/orderbook-fe/maintenance     # site back
+```
+
+Takes effect on the next request. nginx checks for the file per request; there is
+nothing to reload.
+
+Edit the page itself at `/etc/orderbook-fe/maintenance.html`. It is written once
+by `install.sh` and never overwritten, so wording survives deploys. It is
+deliberately self-contained — no external CSS, fonts or images — because it has
+to render when the app is down and its assets may be unreachable.
+
+**Why nginx and not the app.** There is a `MAINTENACE_MODE` env var read by
+`src/proxy.ts`, but it has two problems: `proxy.ts` is Next middleware running on
+the **edge runtime**, which cannot read the filesystem, so no config file can
+drive it — and it is baked in at build time, meaning a rebuild during an
+incident. Worse, an in-app gate cannot answer at all once Node stops responding,
+which is exactly when a maintenance page matters. The nginx check has neither
+limitation.
+
+Returns **503 with `Retry-After: 300`**, not a 200 or a 404, so crawlers treat
+the outage as temporary rather than de-indexing the site.
+
+> `install.sh` runs `nginx -t` before reloading, so a bad config is caught before
+> it can take the site down. If you hand-edit the server block, run `nginx -t`
+> yourself before `systemctl reload nginx`.
 - **The runtime env file is NOT replaced.** An existing
   `/etc/orderbook-fe/orderbook-fe.env` is kept so hand-edits on the server
   survive a redeploy. The consequence is that editing the *source* env and

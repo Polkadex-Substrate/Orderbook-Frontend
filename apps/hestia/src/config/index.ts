@@ -8,7 +8,11 @@ export const defaultConfig = {
   // pointing the UI at real funds.
   polkadexChain: process.env.POLKADEX_CHAIN || "",
   gaTrackerKey: process.env.GA_MEASUREMENT_ID ?? "G-PWZK8JEFLX",
-  landingPageMarket: process.env.LANDING_PAGE || "PDEXCUSDT",
+  // Must stay identical to packages/core/src/config/index.ts. This read
+  // "PDEXCUSDT" while core read "DOTUSDT", so with LANDING_PAGE unset the app
+  // redirected to one pair while getMarketUrl built links to another - and
+  // neither pair exists on this testnet, so both were dead ends.
+  landingPageMarket: process.env.LANDING_PAGE || "WETHUSDT",
   defaultTransferToken: process.env.DEFAULT_TRANSFER_TOKEN || "USDT",
   withCredentials: false,
   incrementalOrderBook: false,

@@ -49,7 +49,8 @@ HARDEN=auto
 CLOUDFLARE=1
 SERVICE_NAME=orderbook-fe
 DRY_RUN=0
-KEEP_BACKUPS=3
+# Keep one rollback target. Each backup is ~140 MB; older ones are never used.
+KEEP_BACKUPS=1
 REPLACE_ENV=0
 EXTRA_INSTALL_ARGS=""
 

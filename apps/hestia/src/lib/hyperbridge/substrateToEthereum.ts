@@ -23,10 +23,44 @@ async function getApi(): Promise<ApiPromise> {
   return apiInstance;
 }
 
+/**
+ * Read an asset's decimals from `assets.metadata` on chain.
+ *
+ * Throws rather than falling back to a guess. This value scales a transfer
+ * amount, so being wrong by a factor of 10^n moves the wrong quantity of funds -
+ * refusing to build the extrinsic is strictly better than proceeding on an
+ * assumption.
+ */
+async function getAssetDecimals(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  api: any,
+  assetId: number
+): Promise<number> {
+  const meta = await api.query.assets.metadata(assetId);
+  const decimals = Number(meta?.toJSON?.()?.decimals);
+
+  if (!Number.isFinite(decimals) || decimals <= 0) {
+    throw new Error(
+      `Could not read decimals for Polkadex asset ${assetId} from assets.metadata. Refusing to build a transfer without a known scale.`
+    );
+  }
+  return decimals;
+}
+
 export type SubstrateToEvmParams = {
   amount: number;
   recipient: string; // EVM 0x address on Sepolia
   senderAddress: string; // Substrate ss58 address on Polkadex
+  /**
+   * Override the POLKADEX-side decimals. Normally leave unset - the value is
+   * read from `assets.metadata` on chain.
+   *
+   * This defaulted to 18, the ERC-20 value for WETH, while pallet_assets stores
+   * bridged assets at 12dp. `parseUnits(amount, 18)` against a 12dp asset
+   * overstates the amount by 10^6, so bridging 1 WETH out requested 1,000,000.
+   * Passing the EVM decimals here is always wrong: this amount is consumed by a
+   * Polkadex extrinsic, not an Ethereum one.
+   */
   decimals?: number;
   assetId?: number; // Polkadex asset ID; defaults to WETH (3)
 };
@@ -41,7 +75,9 @@ export async function transferSubstrateToEvm(
     amount,
     recipient,
     senderAddress,
-    decimals = 18,
+    // No numeric default: an unset value is resolved from chain metadata below.
+    // A default here is what made a silent 10^6 error possible.
+    decimals: decimalsOverride,
     assetId = WETH_ASSET_ID,
   } = params;
 
@@ -87,6 +123,12 @@ export async function transferSubstrateToEvm(
   }
 
   // ── Step 4: Build params ──────────────────────────────────────────────────
+  // Decimals come from the chain, for the specific asset being sent. Config
+  // cannot be trusted here: the nine testnet assets were normalised to 12dp by
+  // forceSetMetadata while config still described their ERC-20 values, and this
+  // amount is what the extrinsic actually moves.
+  const decimals = decimalsOverride ?? (await getAssetDecimals(api, assetId));
+
   const amountBigInt = parseUnits(String(amount), decimals);
 
   // The IsmpHostStateMachine enum on Polkadex is SCALE-encoded as a tagged

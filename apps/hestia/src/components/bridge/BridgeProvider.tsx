@@ -207,9 +207,14 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   // ── Balances (Substrate side) ─────────────────────────────────────────────
   const substrateAddress = substrateAccount?.address;
 
+  // Ticker only. `decimals: t.decimals` was passed here and it is the ERC-20
+  // value - correct for evmTokenSpecs above, wrong for the Substrate side, where
+  // pallet_assets stores every bridged asset at 12dp. useAllSubstrateBalances
+  // now reads decimals from assets.metadata, and the optional field on the spec
+  // exists only as a fallback for assets with no metadata. Passing the EVM value
+  // as that fallback would reintroduce the bug whenever metadata is missing.
   const substrateTokenSpecs = useMemo(
-    () =>
-      supportedAssets.map((t) => ({ ticker: t.ticker, decimals: t.decimals })),
+    () => supportedAssets.map((t) => ({ ticker: t.ticker })),
     [supportedAssets]
   );
 

@@ -49,8 +49,11 @@ export function useSubstrateWethBalance(
 ) {
   const wsUrl = options?.wsUrl ?? defaultSubstrateChain.wsUrl;
   const assetId = options?.assetId;
-  const decimals = options?.decimals ?? defaultToken.decimals;
-  const divisor = Math.pow(10, decimals);
+  // Fallback only. `options.decimals ?? defaultToken.decimals` used to be the
+  // sole source, which meant WETH's ERC-20 value of 18 was applied to a
+  // pallet_assets balance stored at 12dp - a million times too small. The real
+  // value is read from assets.metadata inside the effect below.
+  const fallbackDecimals = options?.decimals;
 
   const [balance, setBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +76,35 @@ export function useSubstrateWethBalance(
     getApi(wsUrl)
       .then(async (api) => {
         if (cancelled) return;
+
+        // Resolve the scale from chain before reading any balance.
+        let decimals = fallbackDecimals;
+        try {
+          const meta = await api.query.assets.metadata(assetId);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const onChain = Number((meta as any)?.toJSON?.()?.decimals);
+          if (Number.isFinite(onChain) && onChain > 0) decimals = onChain;
+        } catch (err) {
+          console.warn(
+            `[useSubstrateWethBalance] could not read decimals for asset ${assetId}:`,
+            err
+          );
+        }
+
+        if (decimals === undefined) {
+          // Reporting 0 beats rendering a raw integer as whole tokens, which
+          // reads as an enormous balance rather than as an error.
+          console.warn(
+            `[useSubstrateWethBalance] no decimals for asset ${assetId} - reporting 0.`
+          );
+          if (!cancelled) {
+            setBalance(0);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        const divisor = Math.pow(10, decimals);
 
         try {
           if (api.query.assets?.account) {
@@ -137,7 +169,9 @@ export function useSubstrateWethBalance(
         unsubRef.current = null;
       }
     };
-  }, [address, wsUrl, assetId, divisor]);
+    // `divisor` used to be a dep; it is now derived inside the effect from chain
+    // metadata, so the fallback is what the effect closes over.
+  }, [address, wsUrl, assetId, fallbackDecimals]);
 
   return { balance, isLoading };
 }

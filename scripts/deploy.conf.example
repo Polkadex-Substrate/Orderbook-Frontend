@@ -31,7 +31,12 @@ EXTRA_INSTALL_ARGS=""
 
 # Old installs are moved to /opt/orderbook-fe.bak.<timestamp>. Each is ~140 MB,
 # so they are pruned to this many. 0 = keep none (no rollback target).
-KEEP_BACKUPS=3
+#
+# 1 rather than 3: a rollback happens immediately after a bad deploy or not at
+# all, so older trees are dead weight - and a full disk takes down the running
+# service, not just the next deploy. Pruning runs before the new tree is copied
+# in, so the backup just created is always the one retained.
+KEEP_BACKUPS=1
 
 # 0 = keep the runtime env already on the server (hand-edits survive; changes
 #     to the source env file are ignored, with a warning).

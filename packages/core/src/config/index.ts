@@ -28,7 +28,10 @@ export const defaultConfig: DefaultConfig = {
     .map((url) => url.trim())
     .filter(Boolean),
   gaTrackerKey: process.env.GA_MEASUREMENT_ID ?? "G-PWZK8JEFLX",
-  landingPageMarket: process.env.LANDING_PAGE || "DOTUSDT",
+  // Must stay identical to apps/hestia/src/config/index.ts. This read
+  // "DOTUSDT" while hestia read "PDEXCUSDT", so with LANDING_PAGE unset the app
+  // redirected to one pair while getMarketUrl built links to another.
+  landingPageMarket: process.env.LANDING_PAGE || "WETHUSDT",
   incrementalOrderBook: false,
   orderBookSideLimit: 25,
   defaultStorageLimit: 100,

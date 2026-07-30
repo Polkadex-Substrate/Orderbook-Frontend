@@ -53,6 +53,10 @@ export const DATAFEED_RESOLUTIONS: readonly Resolution[] = [
   "1D",
 ];
 
+/** Longer than the observed 45 s worst case would be pointless - the poll only
+ *  wants the current bar, and a reply that late is already superseded. */
+const REQUEST_TIMEOUT_MS = 20_000;
+
 type UdfResponse = {
   s: "ok" | "no_data" | "error";
   errmsg?: string;
@@ -139,12 +143,34 @@ export const fetchUdfHistory = async ({
     `&resolution=${encodeURIComponent(resolution)}` +
     `&from=${toSeconds(from)}&to=${toSeconds(to)}`;
 
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      "X-Gateway-Secret": GATEWAY_SECRET || "",
-    },
-  });
+  // Bound the request. Production logs show this endpoint occasionally taking
+  // 45 s (cold upstream), and an unbounded fetch behind a 15 s poll means
+  // requests pile up rather than one being slow.
+  //
+  // No Content-Type: there is no request body, so it means nothing on a GET.
+  // The preflight in the logs comes from X-Gateway-Secret - any custom header
+  // makes the request non-simple - so it cannot be removed client-side. The
+  // gateway can kill almost all of that OPTIONS traffic by returning
+  // `Access-Control-Max-Age`, which it currently does not.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: { "X-Gateway-Secret": GATEWAY_SECRET || "" },
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") {
+      throw new Error(
+        `Datafeed history timed out after ${REQUEST_TIMEOUT_MS / 1000}s\n  GET ${url}`
+      );
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     // Include the full query string. It carries no secret (auth is a header),

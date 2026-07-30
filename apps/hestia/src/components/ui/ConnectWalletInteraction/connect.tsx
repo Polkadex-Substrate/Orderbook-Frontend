@@ -12,6 +12,7 @@ import { useConnectWalletProvider } from "@orderbook/core/providers/user/connect
 import { TradeAccount } from "@orderbook/core/providers/types";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
+import { getMarketUrl } from "@orderbook/core/helpers";
 import { usePathname, useRouter } from "next/navigation";
 
 import { ConnectTradingAccount } from "../ConnectWallet/connectTradingAccount";
@@ -110,7 +111,12 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
     if (!selectedWallet) return null;
 
     if (browserAccountPresent || !hasAccount) {
-      if (path === "/") router.push("/trading/PDEXUSDT");
+      // getMarketUrl(), not a hardcoded pair: it honours the user's last
+      // selected market and falls back to LANDING_PAGE. This read
+      // "/trading/PDEXUSDT" - a market that does not exist on testnet - so
+      // connecting a wallet from the landing page dropped the user on an empty
+      // trading view.
+      if (path === "/") router.push(getMarketUrl());
       onToogleConnectExtension(false);
       return;
     }

@@ -85,8 +85,16 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
        */
       subscribe: ({ market, resolution: r, onBar }) => {
         let cancelled = false;
+        // setInterval does not wait for the previous run. The gateway has been
+        // observed taking 45 s, and at a 15 s cadence that stacks three
+        // concurrent requests, each triggering its own CORS preflight - load
+        // that grows precisely when the backend is already struggling. Skip a
+        // tick instead; the next one carries the same information.
+        let inFlight = false;
 
         const tick = async () => {
+          if (inFlight) return;
+          inFlight = true;
           try {
             const barMs = resolutionToMs(r);
             // Two bars back: enough to catch a bucket rollover between polls
@@ -103,6 +111,10 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
             // Swallow: getCandles surfaces load failures to the user already,
             // and a failed poll should not tear down a working chart. The next
             // tick retries.
+          } finally {
+            // finally, not the end of try: an aborted or failed request must
+            // release the lock or polling stops permanently after one error.
+            inFlight = false;
           }
         };
 

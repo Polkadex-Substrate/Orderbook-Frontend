@@ -65,7 +65,12 @@ CLOUDFLARE=0
 CF_CERT=/etc/ssl/cloudflare/origin.pem
 CF_KEY=/etc/ssl/cloudflare/origin.key
 CF_ORIGIN_PULL=0
-KEEP_BACKUPS=3
+# One rollback target, not three. Each backup is ~140 MB, so the old default of
+# 3 sat on ~420 MB permanently. In practice a rollback happens immediately after
+# a bad deploy or not at all - the second- and third-oldest trees were never
+# used, and a full disk breaks the RUNNING service, not just the next deploy.
+# Override with --keep-backups N (0 keeps none, at the cost of no rollback).
+KEEP_BACKUPS=1
 REPLACE_ENV=0
 
 while [ $# -gt 0 ]; do
@@ -370,17 +375,36 @@ fi
 # survives even if this run fails later.
 prune_backups() {
   [ "$KEEP_BACKUPS" -ge 0 ] 2>/dev/null || return 0
-  local all count excess
+  local all count excess freed
+  # sort -r on a YYYYMMDDHHMMSS suffix is newest-first lexicographically, so
+  # `tail -n excess` is the oldest N. Do not switch to `ls -t`: mv/cp can leave
+  # mtimes that do not reflect deploy order, whereas the name always does.
   all="$(ls -1d "${PREFIX}".bak.* 2>/dev/null | sort -r || true)"
   [ -n "$all" ] || return 0
   count="$(printf '%s\n' "$all" | wc -l)"
   excess=$(( count - KEEP_BACKUPS ))
-  [ "$excess" -gt 0 ] || { log "Backups: $count kept (limit $KEEP_BACKUPS)"; return 0; }
-  log "Pruning $excess old backup(s), keeping the $KEEP_BACKUPS most recent"
+
+  if [ "$excess" -le 0 ]; then
+    log "Backups: $count kept, $(du -shc ${PREFIX}.bak.* 2>/dev/null | tail -1 | cut -f1) total (limit $KEEP_BACKUPS)"
+    return 0
+  fi
+
+  # Report what this reclaims. Silent deletion of 140 MB directories gives no
+  # way to tell pruning ran from pruning being broken.
+  freed="$(printf '%s\n' "$all" | tail -n "$excess" | tr '\n' '\0' \
+    | du -shc --files0-from=- 2>/dev/null | tail -1 | cut -f1)"
+  log "Pruning $excess old backup(s) (${freed:-unknown} reclaimed), keeping the $KEEP_BACKUPS most recent"
+
   printf '%s\n' "$all" | tail -n "$excess" | while read -r old; do
     [ -n "$old" ] || continue
     run "rm -rf '$old'"
   done
+
+  # Free space after pruning. A deploy that succeeds onto a nearly-full disk is
+  # a service outage waiting for the next one.
+  local avail
+  avail="$(df -h "$(dirname "$PREFIX")" 2>/dev/null | awk 'NR==2 {print $4}')"
+  [ -n "$avail" ] && log "Free space on $(dirname "$PREFIX"): $avail"
 }
 prune_backups
 
@@ -445,10 +469,80 @@ HOSTNAME=0.0.0.0
 # Server-side settings (safe to change here, then restart the service):
 # POLKADEX_CHAIN=wss://...
 # GRAPHQL_URL=https://...
-# API_REGION=...
 EOF
     chown root:"$SVC_USER" "$ENV_FILE"
     chmod 0640 "$ENV_FILE"
+  fi
+fi
+
+# ── 5b. Announcements feed ──────────────────────────────────────────────
+# Read at REQUEST time by /api/announcements, so editing this file publishes or
+# retracts an announcement with no rebuild and no restart.
+#
+# It lives here rather than under $PREFIX because deploy.sh replaces the whole
+# install tree - anything inside it is lost on every deploy. Never overwritten
+# if present: it holds operational state the operator set, not release content.
+ANNOUNCEMENTS_FILE="$ENV_DIR/announcements.json"
+if [ -f "$ANNOUNCEMENTS_FILE" ]; then
+  log "Keeping existing $ANNOUNCEMENTS_FILE"
+else
+  log "Seeding empty $ANNOUNCEMENTS_FILE"
+  if [ "$DRY_RUN" -eq 0 ]; then
+    # An empty array, not an absent file: the route treats ENOENT as "nothing to
+    # announce" too, but a real file is discoverable and shows the expected shape.
+    printf '[]\n' > "$ANNOUNCEMENTS_FILE"
+    chown root:"$SVC_USER" "$ANNOUNCEMENTS_FILE"
+    # 0644, unlike the env file's 0640: announcement text is public by nature
+    # (every visitor sees it) and readability makes it easy to inspect.
+    chmod 0644 "$ANNOUNCEMENTS_FILE"
+  fi
+fi
+
+# ── 5c. Maintenance page ────────────────────────────────────────────────
+# Served by nginx when $ENV_DIR/maintenance exists. Written once and never
+# overwritten, so wording edits survive deploys. Self-contained: no external
+# CSS, fonts or images, because it has to render when the app is down and its
+# assets may be unreachable.
+MAINTENANCE_PAGE="$ENV_DIR/maintenance.html"
+if [ -f "$MAINTENANCE_PAGE" ]; then
+  log "Keeping existing $MAINTENANCE_PAGE"
+else
+  log "Writing $MAINTENANCE_PAGE"
+  if [ "$DRY_RUN" -eq 0 ]; then
+    cat > "$MAINTENANCE_PAGE" <<'MAINTEOF'
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Under maintenance</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; background: #0d0d0f; color: #d1d4dc;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    text-align: center; padding: 1.5rem; box-sizing: border-box;
+  }
+  main { max-width: 32rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .75rem; color: #fff; font-weight: 600; }
+  p  { margin: 0 0 .5rem; line-height: 1.6; color: #8b909a; }
+  strong { color: #d1d4dc; font-weight: 600; }
+</style>
+</head>
+<body>
+  <main>
+    <h1>Under maintenance</h1>
+    <p>We are carrying out scheduled maintenance and will be back shortly.</p>
+    <p><strong>Your funds are safe.</strong> Nothing is at risk while the
+       interface is offline.</p>
+  </main>
+</body>
+</html>
+MAINTEOF
+    chown root:"$SVC_USER" "$MAINTENANCE_PAGE"
+    chmod 0644 "$MAINTENANCE_PAGE"
   fi
 fi
 
@@ -619,6 +713,36 @@ EOF
   PROXY_BLOCK=$(cat <<EOF
     limit_req  zone=ob_req burst=60 nodelay;
     limit_conn ob_conn 32;
+
+    # ── Maintenance gate ───────────────────────────────────────────────
+    # Presence of the flag file takes the site offline:
+    #   sudo touch /etc/$SERVICE_NAME/maintenance    # on
+    #   sudo rm -f /etc/$SERVICE_NAME/maintenance    # off
+    #
+    # Deliberately in nginx rather than the app. MAINTENACE_MODE is read by
+    # src/proxy.ts, which is Next middleware running on the EDGE runtime - it
+    # cannot read the filesystem, so no config file can drive it, and changing
+    # the env var needs a full rebuild. More importantly, maintenance mode is
+    # most needed when the app itself is broken, and an in-app gate cannot
+    # answer once Node stops responding. This can.
+    #
+    # \$maintenance via a variable, not a bare \`if ... return\`, so the internal
+    # redirect to @maintenance below is not re-tested and cannot loop.
+    set \$maintenance 0;
+    if (-f /etc/$SERVICE_NAME/maintenance) { set \$maintenance 1; }
+    if (\$maintenance = 1) { return 503; }
+
+    error_page 503 @maintenance;
+
+    location @maintenance {
+        # 503 + Retry-After tells crawlers this is temporary, so the outage does
+        # not cost search ranking the way a 200 or a 404 would.
+        default_type text/html;
+        add_header Retry-After 300 always;
+        add_header Cache-Control "no-store, must-revalidate" always;
+        root /etc/$SERVICE_NAME;
+        try_files /maintenance.html =503;
+    }
 
     # WebSocket upgrade headers are required: the app holds chain and
     # orderbook subscriptions open from the browser.
