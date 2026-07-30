@@ -10,6 +10,16 @@ import {
 export type ToolbarProps = {
   resolution: Resolution;
   onResolution: (r: Resolution) => void;
+  /**
+   * Which resolutions to offer. Defaults to all of them.
+   *
+   * Not every datafeed serves every interval - the Polkadex gateway supports
+   * 1, 5, 60 and 1D only - and a button that always errors is worse than an
+   * absent one. This stays a prop rather than a constant here because it is a
+   * property of the feed, not of the chart, and this package must not know
+   * which backend it is pointed at.
+   */
+  resolutions?: readonly Resolution[];
   chartType: ChartType;
   onChartType: (t: ChartType) => void;
   indicators: IndicatorConfig;
@@ -35,6 +45,7 @@ const btn = (active: boolean) =>
 export function Toolbar({
   resolution,
   onResolution,
+  resolutions = RESOLUTIONS,
   chartType,
   onChartType,
   indicators,
@@ -45,7 +56,7 @@ export function Toolbar({
   const emaOn = (indicators.ema?.length ?? 0) > 0;
   return (
     <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-gray-800">
-      {RESOLUTIONS.map((r) => (
+      {resolutions.map((r) => (
         <button
           key={r}
           className={btn(r === resolution)}

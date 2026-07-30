@@ -34,7 +34,7 @@ import {
   resolutionToMs,
 } from "@orderbook/chart";
 
-import { fetchUdfHistory } from "./datafeed";
+import { DATAFEED_RESOLUTIONS, fetchUdfHistory } from "./datafeed";
 
 const DEPTH_LEVELS = 40;
 const FILLS_LIMIT = 30;
@@ -187,6 +187,8 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
       <Toolbar
         resolution={resolution}
         onResolution={setResolution}
+        // Only what the gateway serves - 15m, 30m, 4h and 1W would 400.
+        resolutions={DATAFEED_RESOLUTIONS}
         chartType={chartType}
         onChartType={setChartType}
         indicators={indicators}
@@ -198,7 +200,17 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
         <div className="flex-1 min-w-0">
           <CandleChart
             feed={feed}
-            market={marketId}
+            // TICKER pair, not the asset-id pair. Market.id is
+            // "{baseAssetId}-{quoteAssetId}" (e.g. "8-6") while Market.name is
+            // "{baseTicker}/{quoteTicker}" (e.g. "WETH/PDEX"), and the datafeed
+            // gateway resolves tickers only - asset ids come back 404 "asset
+            // not found". Passing `marketId` here sent "symbol=8&vs_currency=6".
+            //
+            // GraphV1 built this request from `name.split("/")` and was right;
+            // the id/name distinction was lost when the feed moved onto the
+            // gateway. `market` reaches the datafeed adapter, so it must be
+            // whatever that API keys on, not our internal identifier.
+            market={marketName}
             marketLabel={marketName}
             resolution={resolution}
             chartType={chartType}
@@ -210,7 +222,10 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
             // "Chart data not available" overlay and otherwise swallows the
             // error, which makes server/auth issues undiagnosable.
             onError={(e) =>
-              console.error(`[GraphV2] getCandles failed for ${marketId}:`, e)
+              // marketName, not marketId: this must name what was actually
+              // requested from the gateway, or the log sends the next reader
+              // looking for the wrong identifier.
+              console.error(`[chart] getCandles failed for ${marketName}:`, e)
             }
           />
         </div>

@@ -29,6 +29,30 @@ import type { Candle, Resolution } from "@orderbook/chart";
 const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
 const GATEWAY_SECRET = process.env.NEXT_PUBLIC_GATEWAY_SECRET;
 
+/**
+ * Resolutions this gateway actually serves.
+ *
+ * Straight from the gateway's own rejection message:
+ *
+ *   Invalid resolution: X. Must be one of: 1, 5, 60, 1D, 1d, D, d.
+ *
+ * "1d", "D" and "d" are aliases for daily, so there are four distinct
+ * intervals: 1m, 5m, 1h and 1D. The chart's Resolution type also defines 15,
+ * 30, 240 and 1W - those are NOT available here, and the toolbar is given this
+ * list so it does not render buttons that always error.
+ *
+ * Deliberately not mapped to a nearest neighbour: quietly serving 5m candles
+ * to someone who asked for 15m is worse than not offering 15m, because the
+ * chart would be silently wrong rather than visibly limited. If these
+ * intervals are wanted, they have to be added gateway-side.
+ */
+export const DATAFEED_RESOLUTIONS: readonly Resolution[] = [
+  "1",
+  "5",
+  "60",
+  "1D",
+];
+
 type UdfResponse = {
   s: "ok" | "no_data" | "error";
   errmsg?: string;
@@ -43,12 +67,26 @@ type UdfResponse = {
 /**
  * Split a market into the gateway's `symbol` / `vs_currency` pair.
  *
- * Market names arrive as "BASE/QUOTE"; GraphV1 built "BASE-QUOTE" and split on
- * "-". Accepting either separator means this keeps working whether it is handed
- * a market name or a market id.
+ * Expects a TICKER pair - "WETH/PDEX" (Market.name). It must NOT be handed
+ * Market.id, which is "{baseAssetId}-{quoteAssetId}" like "8-6": the gateway
+ * resolves tickers only and answers asset ids with 404 "asset not found".
+ *
+ * This function originally accepted "/" or "-" so it would work with "whatever
+ * it was handed". That leniency was the bug: passing an asset-id pair was
+ * silently well-formed, and the mistake only surfaced as a 404 from a remote
+ * service on a market whose ticker digits differed. Numeric segments are now
+ * rejected here, at the boundary, where the message can say what is wrong.
  */
 export const splitMarket = (market: string): [string, string] => {
   const [base = "", quote = ""] = market.split(/[/-]/);
+
+  // Tickers are never all-digits; asset ids always are.
+  if (/^\d+$/.test(base) || /^\d+$/.test(quote)) {
+    throw new Error(
+      `Datafeed needs a ticker pair like "WETH/PDEX", got asset ids "${market}". Pass Market.name, not Market.id.`
+    );
+  }
+
   return [base, quote];
 };
 
@@ -76,6 +114,12 @@ export const fetchUdfHistory = async ({
   if (!SERVER_BASE_URL) {
     throw new Error(
       "NEXT_PUBLIC_SERVER_BASE_URL is not set - the chart datafeed has no endpoint. It is baked in at build time, so this needs a rebuild, not a restart."
+    );
+  }
+
+  if (!DATAFEED_RESOLUTIONS.includes(resolution)) {
+    throw new Error(
+      `Resolution "${resolution}" is not served by this datafeed. Supported: ${DATAFEED_RESOLUTIONS.join(", ")}.`
     );
   }
 
