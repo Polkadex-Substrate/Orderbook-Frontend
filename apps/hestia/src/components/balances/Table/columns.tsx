@@ -1,11 +1,11 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { AssetsProps } from "@orderbook/core/hooks";
-import { getChainFromTicker } from "@orderbook/core/helpers";
 import { Tokens, Typography } from "@mitrabook/ux";
 import { Fragment } from "react";
 
 import { ActionsCard } from "./actionsCard";
 
+import { getChainFromTicker } from "@/config/assetChain";
 import { TokenCard } from "@/components/ui/ReadyToUse";
 import { AmountCard } from "@/components/ui/ReadyToUse/amountCard";
 

@@ -25,7 +25,6 @@ import {
   useConnectWalletProvider,
 } from "@orderbook/core/providers/user/connectWalletProvider";
 import {
-  getChainFromTicker,
   isAssetPDEX,
   parseScientific,
   trimFloat,
@@ -57,6 +56,7 @@ import { FromTrading } from "./FromTrading";
 import { FilteredAssetProps, SwitchType } from "@/hooks";
 import { UnlockAccount } from "@/components/ui/ReadyToUse/unlockAccount";
 import { ConfirmTransaction } from "@/components/ui/ConnectWallet/confirmTransaction";
+import { getChainFromTicker } from "@/config/assetChain";
 const initialValues = { amount: 0.0 };
 export const Form = ({
   isBalanceFetching,

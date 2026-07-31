@@ -71,6 +71,9 @@ ARG SUBSCAN_API
 ARG SUBQUERY_URL
 ARG READ_ONLY_TOKEN
 ARG SENTRY_DSN
+# Sampling rates. Optional - the code defaults to 0.1 traces / 0 replay sessions.
+ARG SENTRY_TRACES_SAMPLE_RATE=
+ARG SENTRY_REPLAY_SESSION_SAMPLE_RATE=
 # SENTRY_AUTH deliberately absent. It is a write-scoped Sentry token, and as an
 # ARG/ENV it was recoverable from `docker history` by anyone holding the image,
 # as well as being inlined into the browser bundle by next.config.js's `env`
@@ -132,6 +135,8 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
     SUBQUERY_URL=$SUBQUERY_URL \
     READ_ONLY_TOKEN=$READ_ONLY_TOKEN \
     SENTRY_DSN=$SENTRY_DSN \
+    SENTRY_TRACES_SAMPLE_RATE=$SENTRY_TRACES_SAMPLE_RATE \
+    SENTRY_REPLAY_SESSION_SAMPLE_RATE=$SENTRY_REPLAY_SESSION_SAMPLE_RATE \
     DISABLED_FEATURES=$DISABLED_FEATURES \
     GOOGLE_API_KEY=$GOOGLE_API_KEY \
     GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
@@ -173,6 +178,12 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
 #
 # 3072 leaves headroom for two concurrent processes plus the OS. Confirm any
 # OOM with: dmesg -T | grep -i 'killed process'
+# Unique per build, so /_next/static/<buildId>/_buildManifest.js gets a new URL
+# each deploy. Defaulted (not bare) so build-release.sh does not warn about it as
+# an unset env var - it is passed explicitly, not sourced from the env file.
+ARG NEXT_BUILD_ID=
+ENV NEXT_BUILD_ID=$NEXT_BUILD_ID
+
 ARG NODE_HEAP_MB=3072
 ENV NODE_OPTIONS="--max_old_space_size=$NODE_HEAP_MB"
 ENV NEXT_TELEMETRY_DISABLED=1

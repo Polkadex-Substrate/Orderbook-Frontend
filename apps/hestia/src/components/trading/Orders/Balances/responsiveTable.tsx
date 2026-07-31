@@ -2,8 +2,8 @@ import { Button, Drawer, Tokens } from "@mitrabook/ux";
 import { Dispatch, SetStateAction } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import Link from "next/link";
-import { getChainFromTicker } from "@orderbook/core/helpers";
 
+import { getChainFromTicker } from "@/config/assetChain";
 import { ResponsiveCard, TokenCard } from "@/components/ui/ReadyToUse";
 export const ResponsiveTable = ({
   open,
@@ -16,7 +16,9 @@ export const ResponsiveTable = ({
 }) => {
   if (!data) return null;
   const { ticker, onChainBalance, free_balance, inOrdersBalance } = data;
-  const chainName = getChainFromTicker(ticker);
+  // ?? ticker: see balances/Table/responsiveTable - undefined replaces the old
+  // "Unknown" sentinel, and tokenName is a required string.
+  const chainName = getChainFromTicker(ticker) ?? ticker;
 
   return (
     <Drawer closeOnClickOutside open={open} onOpenChange={onOpenChange}>

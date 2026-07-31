@@ -11,7 +11,7 @@ import {
 } from "@mitrabook/ux";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { useState } from "react";
-import { getChainFromTicker } from "@orderbook/core/index";
+import { getChainFromTicker } from "@/config/assetChain";
 import Link from "next/link";
 import classNames from "classnames";
 

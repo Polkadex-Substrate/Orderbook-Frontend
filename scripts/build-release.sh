@@ -177,6 +177,11 @@ if [ "$MODE" = docker ]; then
   fi
 
   log "Building ${IMAGE_REPO}:${IMAGE_TAG}  ($RESOLVED build args)"
+  # Explicit, not derived from the env file: this is build metadata, not config.
+  # A unique value per build is what keeps /_next/static/<buildId>/ from being
+  # served stale out of a year-long immutable cache after a deploy.
+  BUILD_ARGS+=(--build-arg "NEXT_BUILD_ID=$STAMP")
+
   docker build \
     ${PLATFORM:+--platform "$PLATFORM"} \
     "${BUILD_ARGS[@]}" \

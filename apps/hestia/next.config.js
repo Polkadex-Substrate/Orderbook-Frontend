@@ -4,6 +4,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { execSync } = require("child_process");
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.NEXT_PUBLIC_ANALYZE === "true",
@@ -24,14 +25,13 @@ const nextConfig = {
       "lokijs",
       "encoding",
       "porto",
-      "@base-org/account",
+      "@base-org/account"
     );
     // Force @headlessui/react to use its CJS build so webpack doesn't choke on
     // the ESM build's access of React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
     // which isn't a named ESM export of React 18.
-    config.resolve.alias["@headlessui/react"] = require.resolve(
-      "@headlessui/react"
-    );
+    config.resolve.alias["@headlessui/react"] =
+      require.resolve("@headlessui/react");
     return config;
   },
   output: "standalone",
@@ -58,12 +58,32 @@ const nextConfig = {
     cpus: Number(process.env.NEXT_BUILD_CPUS) || 1,
   },
   reactStrictMode: false,
+  /**
+   * Build id. MUST be unique per build.
+   *
+   * This used to shell out to `git rev-parse HEAD` and fall back to the constant
+   * string "orderbookDefaultId". The Docker builder image has no git binary -
+   * the build log says `/bin/sh: git: not found` - so EVERY image was built with
+   * that same constant id.
+   *
+   * Which breaks caching in a way that is invisible until it bites. Next serves
+   * `/_next/static/<buildId>/_buildManifest.js`, and unlike the content-hashed
+   * chunks that filename carries no hash: the build id IS its version. nginx and
+   * the Cloudflare rule both mark `/_next/static/` as immutable for a year, so a
+   * browser that once cached that manifest keeps serving it across deploys - a
+   * stale manifest pointing at chunk hashes the server no longer has. Result:
+   * blank page on first load after a deploy, fine after a reload.
+   *
+   * NEXT_BUILD_ID is passed in by scripts/build-release.sh (version + short sha
+   * + dirty flag). The git call remains for local `next build`, and the last
+   * resort is a timestamp - never a constant, because a constant is the bug.
+   */
   generateBuildId: async () => {
+    if (process.env.NEXT_BUILD_ID) return process.env.NEXT_BUILD_ID;
     try {
-      const gitCommitHash = execSync("git rev-parse HEAD").toString().trim();
-      return gitCommitHash;
-    } catch (error) {
-      return "orderbookDefaultId";
+      return execSync("git rev-parse HEAD").toString().trim();
+    } catch {
+      return `build-${Date.now()}`;
     }
   },
   // NOTE: Next 16 removed the `eslint` config key (and `next lint`). Linting is
@@ -103,6 +123,9 @@ const nextConfig = {
     DEFAULT_TRANSFER_TOKEN: process.env.DEFAULT_TRANSFER_TOKEN,
     SUBSCAN_API: process.env.SUBSCAN_API,
     SENTRY_DSN: process.env.SENTRY_DSN,
+    SENTRY_TRACES_SAMPLE_RATE: process.env.SENTRY_TRACES_SAMPLE_RATE,
+    SENTRY_REPLAY_SESSION_SAMPLE_RATE:
+      process.env.SENTRY_REPLAY_SESSION_SAMPLE_RATE,
     // SENTRY_AUTH removed: everything in this `env` block is inlined into the
     // CLIENT bundle at build time, so a write-scoped upload token was being
     // served to every visitor. Nothing read it. Source-map upload happens in
