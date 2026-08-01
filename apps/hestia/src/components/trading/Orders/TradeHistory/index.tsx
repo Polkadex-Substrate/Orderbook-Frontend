@@ -9,18 +9,14 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import classNames from "classnames";
-import {
-  Button,
-  GenericMessage,
-  Table as PolkadexTable,
-  Spinner,
-} from "@mitrabook/ux";
+import { Button, Table as PolkadexTable, Spinner } from "@mitrabook/ux";
 import { useTradeHistory } from "@orderbook/core/hooks";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { DEFAULT_BATCH_LIMIT } from "@orderbook/core/constants";
 import { Trade } from "@orderbook/core/utils/orderbookService/types";
 
 import { Loading } from "../loading";
+import { TabEmptyState } from "../emptyState";
 
 import { columns } from "./columns";
 import { ResponsiveTable } from "./responsiveTable";
@@ -52,16 +48,7 @@ export const TradeHistoryTable = ({
   if (isLoading) return <Loading />;
 
   if (!trades.length)
-    return (
-      <GenericMessage
-        title={"No items found"}
-        illustration="NoData"
-        className="bg-level-0"
-        imageProps={{
-          className: "w-10 self-center",
-        }}
-      />
-    );
+    return <TabEmptyState tab="tradeHistory" reason="empty" />;
 
   return (
     <Fragment>

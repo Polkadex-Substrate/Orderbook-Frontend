@@ -516,27 +516,108 @@ else
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Under maintenance</title>
+<title>Polkadex Orderbook - back shortly</title>
 <style>
-  :root { color-scheme: dark; }
-  body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; background: #0d0d0f; color: #d1d4dc;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    text-align: center; padding: 1.5rem; box-sizing: border-box;
+  /* Brand tokens copied from themeConfig.ts. Inlined, not imported: this page
+     must render when the app is down and its assets may be unreachable. */
+  :root {
+    color-scheme: dark;
+    --pink: #E6007A;
+    --pink-soft: #EA268E;
+    --orange: #F08205;
+    --green: #02B671;
+    --l0: #0D0D10;
+    --l1: #131419;
+    --l4: #2B303A;
+    --text: #FFFFFF;
+    --muted: #8B909A;
   }
-  main { max-width: 32rem; }
-  h1 { font-size: 1.5rem; margin: 0 0 .75rem; color: #fff; font-weight: 600; }
-  p  { margin: 0 0 .5rem; line-height: 1.6; color: #8b909a; }
-  strong { color: #d1d4dc; font-weight: 600; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    padding: 1.5rem; background: var(--l0); color: var(--text);
+    font-family: "Work Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    /* Two soft brand glows, so the page is not a flat black rectangle. */
+    background-image:
+      radial-gradient(60rem 30rem at 15% -10%, rgba(230,0,122,.18), transparent 60%),
+      radial-gradient(50rem 26rem at 90% 110%, rgba(240,130,5,.14), transparent 60%);
+  }
+  .card {
+    width: 100%; max-width: 34rem; text-align: center;
+    background: linear-gradient(180deg, var(--l1), var(--l0));
+    border: 1px solid var(--l4); border-radius: 14px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-size: .75rem; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--orange);
+    border: 1px solid rgba(240,130,5,.35); background: rgba(240,130,5,.10);
+    padding: .35rem .7rem; border-radius: 999px; margin-bottom: 1.25rem;
+  }
+  .dot {
+    width: .5rem; height: .5rem; border-radius: 50%; background: var(--orange);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  h1 {
+    margin: 0 0 .75rem; font-size: 1.6rem; line-height: 1.25; font-weight: 600;
+    background: linear-gradient(90deg, var(--pink), var(--pink-soft) 55%, var(--orange));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  p { margin: 0 0 .75rem; line-height: 1.65; color: var(--muted); font-size: .95rem; }
+  p.lead { color: #C9CDD6; }
+  strong { color: var(--text); font-weight: 600; }
+  .safe {
+    margin-top: 1.5rem; padding: .85rem 1rem; border-radius: 10px;
+    border: 1px solid rgba(2,182,113,.3); background: rgba(2,182,113,.08);
+    color: var(--green); font-size: .875rem; font-weight: 500;
+  }
+  /* Three-dot "working on it" indicator. Decorative only, so aria-hidden. */
+  .work { display: flex; gap: .4rem; justify-content: center; margin: 1.5rem 0 .25rem; }
+  .work i {
+    width: .45rem; height: .45rem; border-radius: 50%; background: var(--pink);
+    display: block; animation: bounce 1.4s ease-in-out infinite;
+  }
+  .work i:nth-child(2) { animation-delay: .18s; background: var(--pink-soft); }
+  .work i:nth-child(3) { animation-delay: .36s; background: var(--orange); }
+  a { color: var(--pink-soft); text-decoration: none; font-weight: 500; }
+  a:hover { text-decoration: underline; }
+  .foot { margin-top: 1.75rem; font-size: .8rem; color: #6B7280; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); opacity: .45; }
+    50%     { transform: translateY(-.35rem); opacity: 1; }
+  }
+  /* Respect the OS setting - a looping animation is a real problem for some
+     people, and a maintenance page is not worth triggering it. */
+  @media (prefers-reduced-motion: reduce) {
+    .dot, .work i { animation: none; }
+  }
 </style>
 </head>
 <body>
-  <main>
-    <h1>Under maintenance</h1>
-    <p>We are carrying out scheduled maintenance and will be back shortly.</p>
-    <p><strong>Your funds are safe.</strong> Nothing is at risk while the
-       interface is offline.</p>
+  <main class="card">
+    <span class="badge"><span class="dot"></span>Maintenance in progress</span>
+
+    <h1>We are fixing a few things</h1>
+
+    <p class="lead">
+      The dev team is working through the bugs you reported. The orderbook is
+      paused while those fixes go in, and we will be back as soon as they are
+      verified.
+    </p>
+
+    <div class="work" aria-hidden="true"><i></i><i></i><i></i></div>
+
+    <p class="safe"><strong>Your funds are safe.</strong> Nothing is at risk
+      while the interface is offline, and open orders are untouched.</p>
+
+    <p class="foot">
+      Thanks for the reports - they are the reason this is getting fixed.<br>
+      Follow along on <a href="https://discord.gg/QNfwPevNG">Discord</a> for
+      updates.
+    </p>
   </main>
 </body>
 </html>

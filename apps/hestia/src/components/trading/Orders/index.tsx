@@ -19,11 +19,11 @@ import { OpenOrdersTable } from "./OpenOrders";
 import { OrderHistoryTable } from "./OrderHistory";
 import { BalancesTable } from "./Balances";
 import { TradeHistoryTable } from "./TradeHistory";
+import { TabEmptyState } from "./emptyState";
 
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import "@/styles/calendar.scss";
-import { ConnectAccountWrapper } from "@/components/ui/ReadyToUse";
 import { useSizeObserver } from "@/hooks";
 
 const initialFilters: Ifilters = {
@@ -198,7 +198,7 @@ export const Orders = () => {
           {connected ? (
             <OpenOrdersTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} compact />
+            <TabEmptyState tab="openOrders" reason="disconnected" />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -208,7 +208,7 @@ export const Orders = () => {
           {connected ? (
             <OrderHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} compact />
+            <TabEmptyState tab="orderHistory" reason="disconnected" />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -218,7 +218,7 @@ export const Orders = () => {
           {connected ? (
             <TradeHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} compact />
+            <TabEmptyState tab="tradeHistory" reason="disconnected" />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -228,7 +228,7 @@ export const Orders = () => {
           {mainAddress?.length > 0 ? (
             <BalancesTable height={height} />
           ) : (
-            <ConnectAccountWrapper funding compact />
+            <TabEmptyState tab="balances" reason="disconnected" />
           )}
         </Tabs.Content>
       </div>

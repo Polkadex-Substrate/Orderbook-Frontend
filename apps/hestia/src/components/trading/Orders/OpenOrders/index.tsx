@@ -15,12 +15,7 @@ import {
   CancelOrderArgs,
   useCancelAllOrders,
 } from "@orderbook/core/hooks";
-import {
-  GenericMessage,
-  Modal,
-  Table as PolkadexTable,
-  Spinner,
-} from "@mitrabook/ux";
+import { Modal, Table as PolkadexTable, Spinner } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";
@@ -28,6 +23,7 @@ import { useConnectWalletProvider } from "@orderbook/core/providers/user/connect
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 
 import { Loading } from "../loading";
+import { TabEmptyState } from "../emptyState";
 
 import { columns } from "./columns";
 import { ResponsiveTable } from "./responsiveTable";
@@ -96,16 +92,7 @@ export const OpenOrdersTable = ({
   if (isLoading) return <Loading />;
 
   if (!openOrders.length)
-    return (
-      <GenericMessage
-        title={"No items found"}
-        illustration="NoData"
-        className="bg-level-0"
-        imageProps={{
-          className: "w-10 self-center",
-        }}
-      />
-    );
+    return <TabEmptyState tab="openOrders" reason="empty" />;
 
   return (
     <Fragment>
