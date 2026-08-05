@@ -152,6 +152,22 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
   Then re-run this script. Or pass --no-preflight to build anyway."
   fi
   log "Pre-flight: formatting ok"
+
+  # ESLint too, errors only. Prettier alone proved insufficient: a build died
+  # 4.3 minutes in on import/order errors, which are eslint rules prettier
+  # cannot see. This costs ~a minute; the compile it saves costs 4.5. Warnings
+  # are not checked - next build does not fail on them.
+  if [ -x node_modules/.bin/eslint ]; then
+    log "Pre-flight: eslint (errors only, ~1 min)"
+    # set -o pipefail is on, so the pipeline carries eslint's exit code.
+    if ! node_modules/.bin/eslint apps/hestia/src packages/core/src packages/format/src \
+        --ext .ts,.tsx --quiet 2>&1 | sed 's/^/  /'; then
+      die "ESLint errors above WILL fail next build's lint step.
+  Most are auto-fixable:  node_modules/.bin/eslint <file> --fix
+  Or pass --no-preflight to build anyway."
+    fi
+    log "Pre-flight: eslint ok"
+  fi
 fi
 
 # `set -a` exports everything sourced, which is what makes the values visible

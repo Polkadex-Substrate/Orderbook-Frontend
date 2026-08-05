@@ -29,11 +29,6 @@ import { formatDisplay } from "@orderbook/format";
 
 import { useBridgeProvider } from "./BridgeProvider";
 
-import {
-  BRIDGE_MAINNET_FEES_ENABLED,
-  BRIDGE_RELAYER_FEE,
-} from "@/config/bridgeFees";
-
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 import { usePool } from "@/hooks";
 import {
@@ -42,6 +37,10 @@ import {
   Terms,
 } from "@/components/ui/ReadyToUse";
 import { formatAmount } from "@/helpers";
+import {
+  BRIDGE_MAINNET_FEES_ENABLED,
+  BRIDGE_RELAYER_FEE,
+} from "@/config/bridgeFees";
 import { transferSubstrateToEvm } from "@/lib/hyperbridge/substrateToEthereum";
 import { config as wagmiConfig } from "@/config/wagmi";
 import { BRIDGE_CHAINS } from "@/config/bridge";

@@ -30,11 +30,6 @@ import {
   totalFundingNeeded,
   hasGasForBridge,
 } from "../moveFromTrading.logic";
-import {
-  BRIDGE_MAINNET_FEES_ENABLED,
-  BRIDGE_RELAYER_FEE,
-  BRIDGE_MIN_PDEX_FOR_GAS,
-} from "@/config/bridgeFees";
 
 import { WalletCard } from "./walletCard";
 import { PendingAccountRow } from "./pendingAccountRow";
@@ -43,6 +38,11 @@ import { SelectNetwork } from "./selectNetwork";
 
 import { createQueryString, formatAmount } from "@/helpers";
 import { useQueryPools } from "@/hooks";
+import {
+  BRIDGE_MAINNET_FEES_ENABLED,
+  BRIDGE_RELAYER_FEE,
+  BRIDGE_MIN_PDEX_FOR_GAS,
+} from "@/config/bridgeFees";
 
 const initialValues = {
   amount: "",
@@ -286,6 +286,7 @@ export const Form = () => {
     isValid,
     displayTicker,
     coverableShortfall,
+    transferConfig?.sourceFeeBalance?.amount,
     hasSubstrateAccounts,
     open,
   ]);
