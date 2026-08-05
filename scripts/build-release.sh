@@ -177,15 +177,31 @@ if [ "$MODE" = docker ]; then
   # far: compose passed them, the Dockerfile never declared them.
   BUILD_ARGS=()
   MISSING=()
+  DELIBERATELY_EMPTY=()
   RESOLVED=0
   while read -r name; do
     [ -n "$name" ] || continue
-    if [ -n "${!name:-}" ]; then
+    #
+    # `${!name+x}` tests EXISTENCE; `${!name:-}` tested for a non-empty value. The
+    # difference matters: several vars are documented in the env file as "leave
+    # EMPTY, do not omit" (DISABLED_FEATURES defaults to a non-empty list when
+    # absent, BLOCKED_ASSETS, UNDER_MAINTENACE, READ_ONLY_TOKEN). The old test
+    # reported all of those as missing on every single build, so the warning
+    # routinely listed ~8 benign names - and the three that actually mattered
+    # (SENTRY_ORG, SENTRY_PROJECT, SENTRY_ENVIRONMENT) were lost among them.
+    #
+    # A warning that cries wolf on every build is not a warning.
+    #
+    if [ -z "${!name+x}" ]; then
+      MISSING+=("$name")            # absent from the env file entirely
+    else
+      # Present, empty or not. An empty value is legitimate and is passed through
+      # explicitly rather than left to the ARG default, so the image reflects the
+      # env file exactly.
       # Two array elements per arg - count separately, don't use ${#BUILD_ARGS[@]}.
       BUILD_ARGS+=(--build-arg "$name=${!name}")
       RESOLVED=$((RESOLVED + 1))
-    else
-      MISSING+=("$name")
+      [ -n "${!name}" ] || DELIBERATELY_EMPTY+=("$name")
     fi
     # Only ARGs WITHOUT a default in the Dockerfile (`ARG NAME`, not
     # `ARG NAME=value`). One with a default is not "baked empty" when unset,
@@ -194,8 +210,15 @@ if [ "$MODE" = docker ]; then
   done < <(grep -E '^ARG [A-Z_][A-Z0-9_]*[[:space:]]*$' Dockerfile | awk '{print $2}' | sort -u)
 
   if [ ${#MISSING[@]} -gt 0 ]; then
-    warn "${#MISSING[@]} build arg(s) unset in $BUILD_ENV_FILE, baked empty:
-     ${MISSING[*]}"
+    warn "${#MISSING[@]} build arg(s) ABSENT from $BUILD_ENV_FILE, baked empty:
+     ${MISSING[*]}
+   Add them with:  scripts/sync-env.sh --from <reference.env>
+   (that only appends what is missing; it never touches existing values)"
+  fi
+  # Not a warning: these are present and intentionally blank. Counted, not listed,
+  # so the absent list above stays readable.
+  if [ ${#DELIBERATELY_EMPTY[@]} -gt 0 ]; then
+    log "${#DELIBERATELY_EMPTY[@]} build arg(s) present but empty (intentional for flags/opt-outs)"
   fi
 
   # A faucet that is switched on but has no endpoint fails at the point of use,
@@ -253,6 +276,19 @@ if [ "$MODE" = docker ]; then
   echo "  Image : ${IMAGE_REPO}:${IMAGE_TAG}"
   echo "  Also  : ${IMAGE_REPO}:latest"
   echo "  Size  : ${SIZE:-unknown}"
+
+  # Repeated here on purpose. The warning above is emitted BEFORE a build that
+  # takes several minutes and prints hundreds of lines, so by the time anyone
+  # reads the outcome it has scrolled out of view - which is how a deploy shipped
+  # with SENTRY_ORG and SENTRY_PROJECT unset and nobody noticed. Same facts, at
+  # the point where the operator is actually looking.
+  if [ ${#MISSING[@]} -gt 0 ]; then
+    echo
+    warn "This image was built with ${#MISSING[@]} build arg(s) EMPTY:
+     ${MISSING[*]}
+   Each was absent from $BUILD_ENV_FILE. NEXT_PUBLIC_* values are baked in at
+   build time, so fixing the env file requires a REBUILD, not a restart."
+  fi
   echo
   echo "Run it (ad-hoc, for a smoke test):"
   echo "  docker run --rm -p 3000:3000 --env-file $BUILD_ENV_FILE ${IMAGE_REPO}:${IMAGE_TAG}"
