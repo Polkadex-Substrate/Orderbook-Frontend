@@ -82,6 +82,17 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
        * Only the trailing window is re-fetched, not the whole history, and
        * CandleChart already tolerates a bar it has seen before: it matches on
        * `time` and replaces in place.
+       *
+       * Two safeguards keep this from hammering the gateway when nobody is
+       * looking:
+       *  - Backgrounded tab: skip the fetch entirely while
+       *    `document.visibilityState !== "visible"`, and catch up immediately
+       *    on the next `visibilitychange` rather than waiting out a stale
+       *    timer. Without this, every open trading tab keeps polling on its
+       *    own 15s clock regardless of whether it's in front of anyone.
+       *  - Rate limiting: a 429 backs off exponentially (capped) instead of
+       *    retrying at the same fixed cadence, which otherwise just keeps
+       *    hitting the limit forever once tripped.
        */
       subscribe: ({ market, resolution: r, onBar }) => {
         let cancelled = false;
@@ -91,9 +102,32 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
         // that grows precisely when the backend is already struggling. Skip a
         // tick instead; the next one carries the same information.
         let inFlight = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const baseInterval = pollIntervalFor(r);
+        const MAX_BACKOFF_MS = 2 * 60 * 1000;
+        let backoffMs = 0;
+
+        const scheduleNext = (delay: number) => {
+          if (cancelled) return;
+          timeoutId = setTimeout(tick, delay);
+        };
 
         const tick = async () => {
-          if (inFlight) return;
+          if (cancelled) return;
+
+          if (document.visibilityState !== "visible") {
+            // Re-check at the base cadence rather than stopping outright, so
+            // the poll resumes promptly once the tab is foregrounded (the
+            // visibilitychange handler below also fast-tracks this).
+            scheduleNext(baseInterval);
+            return;
+          }
+
+          if (inFlight) {
+            scheduleNext(baseInterval);
+            return;
+          }
           inFlight = true;
           try {
             const barMs = resolutionToMs(r);
@@ -105,27 +139,47 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
               from: new Date(Date.now() - barMs * 2),
               to: new Date(),
             });
-            if (cancelled || !bars.length) return;
-            onBar(bars[bars.length - 1]);
-          } catch {
+            if (cancelled) return;
+            if (bars.length) onBar(bars[bars.length - 1]);
+            backoffMs = 0; // reset after a successful call
+          } catch (e) {
             // Swallow: getCandles surfaces load failures to the user already,
             // and a failed poll should not tear down a working chart. The next
-            // tick retries.
+            // tick retries - at a longer interval if this was a 429, so a
+            // trip of the rate limit backs off instead of resustaining itself.
+            const isRateLimited =
+              (e as { status?: number } | undefined)?.status === 429;
+            backoffMs = isRateLimited
+              ? Math.min(
+                  backoffMs ? backoffMs * 2 : baseInterval,
+                  MAX_BACKOFF_MS
+                )
+              : 0;
           } finally {
             // finally, not the end of try: an aborted or failed request must
             // release the lock or polling stops permanently after one error.
             inFlight = false;
+            scheduleNext(baseInterval + backoffMs);
           }
         };
+
+        const onVisibilityChange = () => {
+          if (document.visibilityState !== "visible" || !timeoutId) return;
+          // Catch up immediately instead of waiting out whatever's left of
+          // the last-scheduled delay.
+          clearTimeout(timeoutId);
+          tick();
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
 
         // Fire once immediately so the current bar is not up to one interval
         // stale on mount.
         tick();
-        const id = setInterval(tick, pollIntervalFor(r));
 
         return () => {
           cancelled = true;
-          clearInterval(id);
+          if (timeoutId) clearTimeout(timeoutId);
+          document.removeEventListener("visibilitychange", onVisibilityChange);
         };
       },
     }),
