@@ -146,6 +146,10 @@ export const Form = () => {
           );
         }
         resetForm();
+        // resetForm() empties walletAddress, so hand control back to the autofill
+        // effect - otherwise a user who typed an address once would face a blank
+        // field after every successful drip.
+        setAddressEdited(false);
         // The network deliberately survives a successful claim - resetting it
         // sent Sepolia users back to Polkadex after every request. resetForm()
         // restores initialValues.networkId (the default), so the field is put
@@ -181,19 +185,40 @@ export const Form = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** The connected address for whichever network is selected. */
+  const connectedAddress =
+    selectedNetwork.id === "sepolia"
+      ? evmAddress
+      : selectedAddresses.mainAddress;
+
+  /*
+   * Keep the address field in step with the connected wallet, and SELF-HEAL if it
+   * is ever emptied.
+   *
+   * The old version depended only on [network, mainAddress, evmAddress]. Nothing
+   * in that list changes when you pick a token, so anything that blanked the field
+   * left it blank permanently - there was no code path back to the connected
+   * address short of reloading the page. That is the reported bug: "once the box
+   * resets it never repopulates".
+   *
+   * Watching values.walletAddress instead means the field is refilled whenever it
+   * is empty, whatever emptied it. That fixes the symptom without needing to know
+   * the trigger, and it is the behaviour a user expects anyway: the address of the
+   * wallet they are connected with, unless they deliberately changed it.
+   *
+   * `addressEdited` is what makes "deliberately" work. Without it, refilling on
+   * empty would make the field impossible to clear - every keystroke deleting the
+   * last character would snap the connected address back, which is worse than the
+   * bug. Once the user types or pastes, we stop touching it.
+   */
+  const [addressEdited, setAddressEdited] = useState(false);
+
   useEffect(() => {
-    if (selectedNetwork?.id === "polkadex" && selectedAddresses.mainAddress) {
-      setFieldValue("walletAddress", selectedAddresses.mainAddress);
+    if (addressEdited || !connectedAddress) return;
+    if (values.walletAddress !== connectedAddress) {
+      setFieldValue("walletAddress", connectedAddress);
     }
-    if (selectedNetwork?.id === "sepolia" && evmAddress) {
-      setFieldValue("walletAddress", evmAddress);
-    }
-  }, [
-    selectedNetwork?.id,
-    selectedAddresses.mainAddress,
-    evmAddress,
-    setFieldValue,
-  ]);
+  }, [addressEdited, connectedAddress, values.walletAddress, setFieldValue]);
 
   const handleNetworkSelect = (network: FaucetNetwork) => {
     setSelectedNetwork(network);
@@ -201,13 +226,12 @@ export const Form = () => {
     setSelectedToken(undefined);
     setFieldValue("networkId", network.id);
     setFieldValue("tokenId", "");
-    const autoAddress =
-      network.id === "polkadex" && selectedAddresses.mainAddress
-        ? selectedAddresses.mainAddress
-        : network.id === "sepolia" && evmAddress
-          ? evmAddress
-          : "";
-    setFieldValue("walletAddress", autoAddress);
+    // A Polkadex address is meaningless on Sepolia and vice versa, so an address
+    // the user typed for the old network must not be kept. Clearing `addressEdited`
+    // hands control back to the autofill effect, which fills in the new network's
+    // connected address (or leaves it empty if no matching wallet is connected).
+    setAddressEdited(false);
+    setFieldValue("walletAddress", "");
   };
 
   const handleTokenSelect = (token: FaucetToken) => {
@@ -314,6 +338,13 @@ export const Form = () => {
                   autoComplete="off"
                   placeholder={addressPlaceholder}
                   {...getFieldProps("walletAddress")}
+                  // Wraps formik's onChange, so it must come AFTER the spread.
+                  // Recording that the value is the user's own is what stops the
+                  // self-healing effect above from overwriting what they type.
+                  onChange={(e) => {
+                    setAddressEdited(true);
+                    getFieldProps("walletAddress").onChange(e);
+                  }}
                   id={ADDRESS_FIELD_ID}
                   className="max-sm:focus:text-[16px] w-full pl-4 py-4"
                 />
@@ -321,6 +352,7 @@ export const Form = () => {
                     field border so it reads as part of the control. */}
                 <PasteButton
                   onPaste={(text) => {
+                    setAddressEdited(true);
                     setFieldValue("walletAddress", text);
                     setFieldTouched("walletAddress", true);
                   }}
