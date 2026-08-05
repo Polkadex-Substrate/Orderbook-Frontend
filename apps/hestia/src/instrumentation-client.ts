@@ -65,7 +65,9 @@ const rate = (value: string | undefined, fallback: number) => {
  */
 const ENVIRONMENT =
   process.env.SENTRY_ENVIRONMENT ||
-  (process.env.NODE_ENV === "production" ? "unspecified" : process.env.NODE_ENV);
+  (process.env.NODE_ENV === "production"
+    ? "unspecified"
+    : process.env.NODE_ENV);
 
 const TRACES_SAMPLE_RATE = rate(process.env.SENTRY_TRACES_SAMPLE_RATE, 0.1);
 const REPLAY_SESSION_SAMPLE_RATE = rate(

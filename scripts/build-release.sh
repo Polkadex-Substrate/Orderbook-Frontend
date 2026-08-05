@@ -34,6 +34,7 @@
 #   scripts/build-release.sh --repo my/orderbook-fe # image repo name
 #   scripts/build-release.sh --tag v1.2.3           # override the tag
 #   scripts/build-release.sh --push                 # push after building
+#   scripts/build-release.sh --no-preflight         # skip the formatting check
 #   scripts/build-release.sh --platform linux/arm64 # cross-build
 #   scripts/build-release.sh --skip-install         # tarball: reuse node_modules
 #   scripts/build-release.sh --install-docker       # install Docker if missing,
@@ -51,6 +52,8 @@ cd "$REPO_ROOT"
 
 MODE=docker
 BUILD_ENV_FILE="apps/hestia/.env"
+# Fast formatting check before the 4.5-minute compile. --no-preflight to skip.
+PREFLIGHT=1
 SKIP_INSTALL=0
 IMAGE_REPO="orderbook-fe"
 IMAGE_TAG=""
@@ -64,6 +67,7 @@ while [ $# -gt 0 ]; do
     --docker)       MODE=docker; shift ;;
     --tarball)      MODE=tarball; shift ;;
     --env)          BUILD_ENV_FILE="$2"; shift 2 ;;
+    --no-preflight) PREFLIGHT=0; shift ;;
     --repo)         IMAGE_REPO="$2"; shift 2 ;;
     --tag)          IMAGE_TAG="$2"; shift 2 ;;
     --push)         PUSH=1; shift ;;
@@ -71,7 +75,9 @@ while [ $# -gt 0 ]; do
     --skip-install) SKIP_INSTALL=1; shift ;;
     --from-image)   FROM_IMAGE="$2"; MODE=tarball; shift 2 ;;
     --install-docker) INSTALL_DOCKER=1; shift ;;
-    -h|--help)      sed -n '2,33p' "$0"; exit 0 ;;
+    # 2,46: the whole usage comment block. Was 2,33, which cut the help off
+    # mid-list as options were added.
+    -h|--help)      sed -n '2,46p' "$0"; exit 0 ;;
     *)              echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -123,6 +129,29 @@ if ! bash -n "$BUILD_ENV_FILE" 2>/dev/null; then
     KEY=\"a value with an apostrophe like We'll\"
   The line number above points at where the quote was left open, which is
   usually the line with the unquoted character."
+fi
+
+# ── Pre-flight: formatting ──────────────────────────────────────────────────
+# `next build` runs ESLint as its LAST step, after the full webpack compile. So a
+# one-line prettier violation fails the build 4.5 minutes in, having thrown away
+# the entire compile. Prettier alone takes about a second and catches the most
+# common class of that failure.
+#
+# Deliberately only prettier, not the full eslint run: this must stay fast enough
+# that nobody is tempted to skip it, and formatting is what actually breaks builds
+# in practice. Skip with --no-preflight if you need to build a known-dirty tree.
+if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
+  if ! node_modules/.bin/prettier --check \
+      "apps/*/src/**/*.{ts,tsx}" "packages/*/src/**/*.{ts,tsx}" \
+      "apps/*/*.js" >/dev/null 2>&1; then
+    echo "Formatting problems (these WILL fail next build's lint step):" >&2
+    node_modules/.bin/prettier --list-different \
+      "apps/*/src/**/*.{ts,tsx}" "packages/*/src/**/*.{ts,tsx}" \
+      "apps/*/*.js" 2>/dev/null | sed 's/^/  /' >&2
+    die "Run:  node_modules/.bin/prettier --write <the files above>
+  Then re-run this script. Or pass --no-preflight to build anyway."
+  fi
+  log "Pre-flight: formatting ok"
 fi
 
 # `set -a` exports everything sourced, which is what makes the values visible
