@@ -178,10 +178,15 @@ export const fetchUdfHistory = async ({
     // unknown symbol and an unsupported vs_currency - three different fixes.
     // Response body too: gateways often explain the 404 in it.
     const body = await response.text().catch(() => "");
-    throw new Error(
-      `Datafeed history failed: HTTP ${response.status}\n  GET ${url}\n  body: ${
-        body.slice(0, 300) || "(empty)"
-      }`
+    // `status` lets the poller in GraphV2 tell a 429 apart from a timeout or
+    // a 500 and back off instead of retrying at the same fixed cadence.
+    throw Object.assign(
+      new Error(
+        `Datafeed history failed: HTTP ${response.status}\n  GET ${url}\n  body: ${
+          body.slice(0, 300) || "(empty)"
+        }`
+      ),
+      { status: response.status }
     );
   }
 
