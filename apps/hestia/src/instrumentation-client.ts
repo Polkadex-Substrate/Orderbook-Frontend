@@ -52,6 +52,21 @@ const rate = (value: string | undefined, fallback: number) => {
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : fallback;
 };
 
+/**
+ * Which deployment this is.
+ *
+ * Unset, the SDK defaults `environment` to the literal string "production" - so a
+ * testnet deployment and a local production build both reported as "production",
+ * and Sentry's environment filter was useless for telling them apart. Every event
+ * in the project claimed to be production.
+ *
+ * Set this per deployment ("testnet", "staging", "production"). It is a build-time
+ * value like everything else here, so it is baked per image.
+ */
+const ENVIRONMENT =
+  process.env.SENTRY_ENVIRONMENT ||
+  (process.env.NODE_ENV === "production" ? "unspecified" : process.env.NODE_ENV);
+
 const TRACES_SAMPLE_RATE = rate(process.env.SENTRY_TRACES_SAMPLE_RATE, 0.1);
 const REPLAY_SESSION_SAMPLE_RATE = rate(
   process.env.SENTRY_REPLAY_SESSION_SAMPLE_RATE,
@@ -65,6 +80,10 @@ if (enabled) {
     .then((Sentry) => {
       Sentry.init({
         dsn: SENTRY_DSN,
+        // "unspecified" rather than a silent "production" default, so an
+        // unconfigured deployment is visibly unconfigured in the environment
+        // filter instead of masquerading as prod.
+        environment: ENVIRONMENT,
         // Replay may only be enabled on the client.
         integrations: [Sentry.replayIntegration()],
         tracesSampleRate: TRACES_SAMPLE_RATE,

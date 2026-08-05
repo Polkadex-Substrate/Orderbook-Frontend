@@ -74,13 +74,29 @@ ARG SENTRY_DSN
 # Sampling rates. Optional - the code defaults to 0.1 traces / 0 replay sessions.
 ARG SENTRY_TRACES_SAMPLE_RATE=
 ARG SENTRY_REPLAY_SESSION_SAMPLE_RATE=
-# SENTRY_AUTH deliberately absent. It is a write-scoped Sentry token, and as an
-# ARG/ENV it was recoverable from `docker history` by anyone holding the image,
-# as well as being inlined into the browser bundle by next.config.js's `env`
-# block. No source file reads it. Source-map upload is the only thing that
-# needs it - reintroduce it as a BuildKit secret if that is ever wanted:
-#   RUN --mount=type=secret,id=sentry_auth ...
-# which never lands in a layer.
+# Org and project for source map upload. Not secrets - they are visible in every
+# Sentry URL. The upload silently does nothing unless BOTH are set alongside the
+# auth token, which is why stack traces were arriving minified.
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+# Which deployment this is: testnet / staging / production. Unset, the SDK
+# defaults to the literal "production", so every environment looked like prod
+# in Sentry's filter. Required in practice, hence no default.
+ARG SENTRY_ENVIRONMENT
+# Tags every event with the build it came from, so Sentry can tell a regression
+# from a pre-existing issue and can pick the right source maps. Defaults to
+# NEXT_BUILD_ID (set further down) when not passed explicitly.
+ARG SENTRY_RELEASE=
+#
+# SENTRY_AUTH_TOKEN is deliberately NOT an ARG. As an ARG/ENV it is recoverable
+# from `docker history` by anyone holding the image. It is passed as a BuildKit
+# secret on the build RUN instead - see the turbo run build step below - so it
+# exists only for the duration of that command and never lands in a layer.
+#
+# Note the name: a differently-named `SENTRY_AUTH` used to be an ARG here and was
+# inlined into the BROWSER bundle by next.config.js's `env` block. No source file
+# and no tool read that name, so it was leaked to every visitor for no benefit.
+# Rotate it if it was ever a live token.
 ARG DISABLED_FEATURES
 ARG GOOGLE_API_KEY
 ARG GOOGLE_CLIENT_ID
@@ -164,6 +180,9 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
     SUBQUERY_URL=$SUBQUERY_URL \
     READ_ONLY_TOKEN=$READ_ONLY_TOKEN \
     SENTRY_DSN=$SENTRY_DSN \
+    SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_ENVIRONMENT=$SENTRY_ENVIRONMENT \
+    SENTRY_PROJECT=$SENTRY_PROJECT \
     SENTRY_TRACES_SAMPLE_RATE=$SENTRY_TRACES_SAMPLE_RATE \
     SENTRY_REPLAY_SESSION_SAMPLE_RATE=$SENTRY_REPLAY_SESSION_SAMPLE_RATE \
     DISABLED_FEATURES=$DISABLED_FEATURES \
@@ -232,6 +251,11 @@ ENV POLKADEX_CHAIN=$POLKADEX_CHAIN \
 # an unset env var - it is passed explicitly, not sourced from the env file.
 ARG NEXT_BUILD_ID=
 ENV NEXT_BUILD_ID=$NEXT_BUILD_ID
+# Release defaults to the build id, so events are attributable to a build without
+# anyone having to remember a second variable. Both are in turbo.json's
+# passThroughEnv, NOT its env: they change every build, and in the cache key they
+# would force a full recompile every time.
+ENV SENTRY_RELEASE=${SENTRY_RELEASE:-$NEXT_BUILD_ID}
 
 ARG NODE_HEAP_MB=3072
 ENV NODE_OPTIONS="--max_old_space_size=$NODE_HEAP_MB"
@@ -252,9 +276,15 @@ ENV TURBO_CACHE_DIR=/app/.turbo
 # when a single line of copy changed.
 #
 # Cache mounts are not part of the image, so nothing here bloats the result.
+# The sentry_auth_token secret is OPTIONAL (required=false): without it the build
+# still succeeds, it just skips source map upload. It is read into the environment
+# for the duration of this one command only, so it never appears in a layer or in
+# `docker history` - which is the whole reason it is not an ARG.
 RUN --mount=type=cache,target=/app/apps/hestia/.next/cache,sharing=locked \
     --mount=type=cache,target=/app/.turbo,sharing=locked \
     --mount=type=cache,target=/root/.npm,sharing=locked \
+    --mount=type=secret,id=sentry_auth_token,required=false \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" \
     npx turbo run build --filter=@orderbook/hestia --concurrency=$TURBO_CONCURRENCY
 
 # ============================================

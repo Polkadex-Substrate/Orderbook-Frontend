@@ -42,13 +42,26 @@ const FILLS_LIMIT = 30;
 /**
  * How often to re-poll the datafeed for the current bar.
  *
- * The gateway is REST-only, so there is nothing to stream. Capped at 15s so a
- * 1-week resolution does not mean a week between updates, and floored at the
- * bar length so a 1-minute chart is not polled pointlessly often.
+ * The gateway is REST-only, so there is nothing to stream.
+ *
+ * This used to be `Math.min(resolutionToMs(r), 15_000)`, which the comment
+ * described as "floored at the bar length" but which actually collapsed to a flat
+ * 15s for EVERY resolution: min(60_000, 15_000) is 15_000 for a 1-minute bar, and
+ * min(86_400_000, 15_000) is also 15_000 for a daily one. So a 1D chart re-fetched
+ * /history four times a minute to refresh a bar that changes once a day.
+ *
+ * That is the "repetitive history requests" the datafeed sees, and it is why its
+ * rate limiting trips: every poll is a full /history call, and each one carries a
+ * CORS preflight, so the wire cost is double the poll count.
+ *
+ * Now it scales with the bar: a quarter of the bar length, clamped. A 1m chart
+ * still updates every 15s; 1h and 1D settle at 60s, which is well inside the
+ * resolution anyone would notice.
  */
-const POLL_CEILING_MS = 15_000;
+const POLL_MIN_MS = 15_000;
+const POLL_MAX_MS = 60_000;
 const pollIntervalFor = (r: Resolution) =>
-  Math.min(resolutionToMs(r), POLL_CEILING_MS);
+  Math.min(Math.max(resolutionToMs(r) / 4, POLL_MIN_MS), POLL_MAX_MS);
 
 export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
   const marketId = currentMarket?.id ?? "";
@@ -94,6 +107,23 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
 
         const tick = async () => {
           if (inFlight) return;
+          /*
+           * Don't poll a chart nobody is looking at. A trading tab left open in the
+           * background otherwise fetches /history every interval indefinitely -
+           * hundreds of requests per idle tab per hour, all discarded, and a large
+           * share of the load that trips the gateway's rate limiting.
+           *
+           * Cheaper and more correct than throttling: a hidden tab has no bar to
+           * update. The visibilitychange handler below fetches immediately on
+           * return, so coming back to the tab shows current data rather than
+           * waiting out an interval.
+           */
+          if (
+            typeof document !== "undefined" &&
+            document.visibilityState === "hidden"
+          ) {
+            return;
+          }
           inFlight = true;
           try {
             const barMs = resolutionToMs(r);
@@ -123,9 +153,17 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
         tick();
         const id = setInterval(tick, pollIntervalFor(r));
 
+        // Catch up as soon as the tab is foregrounded again, so the skipped polls
+        // above cost freshness only while nobody could see the chart.
+        const onVisible = () => {
+          if (document.visibilityState === "visible") tick();
+        };
+        document.addEventListener("visibilitychange", onVisible);
+
         return () => {
           cancelled = true;
           clearInterval(id);
+          document.removeEventListener("visibilitychange", onVisible);
         };
       },
     }),

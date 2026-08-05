@@ -148,14 +148,32 @@ const nextConfig = {
   },
 };
 
+/*
+ * Source map upload needs THREE things, and it silently does nothing if any one
+ * is missing: an auth token, an org, and a project. Only the token was ever wired
+ * up here, so nothing was ever uploaded and every Sentry stack frame arrived
+ * minified - e.g. `at 23140/sy</< (chunks/00f76785...js:9:63466)` with 45 frames
+ * hidden, which is unactionable.
+ *
+ * Note the token variable is SENTRY_AUTH_TOKEN. A differently-named SENTRY_AUTH
+ * used to be passed as a Docker ARG and inlined into the browser bundle by
+ * next.config's `env` block. Nothing read it - so that token was exposed to every
+ * visitor while buying exactly nothing. It has been removed; if it was ever a real
+ * token it should be rotated.
+ */
 const sentryWebpackPluginOptions = {
   // Additional config options for the Sentry webpack plugin. Keep in mind that
   // the following options are set automatically, and overriding them is not
   // recommended:
   //   release, url, configFile, stripPrefix, urlPrefix, include, ignore
 
-  // An auth token is required for uploading source maps.
+  // Required for uploading source maps. Supplied as a BuildKit secret rather than
+  // a build arg, so it never lands in an image layer or `docker history`.
   authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Without these two the upload is a no-op even with a valid token.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
 
   // Don't serve source maps to users: Sentry gets them during upload (when an
   // auth token is configured), then they're removed from the build output.
@@ -163,7 +181,16 @@ const sentryWebpackPluginOptions = {
     deleteSourcemapsAfterUpload: true,
   },
 
-  silent: true, // Suppresses all logs
+  // Was `true`, which hid upload failures. A silent no-op is the exact failure
+  // mode this whole block exists to fix, so let the plugin say what it did.
+  silent: false,
+
+  // Don't fail the build if Sentry is unreachable. A deploy should not be blocked
+  // by the error reporter's CDN; the cost is unsymbolicated frames for that build.
+  errorHandler: (err) => {
+    // eslint-disable-next-line no-console
+    console.warn("[sentry] source map upload failed:", err.message);
+  },
 
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options.
@@ -177,6 +204,28 @@ const sentryWebpackPluginOptions = {
 const sentryEnabled = Boolean(
   process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
 );
+
+// Warn loudly when the SDK is on but maps cannot be uploaded, rather than
+// discovering it later from an unreadable stack trace in an alert email.
+if (sentryEnabled) {
+  const missing = ["SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT"].filter(
+    (k) => !process.env[k]
+  );
+  if (missing.length) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[sentry] DSN is set but ${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} ` +
+        `not - source maps will NOT be uploaded and stack traces will be minified.`
+    );
+  }
+  if (!process.env.SENTRY_RELEASE) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[sentry] SENTRY_RELEASE is not set - events will have no release, so " +
+        "regressions and suspect commits cannot be tracked."
+    );
+  }
+}
 
 const withSentryIfEnabled = (cfg) =>
   sentryEnabled ? withSentryConfig(cfg, sentryWebpackPluginOptions) : cfg;

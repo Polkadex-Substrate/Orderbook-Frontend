@@ -182,9 +182,29 @@ if [ "$MODE" = docker ]; then
   # served stale out of a year-long immutable cache after a deploy.
   BUILD_ARGS+=(--build-arg "NEXT_BUILD_ID=$STAMP")
 
+  # Sentry source map upload. The token is passed as a BuildKit SECRET, never a
+  # build arg: an arg is readable from `docker history` by anyone with the image.
+  #
+  # Read from the env file like everything else (`set -a` above exports it), but
+  # deliberately NOT via the generated --build-arg list, since it must not become
+  # an ARG. `env=` hands Docker the variable NAME, so the value itself never
+  # appears in the process table or in any file on disk.
+  SECRET_ARGS=()
+  if [ -n "${SENTRY_AUTH_TOKEN:-}" ]; then
+    log "Source maps: uploading (SENTRY_AUTH_TOKEN present)"
+    SECRET_ARGS+=(--secret "id=sentry_auth_token,env=SENTRY_AUTH_TOKEN")
+    for v in SENTRY_ORG SENTRY_PROJECT; do
+      [ -n "${!v:-}" ] || warn "$v is unset - Sentry upload will be a no-op even with a token."
+    done
+  elif [ -n "${SENTRY_DSN:-}" ]; then
+    warn "SENTRY_AUTH_TOKEN unset: errors will report, but stack traces will be
+     MINIFIED and unreadable. Add it to the env file to enable source maps."
+  fi
+
   docker build \
     ${PLATFORM:+--platform "$PLATFORM"} \
     "${BUILD_ARGS[@]}" \
+    "${SECRET_ARGS[@]+"${SECRET_ARGS[@]}"}" \
     -t "${IMAGE_REPO}:${IMAGE_TAG}" \
     -t "${IMAGE_REPO}:latest" \
     -f Dockerfile \

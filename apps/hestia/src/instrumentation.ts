@@ -37,6 +37,14 @@ const tracesSampleRate = (() => {
 const commonOptions = {
   dsn: SENTRY_DSN,
   tracesSampleRate,
+  // Same value the client uses, so server and browser events for one deployment
+  // land in the same Sentry environment. Unset, the SDK reports the literal
+  // string "production" for every build, local ones included.
+  environment:
+    process.env.SENTRY_ENVIRONMENT ||
+    (process.env.NODE_ENV === "production"
+      ? "unspecified"
+      : process.env.NODE_ENV),
   // Note: don't set `release` here - use the SENTRY_RELEASE env var so the
   // value also gets attached to uploaded source maps.
 };

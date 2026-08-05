@@ -70,11 +70,19 @@
         "POLKADEX_CHAIN",
         "READ_ONLY_TOKEN",
         "SENTRY_DSN",
+        "SENTRY_ENVIRONMENT",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT",
         "SHOW_SHUTDOWN_POPUP",
         "SIGNUP_DISABLED",
         "SUBQUERY_URL",
         "SUBSCAN_API",
         "UNDER_MAINTENACE"
+      ],
+      "passThroughEnv": [
+        "NEXT_BUILD_ID",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_RELEASE"
       ]
     },
     "lint": {},
