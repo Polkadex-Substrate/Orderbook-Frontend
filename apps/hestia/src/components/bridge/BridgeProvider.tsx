@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { useExtensionAccounts } from "@aksumite/react-providers";
+import { useFunds } from "@orderbook/core/hooks";
 
 import { useHyperbridgeFees } from "@/lib/hyperbridge/useHyperbridgeFees";
 import { useSubstrateNativeBalance } from "@/lib/hyperbridge/useSubstrateNativeBalance";
@@ -71,6 +72,12 @@ interface BridgeContextProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transferConfig: any;
   selectedAssetBalance: number;
+  /** FREE trading-account balance for the selected asset, from the engine.
+   * Lets the bridge offer moving trading funds to funding (with consent)
+   * instead of dead-ending on "Insufficient balance" when funding alone is
+   * short but funding + trading covers the transfer. Reserved (in-order)
+   * balance is deliberately excluded: it cannot be withdrawn. */
+  tradingFreeBalance: number;
   supportedSourceChains: BridgeChainConfig[];
   supportedDestinationChains: BridgeChainConfig[];
   onSwitchChain: () => void;
@@ -254,6 +261,22 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     [isEvmSource, evmAllTokensLoading, substrateBalancesLoading]
   );
 
+  // Engine (trading account) balances. Same asset ids as pallet_assets, which is
+  // what substrateAssetIds resolves - so the lookup key is shared.
+  const { balances: engineBalances } = useFunds();
+  const tradingFreeBalance = useMemo(() => {
+    if (isEvmSource) return 0; // only meaningful when Polkadex is the source
+    const id =
+      selectedAsset.chains.polkadex?.assetId ??
+      substrateAssetIds.get(selectedAsset.ticker.toUpperCase()) ??
+      "";
+    if (!id) return 0;
+    const entry = engineBalances?.find(
+      (b) => b?.asset?.id?.toString() === id.toString()
+    );
+    return Number(entry?.free ?? 0) || 0;
+  }, [isEvmSource, engineBalances, selectedAsset, substrateAssetIds]);
+
   // All token balances for the token selector dropdown
   const sourceBalances = useMemo(
     () =>
@@ -351,6 +374,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         sourceBalancesLoading,
         transferConfig,
         selectedAssetBalance,
+        tradingFreeBalance,
         supportedSourceChains: allChains,
         supportedDestinationChains: allChains,
         onSwitchChain,

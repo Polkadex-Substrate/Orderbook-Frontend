@@ -63,6 +63,8 @@ export type SubstrateToEvmParams = {
    */
   decimals?: number;
   assetId?: number; // Polkadex asset ID; defaults to WETH (3)
+  /** Relayer fee in the same asset+units as `amount`. Default 0 (testnet). */
+  relayerFee?: number;
 };
 
 // TODO(hft-migration): Replace with new HFT pallet extrinsic once Polkadex team
@@ -79,6 +81,11 @@ export async function transferSubstrateToEvm(
     // A default here is what made a silent 10^6 error possible.
     decimals: decimalsOverride,
     assetId = WETH_ASSET_ID,
+    // Human units of the SAME asset as `amount`; scaled with the same decimals
+    // below. Testnet callers omit it (relayers are subsidised); on mainnet the
+    // relayer fee is pulled from the sender's asset balance, so it must be both
+    // budgeted for in the UI and attached here.
+    relayerFee = 0,
   } = params;
 
   if (!recipient.startsWith("0x")) {
@@ -130,6 +137,7 @@ export async function transferSubstrateToEvm(
   const decimals = decimalsOverride ?? (await getAssetDecimals(api, assetId));
 
   const amountBigInt = parseUnits(String(amount), decimals);
+  const relayerFeeBigInt = parseUnits(String(relayerFee), decimals);
 
   // The IsmpHostStateMachine enum on Polkadex is SCALE-encoded as a tagged
   // variant, not a string. Polkadot.js rejects "EVM-11155111" - it needs the
@@ -141,7 +149,7 @@ export async function transferSubstrateToEvm(
     destination: destinationEnum,
     recipient,
     amount: amountBigInt.toString(),
-    relayerFee: 0,
+    relayerFee: relayerFeeBigInt.toString(),
   });
 
   // ── Step 5: Build and sign tx ─────────────────────────────────────────────
@@ -159,7 +167,7 @@ export async function transferSubstrateToEvm(
     recipient,
     amount: amountBigInt,
     timeout: BigInt(3600),
-    relayerFee: 0n,
+    relayerFee: relayerFeeBigInt,
     callData: null,
   };
 

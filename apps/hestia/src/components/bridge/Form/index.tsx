@@ -24,6 +24,17 @@ import { useBridgeProvider } from "../BridgeProvider";
 import { SelectAsset } from "../selectAsset";
 import { ConnectAccount } from "../connectAccount";
 import { ConfirmTransaction } from "../confirmTransaction";
+import { MoveFromTradingModal } from "../moveFromTradingModal";
+import {
+  computeCoverableShortfall,
+  totalFundingNeeded,
+  hasGasForBridge,
+} from "../moveFromTrading.logic";
+import {
+  BRIDGE_MAINNET_FEES_ENABLED,
+  BRIDGE_RELAYER_FEE,
+  BRIDGE_MIN_PDEX_FOR_GAS,
+} from "@/config/bridgeFees";
 
 import { WalletCard } from "./walletCard";
 import { PendingAccountRow } from "./pendingAccountRow";
@@ -44,6 +55,7 @@ export const Form = () => {
   const [openDestModal, setOpenDestModal] = useState(false);
   const [openFeeModal, setOpenFeeModal] = useState(false);
   const [openSourceModal, setOpenSourceModal] = useState(false);
+  const [openMoveModal, setOpenMoveModal] = useState(false);
 
   const {
     sourceChain,
@@ -59,6 +71,7 @@ export const Form = () => {
     sourceBalancesLoading,
     transferConfig,
     selectedAssetBalance,
+    tradingFreeBalance,
     supportedSourceChains,
     supportedDestinationChains,
     onSwitchChain: onSwitch,
@@ -153,6 +166,36 @@ export const Form = () => {
   const displayTicker =
     selectedAsset?.ticker === "WETH" ? "ETH" : selectedAsset?.ticker;
 
+  /*
+   * Can the trading account cover what the funding account lacks?
+   *
+   * Polkadex-source only: on the EVM side there is no trading account. The tiny
+   * epsilon absorbs float dust from the two balances being read on different
+   * paths - without it, an exactly-covering trading balance can flicker between
+   * offering the move and "insufficient".
+   */
+  // On mainnet the relayer fee comes out of the bridged asset, so the funding
+  // account must hold amount + fee. Flag off (testnet) leaves this = parsedAmount.
+  const fundingNeeded = useMemo(
+    () =>
+      totalFundingNeeded(parsedAmount, {
+        feesEnabled: BRIDGE_MAINNET_FEES_ENABLED && !isEvmSource,
+        relayerFee: BRIDGE_RELAYER_FEE,
+      }),
+    [parsedAmount, isEvmSource]
+  );
+
+  const coverableShortfall = useMemo(
+    () =>
+      computeCoverableShortfall({
+        isEvmSource,
+        amountNeeded: fundingNeeded,
+        fundingBalance: selectedAssetBalance,
+        tradingFreeBalance,
+      }),
+    [isEvmSource, fundingNeeded, selectedAssetBalance, tradingFreeBalance]
+  );
+
   /** The primary button always states the next required step instead of
    *  sitting there disabled and gray with no explanation. Where the step is
    *  actionable (connect wallet, pick token), clicking performs it. */
@@ -190,6 +233,36 @@ export const Form = () => {
           };
     if (!dirty || !parsedAmount)
       return { label: "Enter an amount", blocked: true };
+    // Mainnet only: the bridge extrinsic needs PDEX gas from the funding
+    // account. Without this gate the user passes every check and fails at
+    // signing - possibly after waiting minutes for an auto-move to settle.
+    if (
+      !isEvmSource &&
+      !hasGasForBridge(
+        // sourceFeeBalance is the funding account's PDEX when Polkadex is the
+        // source (see BridgeProvider's transferConfig).
+        Number(transferConfig?.sourceFeeBalance?.amount ?? 0),
+        BRIDGE_MIN_PDEX_FOR_GAS,
+        BRIDGE_MAINNET_FEES_ENABLED
+      )
+    ) {
+      return {
+        label: `Need ${BRIDGE_MIN_PDEX_FOR_GAS} PDEX for network fees`,
+        blocked: true,
+      };
+    }
+    /*
+     * BEFORE the insufficient-balance dead end: if funding is short but
+     * funding + trading covers the transfer, the button offers to fix it
+     * instead of just naming the problem. Consent and the actual move happen
+     * in the modal; nothing is withdrawn from this click alone.
+     */
+    if (coverableShortfall > 0) {
+      return {
+        label: `Move ${formatAmount(coverableShortfall)} ${displayTicker} from Trading & Transfer`,
+        onClick: () => setOpenMoveModal(true),
+      };
+    }
     if (errors.amount || !isValid) {
       const msg = errors.amount ?? "";
       return {
@@ -212,6 +285,7 @@ export const Form = () => {
     errors.amount,
     isValid,
     displayTicker,
+    coverableShortfall,
     hasSubstrateAccounts,
     open,
   ]);
@@ -320,6 +394,12 @@ export const Form = () => {
 
   return (
     <Fragment>
+      <MoveFromTradingModal
+        open={openMoveModal}
+        onOpenChange={setOpenMoveModal}
+        amountNeeded={fundingNeeded}
+        ticker={displayTicker}
+      />
       <ConfirmTransaction
         openFeeModal={openFeeModal}
         setOpenFeeModal={setOpenFeeModal}

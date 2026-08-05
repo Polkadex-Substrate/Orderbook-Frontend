@@ -29,6 +29,11 @@ import { formatDisplay } from "@orderbook/format";
 
 import { useBridgeProvider } from "./BridgeProvider";
 
+import {
+  BRIDGE_MAINNET_FEES_ENABLED,
+  BRIDGE_RELAYER_FEE,
+} from "@/config/bridgeFees";
+
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 import { usePool } from "@/hooks";
 import {
@@ -339,6 +344,11 @@ export const ConfirmTransaction = ({
                         amount,
                         recipient: destinationAccount?.address,
                         senderAddress: sourceAccount?.address,
+                        // 0 unless the mainnet fee flag is on. The form has
+                        // already budgeted funding for amount + fee when it is.
+                        relayerFee: BRIDGE_MAINNET_FEES_ENABLED
+                          ? BRIDGE_RELAYER_FEE
+                          : 0,
                         decimals: selectedAsset?.decimals,
                         assetId: Number(resolvedAssetId),
                       });

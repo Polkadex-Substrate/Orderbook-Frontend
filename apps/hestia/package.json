@@ -9,6 +9,7 @@
     "generate": "",
     "start": "next start",
     "lint": "next lint --fix",
+    "test": "jest",
     "clear": "rm -rf .next"
   },
   "dependencies": {
