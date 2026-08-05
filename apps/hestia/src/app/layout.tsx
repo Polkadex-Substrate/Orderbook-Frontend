@@ -4,7 +4,7 @@ import "@mitrabook/ux/dist/index.css";
 import { ReactNode } from "react";
 import { Metadata } from "next";
 import classNames from "classnames";
-import { Roboto } from "next/font/google";
+import { Work_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { cookieToInitialState } from "wagmi";
 
@@ -12,9 +12,23 @@ import { config } from "@/config/wagmi";
 import Web3ModalProvider from "@/context";
 import { DynamicProviders } from "@/components/ui/DynamicProviders";
 import { TestnetModal } from "@/components/ui/testnetModal.lazy";
-const font = Roboto({
-  weight: ["100", "300", "400", "500", "700", "900"],
+/**
+ * Work Sans, per the brand guidelines (polkadex.ee/mediaKit → BrandGuidelines.md),
+ * which name it as the primary typeface at weights 300 / 400 / 600. The app was
+ * on Roboto, which is why the UI read as off-brand next to the marketing site.
+ *
+ * Three weights, not the six Roboto was requesting (100/300/400/500/700/900).
+ * next/font/google fetches and subsets each weight at build time, and 100 and
+ * 900 were not used anywhere - so this is also a build-time saving.
+ *
+ * `display: "swap"` so text paints in the fallback immediately rather than
+ * blocking on the webfont. On a trading screen, seeing the numbers late is worse
+ * than seeing them briefly in the wrong face.
+ */
+const font = Work_Sans({
+  weight: ["300", "400", "600"],
   subsets: ["latin"],
+  display: "swap",
 });
 
 /**

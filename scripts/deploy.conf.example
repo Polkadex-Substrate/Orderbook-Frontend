@@ -3,7 +3,7 @@
 # deploy.conf is gitignored: it names one specific host, not the project.
 
 DOMAIN="testnet.polkadex.ee"
-ENV_FILE="apps/hestia/.env"
+BUILD_ENV_FILE="apps/hestia/.env"
 IMAGE_REPO="orderbook-fe"
 
 # 1 = on, 0 = off
@@ -40,5 +40,5 @@ KEEP_BACKUPS=1
 
 # 0 = keep the runtime env already on the server (hand-edits survive; changes
 #     to the source env file are ignored, with a warning).
-# 1 = overwrite it from ENV_FILE on every deploy.
+# 1 = overwrite it from BUILD_ENV_FILE on every deploy.
 REPLACE_ENV=0

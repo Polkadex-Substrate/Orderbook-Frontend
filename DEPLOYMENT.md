@@ -135,13 +135,13 @@ An array of entries; see `scripts/announcements.example.json`:
 ]
 ```
 
-- `id` — **must be unique and must change when the message changes.** It is the
+- `id` - **must be unique and must change when the message changes.** It is the
   dismissal key in each user's `localStorage`, so reusing an id means anyone who
   dismissed the old announcement never sees the new one.
-- `type` — `Attention` | `Information` | `Error` | `Success` | `Loading`
-- `date` — epoch **milliseconds**; drives sort order
-- `active` — `true` = unread
-- `href` — optional link target
+- `type` - `Attention` | `Information` | `Error` | `Success` | `Loading`
+- `date` - epoch **milliseconds**; drives sort order
+- `active` - `true` = unread
+- `href` - optional link target
 
 `[]` means nothing to announce, which is the state `install.sh` seeds. The file
 is never overwritten by a deploy: it holds operational state, and it lives in
@@ -171,13 +171,13 @@ nothing to reload.
 
 Edit the page itself at `/etc/orderbook-fe/maintenance.html`. It is written once
 by `install.sh` and never overwritten, so wording survives deploys. It is
-deliberately self-contained — no external CSS, fonts or images — because it has
+deliberately self-contained - no external CSS, fonts or images - because it has
 to render when the app is down and its assets may be unreachable.
 
 **Why nginx and not the app.** There is a `MAINTENACE_MODE` env var read by
 `src/proxy.ts`, but it has two problems: `proxy.ts` is Next middleware running on
 the **edge runtime**, which cannot read the filesystem, so no config file can
-drive it — and it is baked in at build time, meaning a rebuild during an
+drive it - and it is baked in at build time, meaning a rebuild during an
 incident. Worse, an in-app gate cannot answer at all once Node stops responding,
 which is exactly when a maintenance page matters. The nginx check has neither
 limitation.
@@ -241,7 +241,7 @@ usefully continue in the current shell.
 It warns about any Dockerfile `ARG` that has no value in your env file, so a
 silently-empty build var shows up at build time rather than in production.
 
-> **Build through the script, not `docker build` by hand.** There are ~46
+> **Build through the script, not `docker build` by hand.** There are 59
 > build args, and a missing `NEXT_PUBLIC_*` does not fail the build - it bakes
 > an empty string. `NEXT_PUBLIC_PROJECT_ID` is the sharpest case: empty, and
 > the app throws at boot.
@@ -661,9 +661,13 @@ itself. Two of this project's longest debugging sessions were caching, not code.
 2. Open the site with devtools: **no** "Project ID is not defined" boot error
    (that's `NEXT_PUBLIC_PROJECT_ID` missing), no anonymous `{}` WalletConnect
    errors.
-3. Chart renders - if "Chart data not available", read the console line
-   `[GraphV2] getCandles failed…` and check `GRAPHQL_URL` plus the engine
-   (see `../orderbook/KNOWN-ISSUES.md`).
+3. Chart renders - if not, read the console line `[chart] getCandles failed…`.
+   Candles come from the **REST datafeed gateway**, not the GraphQL backend, so
+   check `NEXT_PUBLIC_SERVER_BASE_URL` and `NEXT_PUBLIC_GATEWAY_SECRET`. The
+   error prints the full request URL and the gateway's response body: a 404
+   usually means an unknown symbol (it resolves tickers, not asset ids) or an
+   unsupported resolution (only `1`, `5`, `60`, `1D` are served). See
+   `packages/chart/README.md`.
 4. Faucet nav enabled and `/faucet` reachable (needs `NEXT_PUBLIC_ENABLE_FAUCET`
    plus `NEXT_PUBLIC_FAUCET_URL`/`_API_KEY`).
 5. Bridge page connects a wallet and lists destination accounts.

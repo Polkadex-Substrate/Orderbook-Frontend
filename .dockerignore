@@ -5,7 +5,20 @@ node_modules
 .idea
 __test__
 *.md
-.env*
+# Env files, at ANY depth.
+#
+# The pattern used to be ".env*", which Docker anchors at the CONTEXT ROOT - so
+# it excluded ./.env but NOT apps/hestia/.env. That file was therefore copied in
+# by `COPY . .`, baked into an image layer (recoverable via `docker history`) and
+# installed to /opt/orderbook-fe/apps/hestia/.env. It carried the Sentry DSN,
+# faucet API key, gateway secret and a drpc key.
+#
+# It was also load-bearing: ~25 NEXT_PUBLIC_* vars had no Dockerfile ARG and
+# reached the build only through this file. Those ARGs were added first - see the
+# Dockerfile - so config now arrives solely via --build-arg, which is explicit
+# and which build-release.sh validates.
+**/.env
+**/.env.*
 changed_files.txt
 diff_*.txt
 dist

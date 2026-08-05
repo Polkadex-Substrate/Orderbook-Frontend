@@ -2,6 +2,7 @@ import { LmpMarketConfig } from "@orderbook/core/index";
 import { Tokens, Typography } from "@mitrabook/ux";
 import { millify } from "@aksumite/numericals";
 import { createColumnHelper } from "@tanstack/react-table";
+import { formatDisplay } from "@orderbook/format";
 
 import { MarketCard } from "./marketCard";
 
@@ -75,7 +76,7 @@ export const columns = () => [
     cell: (e) => {
       return (
         <Typography.Text size="sm">
-          {e.getValue().quoteVolume24h.toFixed(4)}{" "}
+          {formatDisplay(e.getValue().quoteVolume24h)}{" "}
           {e.getValue().quoteAsset?.ticker || ""}
         </Typography.Text>
       );

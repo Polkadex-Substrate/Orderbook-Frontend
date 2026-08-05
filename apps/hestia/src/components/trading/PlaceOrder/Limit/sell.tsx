@@ -7,6 +7,7 @@ import { useFormik } from "formik";
 import { useLimitOrder } from "@orderbook/core/hooks";
 import { limitOrderValidations } from "@orderbook/core/validations";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
+import { formatDisplay } from "@orderbook/format";
 
 import { Balance } from "../balance";
 import ConnectAccount from "../connectAccount";
@@ -277,7 +278,7 @@ export const SellOrder = ({
                 <>Crediting balance...</>
               ) : (
                 <>
-                  Move {moveAmount.toFixed(4)} {market?.baseAsset?.ticker} &
+                  Move {formatDisplay(moveAmount)} {market?.baseAsset?.ticker} &
                   Sell
                 </>
               )}

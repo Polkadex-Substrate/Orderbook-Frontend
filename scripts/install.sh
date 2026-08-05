@@ -426,39 +426,39 @@ run "chmod 0750 '$PREFIX/apps/hestia/.next/cache'"
 
 # ── 5. Runtime environment ──────────────────────────────────────────────
 ENV_DIR=/etc/$SERVICE_NAME
-ENV_FILE="$ENV_DIR/$SERVICE_NAME.env"
+RUNTIME_ENV_FILE="$ENV_DIR/$SERVICE_NAME.env"
 run "mkdir -p '$ENV_DIR'"
 
-if [ -f "$ENV_FILE" ] && [ "$REPLACE_ENV" -eq 0 ]; then
+if [ -f "$RUNTIME_ENV_FILE" ] && [ "$REPLACE_ENV" -eq 0 ]; then
   # Existing env is preserved so a redeploy cannot clobber hand-edits made on
   # the server. But that means edits to the SOURCE env file are silently
   # ignored on re-run - surprising when you have just changed GRAPHQL_URL and
   # redeployed. Say so, loudly, when the two differ.
-  if [ -n "$ENV_SRC" ] && [ -f "$ENV_SRC" ] && ! cmp -s "$ENV_SRC" "$ENV_FILE"; then
+  if [ -n "$ENV_SRC" ] && [ -f "$ENV_SRC" ] && ! cmp -s "$ENV_SRC" "$RUNTIME_ENV_FILE"; then
     warn "Runtime env differs from $ENV_SRC - KEEPING the installed copy.
-     Installed: $ENV_FILE
+     Installed: $RUNTIME_ENV_FILE
      Source:    $ENV_SRC
      Re-run with --replace-env to overwrite (the current file is backed up).
      Note NEXT_PUBLIC_* values are compiled in at build time and are not
      affected either way - those need a rebuild."
   else
-    log "Keeping existing $ENV_FILE"
+    log "Keeping existing $RUNTIME_ENV_FILE"
   fi
 elif [ -n "$ENV_SRC" ] && [ -f "$ENV_SRC" ]; then
-  if [ -f "$ENV_FILE" ]; then
+  if [ -f "$RUNTIME_ENV_FILE" ]; then
     log "Replacing runtime env from $ENV_SRC (previous kept as .prev)"
-    run "cp -a '$ENV_FILE' '$ENV_FILE.prev'"
+    run "cp -a '$RUNTIME_ENV_FILE' '$RUNTIME_ENV_FILE.prev'"
   else
     log "Installing runtime env from $ENV_SRC"
   fi
-  run "install -m 0640 -o root -g $SVC_USER '$ENV_SRC' '$ENV_FILE'"
+  run "install -m 0640 -o root -g $SVC_USER '$ENV_SRC' '$RUNTIME_ENV_FILE'"
 elif [ -f "$SRC_DIR/orderbook-fe.env" ]; then
   log "Installing runtime env bundled with the release"
-  run "install -m 0640 -o root -g $SVC_USER '$SRC_DIR/orderbook-fe.env' '$ENV_FILE'"
+  run "install -m 0640 -o root -g $SVC_USER '$SRC_DIR/orderbook-fe.env' '$RUNTIME_ENV_FILE'"
 else
-  log "Writing a starter $ENV_FILE"
+  log "Writing a starter $RUNTIME_ENV_FILE"
   if [ "$DRY_RUN" -eq 0 ]; then
-    cat > "$ENV_FILE" <<EOF
+    cat > "$RUNTIME_ENV_FILE" <<EOF
 # Runtime environment for $SERVICE_NAME.
 # NOTE: NEXT_PUBLIC_* values are compiled into the browser bundle at BUILD
 # time and cannot be changed here - rebuild the release to change them.
@@ -470,8 +470,8 @@ HOSTNAME=0.0.0.0
 # POLKADEX_CHAIN=wss://...
 # GRAPHQL_URL=https://...
 EOF
-    chown root:"$SVC_USER" "$ENV_FILE"
-    chmod 0640 "$ENV_FILE"
+    chown root:"$SVC_USER" "$RUNTIME_ENV_FILE"
+    chmod 0640 "$RUNTIME_ENV_FILE"
   fi
 fi
 
@@ -524,13 +524,13 @@ else
     color-scheme: dark;
     --pink: #E6007A;
     --pink-soft: #EA268E;
-    --orange: #F08205;
-    --green: #02B671;
+    --orange: #FFA500;
+    --green: #0CA564;
     --l0: #0D0D10;
     --l1: #131419;
     --l4: #2B303A;
     --text: #FFFFFF;
-    --muted: #8B909A;
+    --muted: #A8ADB7;
   }
   * { box-sizing: border-box; }
   body {
@@ -540,7 +540,7 @@ else
     /* Two soft brand glows, so the page is not a flat black rectangle. */
     background-image:
       radial-gradient(60rem 30rem at 15% -10%, rgba(230,0,122,.18), transparent 60%),
-      radial-gradient(50rem 26rem at 90% 110%, rgba(240,130,5,.14), transparent 60%);
+      radial-gradient(50rem 26rem at 90% 110%, rgba(255,165,0,.14), transparent 60%);
   }
   .card {
     width: 100%; max-width: 34rem; text-align: center;
@@ -553,7 +553,7 @@ else
     display: inline-flex; align-items: center; gap: .5rem;
     font-size: .75rem; font-weight: 600; letter-spacing: .04em;
     text-transform: uppercase; color: var(--orange);
-    border: 1px solid rgba(240,130,5,.35); background: rgba(240,130,5,.10);
+    border: 1px solid rgba(255,165,0,.35); background: rgba(255,165,0,.10);
     padding: .35rem .7rem; border-radius: 999px; margin-bottom: 1.25rem;
   }
   .dot {
@@ -570,7 +570,7 @@ else
   strong { color: var(--text); font-weight: 600; }
   .safe {
     margin-top: 1.5rem; padding: .85rem 1rem; border-radius: 10px;
-    border: 1px solid rgba(2,182,113,.3); background: rgba(2,182,113,.08);
+    border: 1px solid rgba(12,165,100,.3); background: rgba(12,165,100,.08);
     color: var(--green); font-size: .875rem; font-weight: 500;
   }
   /* Three-dot "working on it" indicator. Decorative only, so aria-hidden. */
@@ -643,7 +643,7 @@ Type=simple
 User=$SVC_USER
 Group=$SVC_USER
 WorkingDirectory=$PREFIX
-EnvironmentFile=$ENV_FILE
+EnvironmentFile=$RUNTIME_ENV_FILE
 Environment=NODE_ENV=production
 Environment=PORT=$PORT
 Environment=HOSTNAME=0.0.0.0
@@ -718,7 +718,7 @@ depend() {
 
 start_pre() {
     set -a
-    [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+    [ -f "$RUNTIME_ENV_FILE" ] && . "$RUNTIME_ENV_FILE"
     set +a
     export NODE_ENV=production PORT=$PORT HOSTNAME=0.0.0.0
 }
@@ -950,7 +950,7 @@ if [ "$HARDEN" -eq 1 ]; then
     else
       warn "Not binding to localhost: no reverse proxy was configured.
      Re-run with --with-nginx, or put your own proxy in front and set
-     HOSTNAME=127.0.0.1 in $ENV_FILE."
+     HOSTNAME=127.0.0.1 in $RUNTIME_ENV_FILE."
     fi
     [ "$HARDEN_SSH" -eq 1 ] && harden_ssh
 
@@ -981,7 +981,7 @@ cat <<EOF
   Service : $SERVICE_NAME
   Listen  : http://127.0.0.1:$PORT
   Files   : $PREFIX
-  Env     : $ENV_FILE
+  Env     : $RUNTIME_ENV_FILE
 EOF
 
 # Cloudflare posture, restated at the end: the mid-run warning scrolls past,

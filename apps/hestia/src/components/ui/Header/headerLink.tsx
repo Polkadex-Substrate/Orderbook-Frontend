@@ -1,8 +1,31 @@
+"use client";
+
 import { Url } from "next/dist/shared/lib/router/router";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ComponentProps, PropsWithChildren, ReactNode } from "react";
 import { Accordion, Dropdown, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
+
+/**
+ * First path segment, or "" at the root. "/trading/WETH-USDT" -> "trading".
+ *
+ * Segment comparison, not equality, because the Trade link's href is a specific
+ * market ("/trading/WETH-USDT", from the last-used market) while the user may be
+ * on any other market. An exact match would leave Trade unhighlighted on exactly
+ * the page where it matters most. Prefix matching via startsWith would be the
+ * other obvious choice, but "/rewards" is a prefix of a hypothetical
+ * "/rewards-archive", so segments are the safer comparison.
+ *
+ * This relies on the nav's routes having distinct first segments - today
+ * trading / bridge / rewards / faucet. Two items under one segment would both
+ * highlight.
+ */
+const firstSegment = (path: string): string =>
+  path
+    .replace(/[?#].*$/, "")
+    .split("/")
+    .filter(Boolean)[0] ?? "";
 
 interface DropdownProps {
   items: {
@@ -85,6 +108,23 @@ const Single = ({
   // target=_blank, but not every in-app webview does.
   const resolvedRel =
     rel ?? (resolvedTarget === "_blank" ? "noopener noreferrer" : undefined);
+
+  // Which nav item you are on had no visual answer: every link rendered
+  // identically, so on /bridge the nav gave no sense of place. Derived here
+  // rather than passed per call site, so the desktop bar and the mobile menu
+  // (which renders the same component) cannot disagree, and so a new link gets
+  // it for free.
+  //
+  // External links are never "current" - you are not on explorer.polkadex.ee.
+  // Disabled ones are not either, since they are not reachable.
+  const pathname = usePathname() ?? "";
+  const isActive =
+    !disabled &&
+    !isExternal &&
+    typeof href === "string" &&
+    firstSegment(href) !== "" &&
+    firstSegment(href) === firstSegment(pathname);
+
   return (
     <Typography.Text
       asChild
@@ -107,6 +147,13 @@ const Single = ({
         !disabled &&
           "transition-colors ease-out duration-300 hover:text-primary-base",
         disabled && "cursor-not-allowed opacity-50",
+        // Colour AND an underline bar, deliberately not colour alone: hover
+        // already turns a link primary-base, so colour by itself would make the
+        // hovered link indistinguishable from the current one. The bar is the
+        // part that survives hover. Colour alone would also be the only signal
+        // for anyone who cannot distinguish it (WCAG 1.4.1).
+        isActive &&
+          "text-primary-base relative after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-[2px] after:rounded-full after:bg-primary-base",
         // Forwarded last so a call site can override. The mobile menu passes
         // className="text-lg" on several items and it was being dropped along
         // with target, leaving those entries a size smaller than the ones that
@@ -118,6 +165,10 @@ const Single = ({
         href={disabled ? "#" : (href as Url)}
         target={disabled ? undefined : resolvedTarget}
         rel={disabled ? undefined : resolvedRel}
+        // The non-visual half of the indicator. A screen reader announces "current
+        // page" from this; the underline above is invisible to it.
+        aria-current={isActive ? "page" : undefined}
+        aria-disabled={disabled || undefined}
       >
         {children}
       </Link>

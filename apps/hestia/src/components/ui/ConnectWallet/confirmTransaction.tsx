@@ -33,6 +33,7 @@ import {
   useTransactionFee,
 } from "@orderbook/core/index";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
+import { formatDisplay } from "@orderbook/format";
 
 import { ErrorMessage, GenericHorizontalItem, Terms } from "../ReadyToUse";
 
@@ -222,7 +223,7 @@ export const ConfirmTransaction = ({
                       <Skeleton loading={swapLoading} className="min-h-4 w-10">
                         <div className="flex items-center gap-1">
                           <Typography.Text>{`${
-                            swapPrice === null ? "-" : swapPrice.toFixed(4)
+                            swapPrice === null ? "-" : formatDisplay(swapPrice)
                           } ${tokenFee?.name}`}</Typography.Text>
                           <Typography.Text appearance="primary">
                             ≈

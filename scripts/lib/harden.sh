@@ -225,9 +225,18 @@ EOF
 # hitting :3000 directly.
 harden_bind_localhost() {
   log "Binding the app to 127.0.0.1 only (reachable via the proxy)"
+  # Set by install.sh, the only caller. Named RUNTIME_ENV_FILE (not ENV_FILE) so
+  # it cannot be confused with deploy.sh's BUILD_ENV_FILE - writing HOSTNAME into
+  # the build env file would do nothing at all, and the old shared name made that
+  # a one-typo mistake.
+  if [ -z "${RUNTIME_ENV_FILE:-}" ]; then
+    warn "RUNTIME_ENV_FILE unset - cannot bind the app to localhost.
+     harden.sh must be sourced by install.sh, which defines it."
+    return
+  fi
   if [ "$DRY_RUN" -eq 0 ]; then
-    sed -i 's/^HOSTNAME=.*/HOSTNAME=127.0.0.1/' "$ENV_FILE" 2>/dev/null || true
-    grep -q '^HOSTNAME=' "$ENV_FILE" || echo "HOSTNAME=127.0.0.1" >> "$ENV_FILE"
+    sed -i 's/^HOSTNAME=.*/HOSTNAME=127.0.0.1/' "$RUNTIME_ENV_FILE" 2>/dev/null || true
+    grep -q '^HOSTNAME=' "$RUNTIME_ENV_FILE" || echo "HOSTNAME=127.0.0.1" >> "$RUNTIME_ENV_FILE"
   fi
 }
 

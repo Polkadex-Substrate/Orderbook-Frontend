@@ -50,7 +50,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 MODE=docker
-ENV_FILE="apps/hestia/.env"
+BUILD_ENV_FILE="apps/hestia/.env"
 SKIP_INSTALL=0
 IMAGE_REPO="orderbook-fe"
 IMAGE_TAG=""
@@ -63,7 +63,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --docker)       MODE=docker; shift ;;
     --tarball)      MODE=tarball; shift ;;
-    --env)          ENV_FILE="$2"; shift 2 ;;
+    --env)          BUILD_ENV_FILE="$2"; shift 2 ;;
     --repo)         IMAGE_REPO="$2"; shift 2 ;;
     --tag)          IMAGE_TAG="$2"; shift 2 ;;
     --push)         PUSH=1; shift ;;
@@ -93,7 +93,7 @@ else
   }
 fi
 
-[ -f "$ENV_FILE" ] || die "env file not found: $ENV_FILE
+[ -f "$BUILD_ENV_FILE" ] || die "env file not found: $BUILD_ENV_FILE
 Copy apps/hestia/.env.example and fill it in, or pass --env <path>."
 
 # ── Version stamp (shared by both modes) ────────────────────────────────
@@ -116,9 +116,9 @@ STAMP="${VERSION}-${GITSHA}${DIRTY}"
 # which aborts the build with a bare
 #   apps/hestia/.env: line 109: unexpected EOF while looking for matching `''
 # and no indication that the env file is what is wrong, let alone which value.
-if ! bash -n "$ENV_FILE" 2>/dev/null; then
-  echo "Shell syntax error in $ENV_FILE:" >&2
-  bash -n "$ENV_FILE" 2>&1 | sed 's/^/  /' >&2
+if ! bash -n "$BUILD_ENV_FILE" 2>/dev/null; then
+  echo "Shell syntax error in $BUILD_ENV_FILE:" >&2
+  bash -n "$BUILD_ENV_FILE" 2>&1 | sed 's/^/  /' >&2
   die "This file is sourced, so values containing ' \" \` or \$ must be quoted:
     KEY=\"a value with an apostrophe like We'll\"
   The line number above points at where the quote was left open, which is
@@ -129,12 +129,12 @@ fi
 # to `docker build --build-arg` below and to `next build` in tarball mode.
 set -a
 # shellcheck disable=SC1090
-. "$ENV_FILE"
+. "$BUILD_ENV_FILE"
 set +a
 
 : "${NEXT_PUBLIC_PROJECT_ID:?NEXT_PUBLIC_PROJECT_ID is required - the app throws at boot without it}"
 
-log "orderbook-fe $STAMP  (mode: $MODE, env: $ENV_FILE)"
+log "orderbook-fe $STAMP  (mode: $MODE, env: $BUILD_ENV_FILE)"
 
 # ════════════════════════════════════════════════════════════════════════
 # Docker mode
@@ -165,7 +165,7 @@ if [ "$MODE" = docker ]; then
   done < <(grep -E '^ARG [A-Z_][A-Z0-9_]*[[:space:]]*$' Dockerfile | awk '{print $2}' | sort -u)
 
   if [ ${#MISSING[@]} -gt 0 ]; then
-    warn "${#MISSING[@]} build arg(s) unset in $ENV_FILE, baked empty:
+    warn "${#MISSING[@]} build arg(s) unset in $BUILD_ENV_FILE, baked empty:
      ${MISSING[*]}"
   fi
 
@@ -206,7 +206,7 @@ if [ "$MODE" = docker ]; then
   echo "  Size  : ${SIZE:-unknown}"
   echo
   echo "Run it (ad-hoc, for a smoke test):"
-  echo "  docker run --rm -p 3000:3000 --env-file $ENV_FILE ${IMAGE_REPO}:${IMAGE_TAG}"
+  echo "  docker run --rm -p 3000:3000 --env-file $BUILD_ENV_FILE ${IMAGE_REPO}:${IMAGE_TAG}"
   echo
   echo "Deploy it (extracts the artifact and installs it under systemd):"
   echo "  sudo scripts/deploy.sh"

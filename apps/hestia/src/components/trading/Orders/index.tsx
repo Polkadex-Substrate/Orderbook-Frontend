@@ -47,8 +47,6 @@ export const Orders = () => {
   } = useProfile();
   const connected = tradeAddress?.length > 0;
 
-  const isFundingType = useMemo(() => !mainAddress, [mainAddress]);
-
   const [show, setShow] = useState(true);
   const [filters, setFilters] = useState<Ifilters>(initialFilters);
 

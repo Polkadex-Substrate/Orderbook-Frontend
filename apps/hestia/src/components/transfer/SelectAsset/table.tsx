@@ -17,7 +17,6 @@ import classNames from "classnames";
 import { columns } from "./columns";
 
 import { FilteredAssetProps } from "@/hooks";
-import { picoScale } from "@/helpers";
 
 // Plain component: this was wrapped in forwardRef but ignored the ref (no
 // caller ever passed one), which triggered React's "render functions accept
@@ -41,11 +40,10 @@ export const Table = ({
 
   const newData = useMemo(
     () =>
-      data.map((item) =>
-        item?.ticker === "USDT"
-          ? { ...item, onChainBalance: picoScale(item?.onChainBalance) }
-          : { ...item }
-      ),
+      // No per-ticker rescaling: fetchOnChainBalance already divides by the
+      // asset's on-chain decimals. The USDT picoScale branch here scaled it a
+      // second time.
+      data.map((item) => ({ ...item })),
     [data]
   );
 

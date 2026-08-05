@@ -40,7 +40,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 DOMAIN=""
-ENV_FILE="apps/hestia/.env"
+BUILD_ENV_FILE="apps/hestia/.env"
 IMAGE_REPO="orderbook-fe"
 DO_PULL=1
 DO_BUILD=1
@@ -57,10 +57,21 @@ EXTRA_INSTALL_ARGS=""
 # shellcheck disable=SC1091
 [ -r scripts/deploy.conf ] && . scripts/deploy.conf
 
+# Back-compat. This variable used to be called ENV_FILE, which collided with
+# install.sh's ENV_FILE - that one is the RUNTIME env at
+# /etc/orderbook-fe/orderbook-fe.env, a different file entirely. harden.sh does
+# `sed -i` on whichever it inherits, so the two names had to be separated.
+#
+# scripts/deploy.conf is gitignored, so existing ones on deployed hosts still set
+# the old name. Honour it, loudly, rather than silently reverting to the default.
+# Read before the flag loop below, so --env still wins.
+LEGACY_ENV_FILE="${ENV_FILE:-}"
+[ -n "$LEGACY_ENV_FILE" ] && BUILD_ENV_FILE="$LEGACY_ENV_FILE"
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --domain)     DOMAIN="$2"; shift 2 ;;
-    --env)        ENV_FILE="$2"; shift 2 ;;
+    --env)        BUILD_ENV_FILE="$2"; shift 2 ;;
     --no-pull)    DO_PULL=0; shift ;;
     --no-build)   DO_BUILD=0; shift ;;
     --harden)     HARDEN=1; shift ;;
@@ -79,8 +90,14 @@ log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mWARN:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
+if [ -n "$LEGACY_ENV_FILE" ]; then
+  warn "scripts/deploy.conf sets ENV_FILE, which was renamed to BUILD_ENV_FILE.
+     Using it for now: $LEGACY_ENV_FILE
+     Rename the key in scripts/deploy.conf - this shim will be removed."
+fi
+
 [ -n "$DOMAIN" ] || die "no --domain given (and none in scripts/deploy.conf)"
-[ -f "$ENV_FILE" ] || die "env file not found: $ENV_FILE"
+[ -f "$BUILD_ENV_FILE" ] || die "env file not found: $BUILD_ENV_FILE"
 
 # install.sh needs root; the build does not. Escalate only where required.
 if [ "$(id -u)" -eq 0 ]; then SUDO=""
@@ -101,7 +118,7 @@ fi
 # ── 2. Image ────────────────────────────────────────────────────────────
 if [ "$DO_BUILD" -eq 1 ]; then
   step "2/5  Building image"
-  scripts/build-release.sh --env "$ENV_FILE" --repo "$IMAGE_REPO"
+  scripts/build-release.sh --env "$BUILD_ENV_FILE" --repo "$IMAGE_REPO"
 else
   step "2/5  Skipping build (--no-build)"
   docker image inspect "$IMAGE_REPO:latest" >/dev/null 2>&1 \
@@ -111,7 +128,7 @@ fi
 # ── 3. Tarball ──────────────────────────────────────────────────────────
 step "3/5  Packing release tarball"
 rm -f dist/orderbook-fe-*.tar.gz dist/orderbook-fe-*.tar.gz.sha256 2>/dev/null || true
-scripts/build-release.sh --tarball --from-image "$IMAGE_REPO:latest" --env "$ENV_FILE"
+scripts/build-release.sh --tarball --from-image "$IMAGE_REPO:latest" --env "$BUILD_ENV_FILE"
 
 TARBALL="$(ls -1t dist/orderbook-fe-*.tar.gz 2>/dev/null | head -1)"
 [ -n "$TARBALL" ] || die "no tarball produced in dist/"
@@ -168,7 +185,7 @@ step "4/5  Installing"
 rm -rf dist/orderbook-fe
 tar -C dist -xzf "$TARBALL"
 
-INSTALL_ARGS="--domain $DOMAIN --env $ENV_FILE --keep-backups $KEEP_BACKUPS"
+INSTALL_ARGS="--domain $DOMAIN --env $BUILD_ENV_FILE --keep-backups $KEEP_BACKUPS"
 [ "$CLOUDFLARE" -eq 1 ]  && INSTALL_ARGS="$INSTALL_ARGS --cloudflare"
 [ "$HARDEN" -eq 1 ]      && INSTALL_ARGS="$INSTALL_ARGS --harden"
 [ "$DRY_RUN" -eq 1 ]     && INSTALL_ARGS="$INSTALL_ARGS --dry-run"

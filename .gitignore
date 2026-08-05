@@ -98,3 +98,8 @@ apps/hestia/public/sw.js.map
 apps/hestia/public/workbox-*.js
 apps/hestia/public/workbox-*.js.map
 apps/hestia/public/fallback-*.js
+
+# TypeScript incremental build cache. apps/hestia/.gitignore already had this,
+# but that file only covers its own directory - so packages/*/tsconfig.tsbuildinfo
+# kept showing up as untracked after any `tsc -p packages/...`.
+*.tsbuildinfo

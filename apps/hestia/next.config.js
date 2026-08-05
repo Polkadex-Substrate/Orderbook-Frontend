@@ -35,7 +35,11 @@ const nextConfig = {
     return config;
   },
   output: "standalone",
-  transpilePackages: ["@orderbook/core", "@orderbook/chart"],
+  // @orderbook/format must be here too. All three workspace packages set
+  // main to raw ./src/index.ts, so Next has to compile them itself - an
+  // omitted entry is a build failure, not a runtime one, which is why it can
+  // sit unnoticed through any number of `yarn dev` runs.
+  transpilePackages: ["@orderbook/core", "@orderbook/chart", "@orderbook/format"],
   experimental: {
     // @remixicon/react is a barrel file re-exporting ~3,200 icon components.
     // Webpack pulled the ENTIRE set into one 2.45 MB chunk even though the app

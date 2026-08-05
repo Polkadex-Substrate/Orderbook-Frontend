@@ -1,83 +1,80 @@
-# Turborepo starter
+# Orderbook Frontend (OFE)
 
-This is an official starter Turborepo.
+The Polkadex Orderbook trading interface. Next.js 15 App Router, in a Turborepo
+monorepo, deployed to a VPS behind nginx and Cloudflare.
 
-## Using this example
+> This file was the unmodified `create-turbo` starter README until 2026-07-31 - > it described apps that do not exist (`docs`, `web`, `ui`) and told you to run
+> `pnpm` in a yarn-1 repo. If something below is wrong, fix it here rather than
+> working around it.
 
-Run the following command:
+## Start here
 
-```sh
-npx create-turbo@latest
-```
+| Doc | What it covers |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the pieces fit, where data comes from, the traps |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | VPS deploy, nginx, Cloudflare, maintenance mode, announcements |
+| [`docs/BACKEND-CONTRACT.md`](docs/BACKEND-CONTRACT.md) | What the frontend expects of the backends and the chain |
+| [`packages/chart/README.md`](packages/chart/README.md) | The chart package and its datafeed contract |
+| [`apps/hestia/src/lib/hyperbridge/docs/`](apps/hestia/src/lib/hyperbridge/docs/) | Bridge: adding a token or chain, and the API-driven config plan |
+| [`apps/hestia/src/components/faucet/docs/faucet-flow.md`](apps/hestia/src/components/faucet/docs/faucet-flow.md) | Testnet faucet flow |
+| [`apps/hestia/docs/user-journey-tour.md`](apps/hestia/docs/user-journey-tour.md) | The onboarding product tour |
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `ui`: a stub React component library shared by both `web` and `docs` applications
-- `@orderbook/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@orderbook/tsconfig`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## Workspaces
 
 ```
-cd my-turborepo
-pnpm build
+apps/
+  hestia/            the trading app - the only app
+packages/
+  core/              chain + backend access, providers, hooks, helpers
+  chart/             candle/depth chart (lightweight-charts)
+  format/            number formatting
+  eslint-config/     shared eslint
+  tsconfig/          shared tsconfig
 ```
 
-### Develop
+`@orderbook/core` and `@orderbook/chart` are consumed as source via
+`transpilePackages`, not built separately. Editing them rebuilds hestia.
 
-To develop all apps and packages, run the following command:
+## Prerequisites
 
-```
-cd my-turborepo
-pnpm dev
-```
+- **Node 22** (`engines: >=22 <23`, and `.nvmrc` says 22). Node 23+ is not
+  supported.
+- **yarn 1.22.22** (`packageManager`). Not pnpm, not yarn 2+.
+- An `apps/hestia/.env` - copy `apps/hestia/.env.example` and fill it in. The app
+  **throws at boot** without `NEXT_PUBLIC_PROJECT_ID`.
 
-### Remote Caching
+## Commands
 
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+```bash
+yarn install              # yarn.lock is committed; use --frozen-lockfile in CI
+yarn dev                  # turbo run dev
+yarn build                # turbo run build
+yarn lint                 # eslint - RUN THIS BEFORE DEPLOYING (see below)
+yarn format               # prettier
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-npx turbo link
+scripts/build-release.sh  # docker image (default) or --tarball
+sudo scripts/deploy.sh    # pull, build, install, restart, health-check
 ```
 
-## deploys(2)
+**Run `yarn lint` before a deploy.** `next build` on Next 15 runs ESLint, and a
+lint *error* fails the production build - five minutes into a Docker build, with
+the real message buried well above Docker's final `exit code: 1`. `tsc` passing
+does not imply lint passing: a misplaced import is valid TypeScript.
 
-## Useful Links
+## First-load slowness in dev is normal
 
-Learn more about the power of Turborepo :
+`next dev` compiles each route on first request. The root layout pulls in wagmi,
+`@polkadot/api` and the chart, so a cold first load of 10-30s is expected and
+says nothing about production. Subsequent loads should be fast; if *every* load
+is slow, that is a real problem.
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+## Two things that will bite you
+
+**`NEXT_PUBLIC_*` and everything in `next.config.js`'s `env:` block are baked in
+at build time.** Editing them on a running server changes nothing. Anything in
+that `env:` block is also inlined into the browser bundle even without the
+prefix - treat the whole list as public and never put a credential there.
+
+**A missing build var does not fail the build**, it bakes an empty string. That
+is why `scripts/build-release.sh` exists rather than a bare `docker build`: it
+warns about every declared `ARG` with no value.

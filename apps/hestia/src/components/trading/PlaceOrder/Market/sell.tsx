@@ -6,6 +6,7 @@ import { Button, Input, Spinner, Typography } from "@mitrabook/ux";
 import { Market, Ticker } from "@orderbook/core/utils/orderbookService/types";
 import { useMarketOrder } from "@orderbook/core/hooks";
 import { marketOrderValidations } from "@orderbook/core/validations";
+import { formatDisplay } from "@orderbook/format";
 
 import { Balance } from "../balance";
 import ConnectAccount from "../connectAccount";
@@ -181,7 +182,7 @@ export const SellOrder = ({
                 <>Crediting balance...</>
               ) : (
                 <>
-                  Move {moveAmount.toFixed(4)} {market?.baseAsset?.ticker} &
+                  Move {formatDisplay(moveAmount)} {market?.baseAsset?.ticker} &
                   Sell
                 </>
               )}

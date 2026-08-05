@@ -25,6 +25,7 @@ import {
   parseScientific,
 } from "@orderbook/core/index";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { formatDisplay } from "@orderbook/format";
 
 import { useBridgeProvider } from "./BridgeProvider";
 
@@ -217,7 +218,7 @@ export const ConfirmTransaction = ({
                         <div className="flex items-center gap-1">
                           <Typography.Text>
                             {Number(swapPriceRaw) > 0
-                              ? `${Number(swapPriceRaw).toFixed(4)} ${selectedAsset?.ticker}`
+                              ? `${formatDisplay(Number(swapPriceRaw))} ${selectedAsset?.ticker}`
                               : "--------"}
                           </Typography.Text>
                           <Typography.Text appearance="primary">
@@ -269,7 +270,7 @@ export const ConfirmTransaction = ({
                     </ResponsiveCard>
                     {showAutoSwap && Number(swapPriceRaw) > 0 && (
                       <ResponsiveCard label="Auto swap">
-                        {Number(swapPriceRaw).toFixed(4)}{" "}
+                        {formatDisplay(Number(swapPriceRaw))}{" "}
                         {selectedAsset?.ticker}
                       </ResponsiveCard>
                     )}

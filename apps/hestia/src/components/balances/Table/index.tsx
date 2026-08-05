@@ -15,7 +15,6 @@ import { columns } from "./columns";
 import { Loading } from "./loading";
 import { ResponsiveTable } from "./responsiveTable";
 
-import { picoScale } from "@/helpers";
 const responsiveKeys = ["inOrders", "fundingAccount"];
 
 // Plain component: was forwardRef but ignored the ref and no caller
@@ -42,11 +41,10 @@ export const Table = ({
 
   const newData = useMemo(
     () =>
-      data.map((item) =>
-        item?.ticker === "USDT"
-          ? { ...item, onChainBalance: picoScale(item?.onChainBalance) }
-          : { ...item }
-      ),
+      // No per-ticker rescaling: fetchOnChainBalance already divides by the
+      // asset's on-chain decimals. The USDT picoScale branch here scaled it a
+      // second time.
+      data.map((item) => ({ ...item })),
     [data]
   );
 

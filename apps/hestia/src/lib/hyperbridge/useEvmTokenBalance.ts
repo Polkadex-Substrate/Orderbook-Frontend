@@ -121,5 +121,7 @@ export function useEvmTokenBalance(
   return { balance, isLoading, refetch: fetchBalance };
 }
 
-// Backwards-compatible alias - existing imports of useWethBalance continue to work
-export const useWethBalance = (address?: string) => useEvmTokenBalance(address);
+// The useWethBalance alias that used to live here is gone. It was kept for
+// "existing imports", but there were none - it and the useWethBalance.ts
+// re-export shim were both dead. Call useEvmTokenBalance directly; its Sepolia
+// and WETH defaults come from config/bridge.ts.

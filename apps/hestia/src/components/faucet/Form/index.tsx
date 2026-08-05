@@ -8,11 +8,18 @@ import { useAccount } from "wagmi";
 import classNames from "classnames";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
+import { getFromStorage, setToStorage } from "@orderbook/core/helpers";
 
 import { faucetRegister, faucetDrip, faucetDripSepolia } from "../api";
 
 import { SelectToken, type FaucetToken } from "./selectToken";
-import { SelectNetwork, type FaucetNetwork } from "./selectNetwork";
+import {
+  SelectNetwork,
+  DEFAULT_FAUCET_NETWORK,
+  FAUCET_NETWORK_STORAGE_KEY,
+  findFaucetNetwork,
+  type FaucetNetwork,
+} from "./selectNetwork";
 
 import { PasteButton } from "@/components/ui/ReadyToUse";
 
@@ -47,13 +54,20 @@ const ADDRESS_FIELD_ID = "faucet-wallet-address";
 const initialValues = {
   walletAddress: "",
   tokenId: "",
-  networkId: "",
+  networkId: DEFAULT_FAUCET_NETWORK.id,
 };
 
 export const Form = () => {
-  const [selectedNetwork, setSelectedNetwork] = useState<
-    FaucetNetwork | undefined
-  >();
+  /*
+   * Always a network, never undefined. The default is applied synchronously and
+   * is the same on the server and the client, so there is no hydration mismatch -
+   * which is why the persisted value is read in an effect below rather than in a
+   * lazy initialiser. A lazy initialiser touching localStorage renders different
+   * HTML on the server than the client and React discards the whole tree.
+   */
+  const [selectedNetwork, setSelectedNetwork] = useState<FaucetNetwork>(
+    DEFAULT_FAUCET_NETWORK
+  );
   const [selectedToken, setSelectedToken] = useState<FaucetToken | undefined>();
   const [tokenOpen, setTokenOpen] = useState(false);
   const [networkOpen, setNetworkOpen] = useState(false);
@@ -78,9 +92,7 @@ export const Form = () => {
   // matches the dropdown above it. It used to name the chain FAMILY
   // ("Substrate Wallet Address"), which is developer vocabulary the rest of
   // the app never shows: every other surface says "Polkadex Testnet".
-  const addressLabel = selectedNetwork
-    ? `${selectedNetwork.name} Wallet Address`
-    : "Wallet Address";
+  const addressLabel = `${selectedNetwork.name} Wallet Address`;
 
   const {
     handleSubmit,
@@ -97,9 +109,9 @@ export const Form = () => {
     validate: (values) => {
       const errs: Partial<typeof values> = {};
 
-      if (!values.networkId) {
-        errs.networkId = "Please select a network";
-      }
+      // No networkId check. It cannot be empty now that the field starts at the
+      // default, and its error was never rendered anywhere - so it could only
+      // ever have blocked submission invisibly.
       if (!values.tokenId) {
         errs.tokenId = "Please select a token";
       }
@@ -119,7 +131,7 @@ export const Form = () => {
       const address = values.walletAddress.trim();
       const ticker = selectedToken!.ticker;
       try {
-        if (selectedNetwork!.id === "polkadex") {
+        if (selectedNetwork.id === "polkadex") {
           await faucetRegister(address);
           const result = await faucetDrip(address, ticker);
           onHandleAlert(
@@ -134,7 +146,11 @@ export const Form = () => {
           );
         }
         resetForm();
-        setSelectedNetwork(undefined);
+        // The network deliberately survives a successful claim - resetting it
+        // sent Sepolia users back to Polkadex after every request. resetForm()
+        // restores initialValues.networkId (the default), so the field is put
+        // back in step with the network that is actually still selected.
+        setFieldValue("networkId", selectedNetwork.id);
         setSelectedToken(undefined);
       } catch (error) {
         onHandleError(
@@ -146,6 +162,24 @@ export const Form = () => {
       }
     },
   });
+
+  /*
+   * Restore the persisted network, once, after hydration. Runs only when the
+   * stored value differs from the default, so the common case does no work and
+   * cannot fight the autofill effect below.
+   */
+  useEffect(() => {
+    const stored = findFaucetNetwork(
+      getFromStorage(FAUCET_NETWORK_STORAGE_KEY)
+    );
+    if (stored && stored.id !== DEFAULT_FAUCET_NETWORK.id) {
+      setSelectedNetwork(stored);
+      setFieldValue("networkId", stored.id);
+    }
+    // Mount only. Re-running on setFieldValue identity changes would stamp the
+    // stored network back over a choice the user just made.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (selectedNetwork?.id === "polkadex" && selectedAddresses.mainAddress) {
@@ -163,6 +197,7 @@ export const Form = () => {
 
   const handleNetworkSelect = (network: FaucetNetwork) => {
     setSelectedNetwork(network);
+    setToStorage(FAUCET_NETWORK_STORAGE_KEY, network.id);
     setSelectedToken(undefined);
     setFieldValue("networkId", network.id);
     setFieldValue("tokenId", "");
@@ -194,8 +229,8 @@ export const Form = () => {
     | { label: string; onClick: () => void }
     | { label: string; submit: true }
     | { label: string; blocked: true } => {
-    if (!selectedNetwork)
-      return { label: "Select a network", onClick: () => setNetworkOpen(true) };
+    // No "Select a network" step any more: a network is always selected, so the
+    // first thing asked of the user is the one thing only they can answer.
     if (!selectedToken)
       return { label: "Select a token", onClick: () => setTokenOpen(true) };
     if (!values.walletAddress)
@@ -207,13 +242,8 @@ export const Form = () => {
       return { label: errors.walletAddress, blocked: true };
     if (isSubmitting) return { label: "Requesting...", blocked: true };
     return { label: "Request Tokens", submit: true };
-  }, [
-    selectedNetwork,
-    selectedToken,
-    values.walletAddress,
-    errors.walletAddress,
-    isSubmitting,
-  ]);
+    // selectedNetwork dropped: no branch reads it any more.
+  }, [selectedToken, values.walletAddress, errors.walletAddress, isSubmitting]);
 
   return (
     <form
@@ -236,9 +266,10 @@ export const Form = () => {
             </div>
             <div className="flex flex-col gap-2 flex-1">
               <Typography.Text appearance="primary">Token</Typography.Text>
+              {/* No longer gated on the network - one is always selected, so
+                  disabling this only ever hid a working control. */}
               <SelectToken
                 selected={selectedToken}
-                disabled={!selectedNetwork}
                 open={tokenOpen}
                 onOpenChange={setTokenOpen}
               >
@@ -259,7 +290,10 @@ export const Form = () => {
           </div>
         </div>
 
-        {/* Wallet Address - only shown after network is selected */}
+        {/* Always rendered now. This used to be hidden until a network was
+            chosen, which meant the form opened as a single dropdown with no
+            indication of what came next. The guard is kept only because
+            selectedNetwork is what supplies addressLabel below. */}
         {selectedNetwork && (
           <div className="flex flex-col gap-3">
             <Typography.Heading>Wallet Address</Typography.Heading>
