@@ -1,4 +1,5 @@
 import { additionalNotifications } from "./notifications";
+import { pruneStoredNotifications } from "./pruneStored";
 import * as T from "./types";
 import * as C from "./constants";
 
@@ -75,11 +76,20 @@ export const getNotifications = (): T.Notification[] => {
   let localNotifications: T.Notification[] =
     JSON.parse(localStorage.getItem(C.DEFAULTNOTIFICATIONNAME) as string) || [];
 
-  localNotifications = localNotifications
+  const dismissed = getDismissedAnnouncements();
+
+  localNotifications = pruneStoredNotifications(
+    // The retired pre-2026-08 code WROTE its hardcoded announcement into this
+    // storage, so a browser that ever ran it keeps resurrecting the entry from
+    // its own cache - weeks after code, bundle and runtime feed were all clean.
+    // Stored "Announcements" survive only while still published and not
+    // dismissed; General entries (user history) are never pruned.
+    localNotifications,
+    allAnnouncements().map((n) => n.id),
+    dismissed
+  )
     .filter((e) => e.message && e.category && e.description)
     ?.sort((a, b) => b.date - a.date);
-
-  const dismissed = getDismissedAnnouncements();
   const seen = new Set(localNotifications.map((n) => n.id));
 
   const filteredAdditionalNotifications = allAnnouncements().filter(
