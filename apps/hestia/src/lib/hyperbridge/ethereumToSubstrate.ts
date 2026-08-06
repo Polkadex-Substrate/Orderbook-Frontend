@@ -13,7 +13,6 @@ import { sepolia } from "viem/chains";
 import {
   createPublicClient,
   getContract,
-  http,
   parseEventLogs,
   parseUnits,
   toHex,
@@ -21,8 +20,8 @@ import {
   type Address,
   type WalletClient,
 } from "viem";
-import { rpcTransport } from "./rpcTransport";
 
+import { rpcTransport } from "./rpcTransport";
 import HOST_MODULE from "./abis/ethSepoliaHostModule";
 import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule";
 

@@ -170,6 +170,34 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
   fi
 fi
 
+# ── Guard: no credential-shaped strings in git-tracked files ────────────────
+# NOT part of --no-preflight, and not skippable. A failed build costs minutes; a
+# key committed to history costs a rotation and cannot be un-published.
+#
+# The real hazard is specific and recurring: RPC providers hand out endpoints
+# with the key embedded in the URL, those URLs go in NEXT_PUBLIC_* vars, and the
+# obvious place to paste one is the default in src/config/bridge.ts or
+# apps/hestia/.env.example - both tracked. Keyed URLs belong ONLY in the
+# untracked env file on the deploy host.
+#
+# Patterns are split mid-literal ('AIza' 'Sy') so this script does not match
+# itself. Shape-matched on purpose: high confidence, no false positives on the
+# public identifiers that legitimately live in tracked files.
+if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
+  secret_pat="AIza""Sy[0-9A-Za-z_-]{33}|sntry""s_[A-Za-z0-9]|sntry""u_[A-Za-z0-9]"
+  if hits=$(git ls-files -z \
+              | xargs -0 grep -lEI "$secret_pat" 2>/dev/null); then
+    if [ -n "$hits" ]; then
+      echo "CREDENTIAL-SHAPED STRING IN GIT-TRACKED FILES:" >&2
+      printf '%s\n' "$hits" | sed 's/^/  /' >&2
+      die "Refusing to build. These files are committed - the value would be public.
+  Move it to the deploy host's env file (untracked) and keep the tracked
+  default keyless. If it was ever pushed, treat it as leaked and rotate it."
+    fi
+  fi
+  log "Pre-flight: no committed credentials"
+fi
+
 # `set -a` exports everything sourced, which is what makes the values visible
 # to `docker build --build-arg` below and to `next build` in tarball mode.
 set -a

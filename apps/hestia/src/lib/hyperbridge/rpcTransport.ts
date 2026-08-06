@@ -18,6 +18,18 @@ import { http, fallback, type Transport } from "viem";
  * viem's `fallback` transport tries them in order and moves on when one errors,
  * so losing a provider degrades instead of breaking.
  *
+ * THE ORDER IS A COST POLICY, NOT JUST A PREFERENCE.
+ * `fallback` treats the list as a strict priority order (ranking is off by
+ * default), so entry 1 serves every request until it fails. Keyless public
+ * endpoints therefore go first and metered/keyed ones last: the keyed endpoint
+ * is billed only for the traffic the free ones could not absorb. Leading with a
+ * keyed URL would meter every ordinary page view instead.
+ *
+ * Failover covers transport-level failures - 429, 5xx, timeouts, an endpoint
+ * refusing the chain. It deliberately does NOT cover deterministic contract
+ * errors: a revert or a user-rejected signature means the same thing at every
+ * provider, and retrying those elsewhere would only slow down a real error.
+ *
  * An empty value falls through to `http()` with no URL, which uses the chain's
  * own default public endpoint - a working last resort rather than a hard fail.
  */
@@ -27,11 +39,23 @@ export const parseRpcUrls = (raw: string | undefined): string[] =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+/**
+ * One retry, then hand over to the next endpoint.
+ *
+ * viem retries 3 times per transport by default with exponential backoff. With a
+ * list of endpoints that is the wrong trade: when the free endpoint is rate
+ * limited, three backed-off retries burn several seconds before failover, and
+ * the user watches a spinner on a request another endpoint would have answered
+ * immediately. Having somewhere else to go makes moving on better than retrying.
+ */
+const RETRY_COUNT = 1;
+
 export const rpcTransport = (raw: string | undefined): Transport => {
   const urls = parseRpcUrls(raw);
   if (urls.length === 0) return http();
+  // A single endpoint has nowhere to fail over to, so keep viem's retry default.
   if (urls.length === 1) return http(urls[0]);
-  return fallback(urls.map((u) => http(u)));
+  return fallback(urls.map((u) => http(u, { retryCount: RETRY_COUNT })));
 };
 
 /**
