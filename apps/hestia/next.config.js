@@ -16,6 +16,18 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   dest: "public",
   register: true,
   disable: process.env.NODE_ENV === "development",
+  // Navigations are served with workbox's NetworkFirst. Without a document
+  // fallback, a failed navigation that has no cached copy leaves NetworkFirst
+  // with nothing to return, so it throws and the browser shows a dead tab:
+  //
+  //   The FetchEvent for "/trading/WETHUSDT" resulted in a network error
+  //   response: the promise was rejected.   /   no-response
+  //
+  // The plugin's default is "/_offline" - "or none if it doesn't exist" - and no
+  // such page existed here, so there was no fallback at all. Note the TILDE: the
+  // App Router treats "_offline" as a private folder and never routes it, so the
+  // documented default name silently produces nothing. See src/app/~offline.
+  fallbacks: { document: "/~offline" },
 });
 
 const nextConfig = {
