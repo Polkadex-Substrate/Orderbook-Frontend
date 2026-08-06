@@ -1,4 +1,4 @@
-import { Tooltip, Typography } from "@polkadex/ux";
+import { Tooltip, Typography } from "@mitrabook/ux";
 import { RiArrowRightLine } from "@remixicon/react";
 
 export const CustomTransactionDirection = ({

@@ -8,16 +8,18 @@ import {
   HoverCard,
   Separator,
   Skeleton,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { useState } from "react";
-import { getChainFromTicker } from "@orderbook/core/index";
 import Link from "next/link";
 import classNames from "classnames";
 
 import { GenericInfoCard, GenericExternalCard } from "../ReadyToUse";
 import { Icons } from "..";
 
+import { getChainFromTicker } from "@/config/assetChain";
+import { PDEX_EXCHANGES } from "@/config/links";
+import { IS_TESTNET } from "@/config/network";
 import { useQueryPools } from "@/hooks";
 
 export const InsufficientBalance = ({
@@ -71,7 +73,7 @@ export const InsufficientBalance = ({
                       <Icons.Bridge className="w-4 h-4 text-primary" />
                     </div>
                     <Typography.Text className="group-hover:text-current duration-300 transition-colors">
-                      THEA - Decentralized bridge
+                      Bridge from another network
                     </Typography.Text>
                   </div>
                   <Separator.Horizontal />
@@ -136,44 +138,56 @@ export const InsufficientBalance = ({
                     </div>
                   </div>
                 </div>
-                <GenericExternalCard
-                  title="CEX On-Ramp"
-                  icon="CexOnRamp"
-                  href="/cexOnRamp"
-                />
-                <GenericExternalCard
-                  title="Centralized exchanges"
-                  icon="CentralizedExchange"
-                  onClick={() => setOpen(true)}
-                >
-                  <Dropdown open={open} onOpenChange={setOpen}>
-                    <Dropdown.Trigger className="gap-1">
-                      <Typography.Text size="sm">All</Typography.Text>
-                      <Dropdown.Icon />
-                    </Dropdown.Trigger>
-                    <Dropdown.Content>
-                      {exchanges.map((e) => (
-                        <Dropdown.Item
-                          key={e.name}
-                          onSelect={() =>
-                            window.open(
-                              e.href,
-                              "_blank",
-                              "noopener, noreferrer"
-                            )
-                          }
-                        >
-                          {e.name}
-                        </Dropdown.Item>
-                      ))}
-                    </Dropdown.Content>
-                  </Dropdown>
-                </GenericExternalCard>
-                <GenericExternalCard
-                  title="Credit Card"
-                  href="https://buy.simplex.com/"
-                  icon="CreditCard"
-                />
+                {/* Mainnet-only funding routes: all three deliver real PDEX,
+                    which is useless here. See config/network.ts. */}
+                {IS_TESTNET ? (
+                  <GenericExternalCard
+                    title="Testnet faucet"
+                    icon="FreeCoin"
+                    href="/faucet"
+                  />
+                ) : (
+                  <>
+                    <GenericExternalCard
+                      title="CEX On-Ramp"
+                      icon="CexOnRamp"
+                      href="/cexOnRamp"
+                    />
+                    <GenericExternalCard
+                      title="Centralized exchanges"
+                      icon="CentralizedExchange"
+                      onClick={() => setOpen(true)}
+                    >
+                      <Dropdown open={open} onOpenChange={setOpen}>
+                        <Dropdown.Trigger className="gap-1">
+                          <Typography.Text size="sm">All</Typography.Text>
+                          <Dropdown.Icon />
+                        </Dropdown.Trigger>
+                        <Dropdown.Content>
+                          {PDEX_EXCHANGES.map((e) => (
+                            <Dropdown.Item
+                              key={e.name}
+                              onSelect={() =>
+                                window.open(
+                                  e.href,
+                                  "_blank",
+                                  "noopener, noreferrer"
+                                )
+                              }
+                            >
+                              {e.name}
+                            </Dropdown.Item>
+                          ))}
+                        </Dropdown.Content>
+                      </Dropdown>
+                    </GenericExternalCard>
+                    <GenericExternalCard
+                      title="Credit Card"
+                      href="https://buy.simplex.com/"
+                      icon="CreditCard"
+                    />
+                  </>
+                )}
               </div>
             </Accordion.Content>
           </Accordion.Item>
@@ -185,22 +199,3 @@ export const InsufficientBalance = ({
     </Interaction>
   );
 };
-
-const exchanges = [
-  {
-    name: "Kucoin",
-    href: "https://www.kucoin.com/trade/PDEX-USDT",
-  },
-  {
-    name: "Gate.io",
-    href: "https://www.gate.io/trade/PDEX_USDT",
-  },
-  {
-    name: "AscendEX",
-    href: "https://ascendex.com/en/cashtrade-spottrading/usdt/pdex",
-  },
-  {
-    name: "CoinDCX",
-    href: "https://coindcx.com/trade/PDEXINR",
-  },
-];

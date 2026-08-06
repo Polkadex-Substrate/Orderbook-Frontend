@@ -55,5 +55,5 @@ export const useLmpMarkets = (epoch?: number) => {
     enabled,
   });
 
-  return { markets: data, isLoading: status === "loading" };
+  return { markets: data, isLoading: status === "pending" };
 };

@@ -1,4 +1,4 @@
-import { Button } from "@polkadex/ux";
+import { Button } from "@mitrabook/ux";
 import { Table } from "@tanstack/react-table";
 import CSVLink from "react-csv-downloader";
 import { RiDownload2Line } from "@remixicon/react";

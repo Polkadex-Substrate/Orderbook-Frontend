@@ -9,7 +9,7 @@ import {
   InteractionProps,
   Spinner,
   Typography,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 
 interface ProcessingTransactionProps extends InteractionProps {
   logo: string;

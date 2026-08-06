@@ -1,6 +1,6 @@
 "use client";
 
-import { Table, GenericMessage } from "@polkadex/ux";
+import { Table, GenericMessage } from "@mitrabook/ux";
 import BigNumber from "bignumber.js";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -17,8 +17,8 @@ import {
 } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useAssets, useTransactions } from "@orderbook/core/hooks";
-import { TransferHistory, getChainFromTicker } from "@orderbook/core/helpers";
-import { useExtensionAccounts } from "@polkadex/react-providers";
+import { TransferHistory } from "@orderbook/core/helpers";
+import { useExtensionAccounts } from "@aksumite/react-providers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { UNIT_BN } from "@orderbook/core/constants";
 
@@ -27,6 +27,7 @@ import { Filters } from "./Filters";
 import { ResponsiveTable } from "./responsiveTable";
 
 import { SkeletonCollection } from "@/components/ui/ReadyToUse";
+import { getChainFromTicker } from "@/config/assetChain";
 
 const responsiveKeys = ["wallets", "fees", "date", "txid"];
 const actionKeys = ["token", "amount", "date"];

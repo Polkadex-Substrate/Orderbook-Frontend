@@ -4,7 +4,7 @@ import {
   ExtensionAccount,
   useExtensionAccounts,
   useUserAccounts,
-} from "@polkadex/react-providers";
+} from "@aksumite/react-providers";
 import { KeyringPair$Json, KeyringPair } from "@polkadot/keyring/types";
 import FileSaver from "file-saver";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
@@ -20,9 +20,9 @@ import { UseMutationResult } from "@tanstack/react-query";
 import {
   GDriveExternalAccountStore,
   GOOGLE_LOCAL_STORAGE_KEY,
-} from "@polkadex/local-wallets";
+} from "@aksumite/local-wallets";
 import { defaultConfig } from "@orderbook/core/config";
-import { localStorageOrDefault } from "@polkadex/utils";
+import { localStorageOrDefault } from "@aksumite/utils";
 import { enabledFeatures } from "@orderbook/core/helpers";
 
 import { POLKADEX_ASSET } from "../../../constants";
@@ -49,7 +49,9 @@ import {
 import { useSettingsProvider } from "../../public/settings";
 const { googleDriveStore } = enabledFeatures;
 
-export type GenericStatus = "error" | "idle" | "success" | "loading";
+// Mirrors react-query's status union. v5 renamed the in-flight state from
+// "loading" to "pending" (for both queries and mutations).
+export type GenericStatus = "error" | "idle" | "success" | "pending";
 
 export { useConnectWalletProvider } from "./useConnectWallet";
 export type ExportTradeAccountProps = {
@@ -96,7 +98,7 @@ type ConnectWalletState = {
   ) => Promise<void>;
 
   onImportFromGoogle: (value: ImportFromGoogleAccount) => Promise<void>;
-  importFromGoogleLoading: UseMutationResult["isLoading"];
+  importFromGoogleLoading: UseMutationResult["isPending"];
   importFromGoogleSuccess: UseMutationResult["isSuccess"];
   // TODO: all the below must be moved into local state of ConnectWalletInteraction
   onExportTradeAccount: (value: ExportTradeAccountProps) => void;
@@ -134,15 +136,15 @@ type ConnectWalletState = {
   hasAccount: boolean;
 
   onBackupGoogleDrive: (value: ExportTradeAccountProps) => Promise<void>;
-  backupGoogleDriveLoading: UseMutationResult["isLoading"];
+  backupGoogleDriveLoading: UseMutationResult["isPending"];
   backupGoogleDriveSuccess: UseMutationResult["isSuccess"];
 
   onConnectGoogleDrive: () => Promise<void>;
-  connectGoogleDriveLoading: UseMutationResult["isLoading"];
+  connectGoogleDriveLoading: UseMutationResult["isPending"];
   connectGoogleDriveSuccess: UseMutationResult["isSuccess"];
 
   onRemoveGoogleDrive: (value: string) => Promise<void>;
-  removeGoogleDriveLoading: UseMutationResult["isLoading"];
+  removeGoogleDriveLoading: UseMutationResult["isPending"];
   removeGoogleDriveSuccess: UseMutationResult["isSuccess"];
 
   gDriveReady: boolean;
@@ -348,7 +350,7 @@ export const ConnectWalletProvider = ({
 
   const {
     mutateAsync: onBackupGoogleDrive,
-    isLoading: backupGoogleDriveLoading,
+    isPending: backupGoogleDriveLoading,
     isSuccess: backupGoogleDriveSuccess,
   } = useBackupTradingAccount({
     GoogleDrive,
@@ -376,7 +378,7 @@ export const ConnectWalletProvider = ({
 
   const {
     mutateAsync: onRemoveGoogleDrive,
-    isLoading: removeGoogleDriveLoading,
+    isPending: removeGoogleDriveLoading,
     isSuccess: removeGoogleDriveSuccess,
   } = useRemoveGoogleTradingAccount({
     GoogleDrive,

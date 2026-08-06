@@ -21,6 +21,7 @@ import {
   DEFAULT_BATCH_LIMIT,
   QUERY_KEYS,
   NOTIFICATIONS,
+  RECENT_TRADES_LIMIT,
 } from "@orderbook/core/constants";
 import { useOrderbookService } from "@orderbook/core/providers/public/orderbookServiceProvider/useOrderbookService";
 import {
@@ -37,8 +38,7 @@ import {
   removeOrderFromList,
   replaceOrPushOrder,
 } from "@orderbook/core/utils/orderbookService/appsync/helpers";
-import { useOrderbook } from "@orderbook/core/hooks";
-import { useExtensionAccounts } from "@polkadex/react-providers";
+import { useExtensionAccounts } from "@aksumite/react-providers";
 
 import { UserAddressTuple, useProfile } from "../profile";
 import { useSettingsProvider } from "../../public/settings";
@@ -68,8 +68,6 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
   const isTradingPage = path.startsWith("/trading");
   const marketName = isTradingPage ? marketId : null;
   const market = getCurrentMarket(markets, marketName)?.id;
-
-  const { asks, bids } = useOrderbook(market as string);
 
   const onOrderUpdates = useCallback(
     (payload: Order, fromMainAddress?: boolean) => {
@@ -189,7 +187,8 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       if (market) {
         queryClient.setQueryData(QUERY_KEYS.recentTrades(market), (oldData) => {
           const oldRecentTrades = oldData ? (oldData as PublicTrade[]) : [];
-          return [trade, ...oldRecentTrades];
+          // Keep the list bounded to what the initial query fetches.
+          return [trade, ...oldRecentTrades].slice(0, RECENT_TRADES_LIMIT);
         });
       }
     },
@@ -200,37 +199,43 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
     (payload: PriceLevel[]) => {
       if (!market) return;
 
-      let book = {
-        ask: [...asks],
-        bid: [...bids],
-      };
+      // Functional update against the CACHE, not component state. The old
+      // version closed over useOrderbook's asks/bids, which (a) made this
+      // callback change identity on every tick, so the websocket
+      // subscription was torn down and re-created continuously - dropping
+      // increments in the gaps - and (b) during a market switch still held
+      // the PREVIOUS market's book, seeding the new market's cache with it
+      // (the "data flaps when clicking through markets" bug). It also wrote
+      // merged numeric tuples into a cache that stores raw string tuples.
+      queryClient.setQueryData(
+        QUERY_KEYS.orderBook(market),
+        (prev?: { asks: string[][]; bids: string[][] }) => {
+          let book = {
+            ask: [...(prev?.asks ?? [])],
+            bid: [...(prev?.bids ?? [])],
+          };
 
-      const incrementalData = payload;
-      incrementalData.forEach((item) => {
-        if (Number(item.qty) === 0) {
-          book = deleteFromBook(
-            book,
-            String(item.price),
-            item.side.toLowerCase()
-          );
-        } else
-          book = replaceOrAddToBook(
-            book,
-            String(item.price),
-            String(item.qty),
-            item.side.toLowerCase()
-          );
-      });
+          payload.forEach((item) => {
+            if (Number(item.qty) === 0) {
+              book = deleteFromBook(
+                book,
+                String(item.price),
+                item.side.toLowerCase()
+              );
+            } else
+              book = replaceOrAddToBook(
+                book,
+                String(item.price),
+                String(item.qty),
+                item.side.toLowerCase()
+              );
+          });
 
-      queryClient.setQueryData(QUERY_KEYS.orderBook(market), () => {
-        const newData = {
-          asks: _.cloneDeep(book.ask),
-          bids: _.cloneDeep(book.bid),
-        };
-        return newData;
-      });
+          return { asks: book.ask, bids: book.bid };
+        }
+      );
     },
-    [asks, bids, market, queryClient]
+    [market, queryClient]
   );
 
   const onUserTradeUpdate = useCallback(

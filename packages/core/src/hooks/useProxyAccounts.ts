@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { UserAddressTuple } from "../providers/user/profile";
 import { QUERY_KEYS } from "../constants";

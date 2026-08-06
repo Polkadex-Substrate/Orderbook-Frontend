@@ -52,7 +52,6 @@ export const usePool = ({
         (a, b) => Number(b.poolReserve) - Number(a.poolReserve)
       );
     },
-    onError: (e) => console.log("Error", e),
   });
 
   const enableQuotePrice = useMemo(
@@ -66,7 +65,6 @@ export const usePool = ({
     queryFn: async () => {
       return await swap?.quotePriceTokensForExactTokens(asset, "PDEX", amount);
     },
-    onError: (e) => console.log("Error", e),
   });
 
   return {

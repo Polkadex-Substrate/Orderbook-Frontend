@@ -1,4 +1,4 @@
-import { Skeleton, Typography } from "@polkadex/ux";
+import { Skeleton, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import React, { PropsWithChildren } from "react";
 

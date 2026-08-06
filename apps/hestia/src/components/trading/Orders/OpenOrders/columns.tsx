@@ -3,7 +3,7 @@ import {
   Order,
 } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Tooltip, Typography } from "@polkadex/ux";
+import { Tooltip, Typography } from "@mitrabook/ux";
 import { CancelOrderArgs } from "@orderbook/core/hooks";
 
 import { CancelAllOrdersAction } from "../../../ui/ReadyToUse/cancelAllOrdersAction";

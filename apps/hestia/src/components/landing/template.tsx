@@ -5,6 +5,7 @@ import { HowItWorks } from "./HowItWorks";
 import { Features } from "./features";
 import { QuickLinks } from "./quickLinks";
 import { Footer } from "./footer";
+
 import { Header } from "@/components/ui";
 
 export function Template() {

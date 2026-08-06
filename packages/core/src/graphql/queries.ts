@@ -30,12 +30,18 @@ export const getOrderbook =
     APITypes.GetOrderbookQueryVariables,
     APITypes.GetOrderbookQuery
   >;
+// NB: from/to are declared String! (ISO 8601), not AWSDateTime! - the
+// self-hosted Rust GraphQL server (orderbook/server, async-graphql) has no
+// AWSDateTime scalar and rejects the whole query with 'Unknown type
+// "AWSDateTime"'. Values were always ISO strings; only the declaration
+// changes. If this app is ever pointed back at real AppSync, these two
+// declarations must revert to AWSDateTime!.
 export const getKlinesByMarketInterval =
   /* GraphQL */ `query GetKlinesByMarketInterval(
   $market: String!
   $interval: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime!
+  $from: String!
+  $to: String!
 ) {
   getKlinesByMarketInterval(
     market: $market
@@ -79,8 +85,8 @@ export const getAllAssets =
   >;
 export const listTradesByMarket = /* GraphQL */ `query ListTradesByMarket(
   $m: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String!
   $limit: Int
   $nextToken: String
 ) {

@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction } from "react";
-import { Button, Modal, Typography } from "@polkadex/ux";
+import { Button, Modal, Typography } from "@mitrabook/ux";
 import Image from "next/image";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { useWindowSize } from "usehooks-ts";
@@ -19,6 +19,9 @@ import { defaultConfig } from "@orderbook/core/config";
 import QrCode from "../../../../public/img/qrCode.png";
 
 import { HeaderLink } from "./headerLink";
+
+import { EXTERNAL_LINKS } from "@/config/links";
+import { LEGAL_LINKS } from "@/config/legalLinks";
 export const ResponsiveMenuModal = ({
   open,
   onOpenChange,
@@ -28,8 +31,7 @@ export const ResponsiveMenuModal = ({
 }) => {
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
-  const isFaucetDisabled =
-    process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
+  const isFaucetDisabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
   const lastUsedMarketUrl = getMarketUrl();
   const { width } = useWindowSize();
   return (
@@ -94,87 +96,64 @@ export const ResponsiveMenuModal = ({
                   >
                     Faucet
                   </HeaderLink.Single>
+                  {/* Analytics promoted out of "More"; mirrors the desktop
+                      header so the two navs stay the same shape. */}
+                  <HeaderLink.Single
+                    href={EXTERNAL_LINKS.analytics}
+                    className="text-lg"
+                  >
+                    Analytics
+                  </HeaderLink.Single>
                   <HeaderLink.Accordion
                     items={[
                       {
-                        href: "https://discord.gg/G4KMw2sGGe",
-                        label: "Community support",
-                      },
-                      {
-                        href: "https://docs.polkadex.ee/orderbookPolkadexFAQHowToTradeStep1",
+                        href: EXTERNAL_LINKS.testnetGuide,
                         label: "Orderbook guide",
                       },
                       {
                         href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
                         label: "FAQ",
                       },
+                      { href: EXTERNAL_LINKS.docs, label: "Documentation" },
                     ]}
                   >
                     Help
                   </HeaderLink.Accordion>
-                  <HeaderLink.Accordion
-                    items={[
-                      { href: "/", label: "Listings" },
-                      {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf",
-                        label: "Terms of use",
-                      },
-                      {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Privacy_Policy.pdf",
-                        label: "Privacy policy",
-                      },
-                      {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Disclaimer_and_Legal_Notice.pdf",
-                        label: "Disclaimer",
-                      },
-                      {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Excluded_Jurisdictions.pdf",
-                        label: "Excluded Jurisdictions",
-                      },
-                      {
-                        href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Data_Retention_Policy.pdf",
-                        label: "Data Retention Policy",
-                      },
-                      {
-                        href: "https://pdexanalytics.com",
-                        label: "Analytics",
-                      },
-                    ]}
-                  >
-                    More
+                  <HeaderLink.Accordion items={[...LEGAL_LINKS]}>
+                    Legal
                   </HeaderLink.Accordion>
                   <HeaderLink.Accordion
                     items={[
                       {
-                        href: "https://t.me/Polkadex",
+                        href: EXTERNAL_LINKS.telegram,
                         label: "Telegram",
                         svg: (
                           <RiTelegramFill className="bg-sky-500 text-textBase rounded-full w-5 h-5" />
                         ),
                       },
                       {
-                        href: "https://discord.com/invite/Uvua83QAzk/",
+                        href: EXTERNAL_LINKS.discord,
                         label: "Discord",
                         svg: (
                           <RiDiscordFill className="bg-blue-700  text-textBase rounded-full w-5 h-5 p-0.5" />
                         ),
                       },
                       {
-                        href: "https://twitter.com/polkadex",
-                        label: "Twitter",
+                        href: EXTERNAL_LINKS.twitter,
+                        label: "X",
                         svg: (
                           <RiTwitterXFill className="rounded-full text-textBase w-5 h-5" />
                         ),
                       },
                       {
-                        href: "https://github.com/Polkadex-Substrate",
+                        href: EXTERNAL_LINKS.github,
                         label: "Github",
                         svg: (
                           <RiGithubFill className="rounded-full text-textBase w-5 h-5" />
                         ),
                       },
                       {
-                        href: "https://www.reddit.com/r/polkadex/",
+                        href: EXTERNAL_LINKS.reddit,
                         label: "Reddit",
                         svg: (
                           <RiRedditFill className="bg-red-500 text-textBase rounded-full w-5 h-5" />

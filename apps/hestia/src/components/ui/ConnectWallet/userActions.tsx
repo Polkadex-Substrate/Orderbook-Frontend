@@ -1,5 +1,5 @@
-import { Interaction } from "@polkadex/ux";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { Interaction } from "@mitrabook/ux";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { GenericHorizontalCard } from "../ReadyToUse";
 

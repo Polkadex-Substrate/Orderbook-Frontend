@@ -1,7 +1,9 @@
 // Export GraphQL configuration functions
-export { isNewBackendEnabled, getGraphQLConfig, getAuthToken } from '../config/graphql';
+export { getGraphQLConfig, getAuthToken } from "../config/graphql";
 
-export * from "./appsync";
+// ./appsync removed with AWS Amplify. Its sendQueryToAppSync/fetch* helpers
+// were the Amplify transport; the equivalents now live in ./graphqlCompat and
+// utils/orderbookService/appsync/helpers.ts, both on Apollo.
 export * from "./cleanPositiveFloatInput";
 export * from "./createOrdersHelpers";
 export * from "./createWithdrawHelpers";

@@ -6,10 +6,11 @@ import {
   Searchable,
   Skeleton,
   TokenCard,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { SetStateAction, Dispatch, useCallback, ComponentProps } from "react";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
+
 import { useBridgeProvider } from "./BridgeProvider";
 
 import { formatAmount } from "@/helpers";

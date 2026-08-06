@@ -1,6 +1,6 @@
 "use client";
 
-import { Checkbox } from "@polkadex/ux";
+import { Checkbox } from "@mitrabook/ux";
 import Link from "next/link";
 
 type Props = {
@@ -24,7 +24,7 @@ export const Terms = ({ checked, setChecked }: Props) => {
         By checking this box, I acknowledge that I have read and agree to be
         bound by the{" "}
         <Link
-          href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf"
+          href="/legal/terms"
           target="_blank"
           className="text-primary-hover"
         >

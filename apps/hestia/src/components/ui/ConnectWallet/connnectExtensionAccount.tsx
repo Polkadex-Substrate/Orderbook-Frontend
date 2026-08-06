@@ -1,8 +1,8 @@
 "use client";
 
-import { Interaction, ProviderCard, Typography } from "@polkadex/ux";
+import { Interaction, ProviderCard, Typography } from "@mitrabook/ux";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
-import { ExtensionStatus } from "@polkadex/react-providers";
+import { ExtensionStatus } from "@aksumite/react-providers";
 
 export type ExtensionDetails = (typeof ExtensionsArray)[number];
 

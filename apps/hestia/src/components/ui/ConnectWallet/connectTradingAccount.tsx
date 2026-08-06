@@ -5,7 +5,7 @@ import {
   Separator,
   Skeleton,
   Typography,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { PropsWithChildren, useMemo } from "react";
 import classNames from "classnames";

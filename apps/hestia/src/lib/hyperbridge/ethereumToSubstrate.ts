@@ -12,23 +12,25 @@ import Keyring, { decodeAddress } from "@polkadot/keyring";
 import { sepolia } from "viem/chains";
 import {
   createPublicClient,
-  createWalletClient,
   getContract,
-  http,
   parseEventLogs,
   parseUnits,
   toHex,
-  custom,
   maxUint256,
   type Address,
-  type EIP1193Provider,
+  type WalletClient,
 } from "viem";
 
+import { rpcTransport } from "./rpcTransport";
 import HOST_MODULE from "./abis/ethSepoliaHostModule";
 import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule";
 
 import { BRIDGE_CHAINS, BRIDGE_TOKENS, BRIDGE_ROUTES } from "@/config/bridge";
-import type { BridgeTokenConfig, EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
+import type {
+  BridgeTokenConfig,
+  EvmChainConfig,
+  SubstrateChainConfig,
+} from "@/config/bridge";
 
 const _substrateChain = BRIDGE_CHAINS.polkadex as SubstrateChainConfig;
 const _evmChain = BRIDGE_CHAINS.sepolia as EvmChainConfig;
@@ -108,30 +110,18 @@ export const getIndexer = singleton(() => {
         hyperbridge: hyperbridgeChain,
         queryClient: query_client,
         pollInterval: 1000,
-      }),
+      })
   );
 });
 
-async function createHelpers(hftAddress: Address) {
-  const ethereum = (window as Window & { ethereum?: EIP1193Provider }).ethereum;
-  if (typeof window === "undefined" || !ethereum) {
-    throw new Error("No Ethereum wallet found.");
-  }
-
-  const accounts = (await ethereum.request({
-    method: "eth_requestAccounts",
-  })) as string[];
-  const address = accounts[0] as `0x${string}`;
-
-  const walletClient = createWalletClient({
-    account: address,
-    chain: sepolia,
-    transport: custom(ethereum),
-  });
-
+async function createHelpers(
+  hftAddress: Address,
+  walletClient: WalletClient,
+  address: Address
+) {
   const publicClient = createPublicClient({
     chain: sepolia,
-    transport: http(sepoliaRpcURL),
+    transport: rpcTransport(sepoliaRpcURL),
   });
 
   const wrappedHft = getContract({
@@ -152,6 +142,8 @@ export type BridgeTransferParams = {
   amount: number;
   recipient: string;
   token: BridgeTokenConfig;
+  walletClient: WalletClient;
+  address: Address;
 };
 
 type THelper = Awaited<ReturnType<typeof createHelpers>>;
@@ -180,18 +172,24 @@ async function getCommitment(helper: THelper, tx_hash: HexString) {
 }
 
 export async function transferTokens(params: BridgeTransferParams) {
-  const { amount, recipient, token } = params;
+  const {
+    amount,
+    recipient,
+    token,
+    walletClient: sourceWalletClient,
+    address: sourceAddress,
+  } = params;
 
   const hftAddress = (token.chains.sepolia?.hftAddress ?? "") as Address;
   if (!hftAddress) {
     throw new Error(
       `No HFT address configured for ${token.ticker} on Sepolia. ` +
-        "Obtain the WrappedHFT contract address from the Hyperbridge team.",
+        "Obtain the WrappedHFT contract address from the Hyperbridge team."
     );
   }
 
   const { address, publicClient, walletClient, wrappedHft } =
-    await createHelpers(hftAddress);
+    await createHelpers(hftAddress, sourceWalletClient, sourceAddress);
 
   const tokenAddress = (token.chains.sepolia?.address ?? "") as Address;
 
@@ -200,7 +198,7 @@ export async function transferTokens(params: BridgeTransferParams) {
   const destBytes = toHex(Destination.chainId);
 
   // ── Step 1: Check if contract uses native ETH (isWeth mode) ──────────────
-  // When isWeth=true the contract wraps native ETH itself — no ERC20 approval.
+  // When isWeth=true the contract wraps native ETH itself - no ERC20 approval.
   // When isWeth=false the underlying ERC20 must be approved to the HFT contract.
   const isWeth = (await publicClient.readContract({
     address: hftAddress,
@@ -225,6 +223,7 @@ export async function transferTokens(params: BridgeTransferParams) {
         functionName: "approve",
         args: [hftAddress, maxUint256],
         account: address,
+        chain: sepolia,
       });
       console.log("WETH approval tx:", approveTxHash);
       await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
@@ -234,7 +233,7 @@ export async function transferTokens(params: BridgeTransferParams) {
     }
   } else {
     console.log(
-      "isWeth=true — no ERC20 approval needed, sending native ETH ✅",
+      "isWeth=true - no ERC20 approval needed, sending native ETH ✅"
     );
   }
 
@@ -254,20 +253,45 @@ export async function transferTokens(params: BridgeTransferParams) {
 
   // quote() may revert if the destination chain isn't configured yet in the
   // HFT contract. Treat that as 0 native fee (same behaviour as the SDK).
+  // The ABI marks quote() as nonpayable, but it's a pure read - use an inline
+  // view ABI so viem's readContract accepts it.
+  const QUOTE_ABI = [
+    {
+      type: "function",
+      name: "quote",
+      stateMutability: "view",
+      inputs: [
+        {
+          name: "params",
+          type: "tuple",
+          components: [
+            { name: "dest", type: "bytes" },
+            { name: "to", type: "bytes" },
+            { name: "amount", type: "uint256" },
+            { name: "timeout", type: "uint64" },
+            { name: "relayerFee", type: "uint256" },
+            { name: "data", type: "bytes" },
+          ],
+        },
+      ],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+  ] as const;
+
   let nativeValue = 0n;
   try {
     console.log("Quoting native cost...");
     nativeValue = (await publicClient.readContract({
       address: hftAddress,
-      abi: WrappedHyperFungibleTokenABI,
+      abi: QUOTE_ABI,
       functionName: "quote",
       args: [sendParams],
     })) as bigint;
     console.log("Native cost (wei):", nativeValue.toString());
   } catch (e) {
     console.warn(
-      "quote() reverted — destination may not be configured yet. Proceeding with 0 native fee.",
-      e,
+      "quote() reverted - destination may not be configured yet. Proceeding with 0 native fee.",
+      e
     );
   }
 
@@ -280,13 +304,14 @@ export async function transferTokens(params: BridgeTransferParams) {
   const hash = await wrappedHft.write.send([sendParams], {
     value: txValue,
     account: address,
+    chain: sepolia,
   });
 
   console.log("Bridge tx submitted ✅ hash:", hash);
 
   const postRequest = await getCommitment(
     { publicClient, walletClient, wrappedHft, address },
-    hash,
+    hash
   );
   console.log("✅ Post Request Commitment:", postRequest.commitment);
 

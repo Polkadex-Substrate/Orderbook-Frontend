@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Input, Tabs, Tooltip, ScrollArea } from "@polkadex/ux";
+import { Typography, Input, Tabs, Tooltip, ScrollArea } from "@mitrabook/ux";
 import { useMemo, useRef, useState } from "react";
 import { RiInformation2Line } from "@remixicon/react";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
@@ -16,7 +16,7 @@ import { TransferHistory } from "./Transfer";
 import { OpenOrders } from "./OpenOrders";
 import { OrderHistory } from "./OrderHistory";
 import { TradeHistory } from "./TradeHistory";
-import { TheaHistory } from "./TheaHistory";
+import { BridgeHistory } from "./BridgeHistory";
 
 import { Footer, Header } from "@/components/ui";
 import { ConnectAccountWrapper } from "@/components/ui/ReadyToUse";
@@ -188,7 +188,7 @@ export function Template() {
             </Tabs.Content>
             <Tabs.Content value="crossChain" className="flex-1 flex">
               {mainAddress?.length ? (
-                <TheaHistory
+                <BridgeHistory
                   ref={tableRowsRef}
                   maxHeight={maxHeight}
                   searchTerm={searchTerm}

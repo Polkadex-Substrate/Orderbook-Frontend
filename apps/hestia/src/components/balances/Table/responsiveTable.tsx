@@ -1,9 +1,9 @@
-import { Button, Drawer, Tokens } from "@polkadex/ux";
+import { Button, Drawer, Tokens } from "@mitrabook/ux";
 import { Dispatch, SetStateAction } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import Link from "next/link";
-import { getChainFromTicker } from "@orderbook/core/helpers";
 
+import { getChainFromTicker } from "@/config/assetChain";
 import { ResponsiveCard, TokenCard } from "@/components/ui/ReadyToUse";
 export const ResponsiveTable = ({
   open,
@@ -16,7 +16,9 @@ export const ResponsiveTable = ({
 }) => {
   if (!data) return null;
   const { ticker, onChainBalance, free_balance, inOrdersBalance } = data;
-  const chainName = getChainFromTicker(ticker);
+  // ?? ticker: TokenCard.tokenName is a string, and an unrecognised asset now
+  // yields undefined rather than the old "Unknown" placeholder.
+  const chainName = getChainFromTicker(ticker) ?? ticker;
 
   return (
     <Drawer

@@ -3,7 +3,7 @@ import {
   Typography,
   Illustrations,
   Interaction,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { MouseEvent } from "react";
 import { TradeAccount } from "@orderbook/core/providers/types";
 

@@ -1,4 +1,4 @@
-import { trimFloat, parseScientific } from "@polkadex/numericals";
+import { trimFloat, parseScientific } from "@aksumite/numericals";
 
 export class BalanceFormatter {
   static toHuman(

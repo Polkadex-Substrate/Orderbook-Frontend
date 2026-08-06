@@ -2,7 +2,6 @@
 /* eslint-disable spaced-comment */
 // TODO: wrong @polkadex/polkadex-api polkadot api version
 
-import { GraphQLResult } from "@aws-amplify/api";
 import BigNumber from "bignumber.js";
 import { UNIT_BN } from "@orderbook/core/constants";
 import { ISubmittableResult } from "@polkadot/types/types";
@@ -16,7 +15,14 @@ import {
 } from "../../../API";
 import * as mutation from "../../../graphql/mutations";
 
-import { sendQueryToAppSync } from "./helpers";
+// GraphQLResponse aliased to GraphQLResult so the usages below read unchanged;
+// same GraphQL envelope, declared locally now that Amplify is gone.
+import {
+  sendQueryToAppSync,
+  GraphQLResponse as GraphQLResult,
+} from "./helpers";
+import { describeWriteError } from "./writeError";
+import { interpretUserActionResponse } from "./userActionResponse";
 import {
   ClaimRewardArgs,
   ClaimWithdrawArgs,
@@ -29,10 +35,6 @@ import {
   WithdrawArgs,
 } from "./../interfaces";
 
-type UserActionLambdaResp = {
-  is_success: boolean;
-  body: string;
-};
 class AppsyncV1Operations implements OrderbookOperationStrategy {
   init(): Promise<void> {
     return Promise.resolve(undefined);
@@ -50,24 +52,32 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         variables: { input: { payload: data.payload } },
         token: data.token,
       });
-      if (result?.data?.place_order) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.place_order);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
-        throw new Error("Cancel order failed: No valid response from server");
-      }
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.place_order)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.place_order,
+        result?.errors
+      );
+      if (!outcome.ok)
+        throw new Error(
+          outcome.message ??
+            "Cancel order failed: No valid response from server"
+        );
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -81,24 +91,31 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         token: data.token,
       });
 
-      if (result?.data?.place_order) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.place_order);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
-        throw new Error("Place order failed: No valid response from server");
-      }
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.place_order)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.place_order,
+        result?.errors
+      );
+      if (!outcome.ok)
+        throw new Error(
+          outcome.message ?? "Place order failed: No valid response from server"
+        );
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -110,24 +127,31 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         variables: { input: { payload } },
         token: data.address,
       });
-      if (result?.data?.withdraw) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.withdraw);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
-        throw new Error("withdraw failed: No valid response from server");
-      }
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.withdraw)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.withdraw,
+        result?.errors
+      );
+      if (!outcome.ok)
+        throw new Error(
+          outcome.message ?? "withdraw failed: No valid response from server"
+        );
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -140,24 +164,31 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         variables: { input: { payload } },
         token,
       });
-      if (result?.data?.cancel_all) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.cancel_all);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
-        throw new Error("cancelAll failed: No valid response from server");
-      }
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.cancel_all)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.cancel_all,
+        result?.errors
+      );
+      if (!outcome.ok)
+        throw new Error(
+          outcome.message ?? "cancelAll failed: No valid response from server"
+        );
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -170,7 +201,20 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
   }: DepositArgs): Promise<SubmittableExtrinsic<"promise">> {
     const assetId =
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
-    const amountStr = new BigNumber(amount).multipliedBy(UNIT_BN).toString();
+    // `amount` is in human units and may be a JS float carrying binary noise
+    // (0.1 + 0.2 -> 0.30000000000000004). BigNumber builds from the number's
+    // decimal string, so multiplying by 10^12 can leave a fractional part -
+    // and `Compact<u128>` rejects it with "String should not contain decimal
+    // points or scientific notation". `.toString()` would also emit exponent
+    // form for very large or small values, which the codec likewise refuses.
+    //
+    // integerValue + toFixed(0) guarantees a plain integer string. FLOOR, not
+    // round: the caller has usually capped the amount at the user's available
+    // balance, and rounding up by one planck would make the extrinsic fail.
+    const amountStr = new BigNumber(amount)
+      .multipliedBy(UNIT_BN)
+      .integerValue(BigNumber.ROUND_FLOOR)
+      .toFixed(0);
     const ext = api.tx.ocex.deposit(asset as unknown as string, amountStr);
     const signedExt = await ext.signAsync(account.address, {
       signer: account.signer,

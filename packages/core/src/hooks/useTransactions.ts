@@ -1,6 +1,5 @@
 import { ChangeEvent, useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 
 import { QUERY_KEYS } from "../constants";
@@ -21,7 +20,6 @@ export function useTransactions() {
   const {
     selectedAddresses: { mainAddress },
   } = useProfile();
-  const { onHandleError } = useSettingsProvider();
 
   const [filterBy, setFilterBy] = useState({
     type: "all",
@@ -43,7 +41,6 @@ export function useTransactions() {
       });
     },
     enabled: Boolean(mainAddress?.length > 0),
-    onError: onHandleError,
   });
 
   const { data: withdrawTransactions, isLoading: isWithdrawLoading } = useQuery(
@@ -62,7 +59,6 @@ export function useTransactions() {
         });
       },
       enabled: Boolean(mainAddress?.length > 0),
-      onError: onHandleError,
       refetchInterval: 30 * 1000,
     }
   );

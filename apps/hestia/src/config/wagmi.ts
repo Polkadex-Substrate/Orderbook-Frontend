@@ -22,9 +22,9 @@ const WAGMI_CHAIN_MAP: Record<number, Chain> = {
   11155111: sepolia,
 };
 
-const chains = SUPPORTED_EVM_CHAIN_IDS.map(
-  (id) => WAGMI_CHAIN_MAP[id]
-).filter(Boolean) as [Chain, ...Chain[]];
+const chains = SUPPORTED_EVM_CHAIN_IDS.map((id) => WAGMI_CHAIN_MAP[id]).filter(
+  Boolean
+) as [Chain, ...Chain[]];
 
 const isClient = typeof window !== "undefined";
 
@@ -34,9 +34,10 @@ export const config = defaultWagmiConfig({
   metadata,
   ssr: true,
   storage: createStorage({ storage: cookieStorage }),
-  // WalletConnect initialises @walletconnect/core which opens indexedDB at
-  // module-load time and crashes the RSC runtime. Gate it to the browser only.
-  enableWalletConnect: isClient,
+  // WalletConnect's core probes indexedDB at construction - only exists in the
+  // browser. Server-side (build "Collecting page data" / prerender) skips the
+  // connector; cookieToInitialState in layout.tsx doesn't depend on connectors.
+  enableWalletConnect: typeof window !== "undefined",
   enableInjected: true,
   enableEIP6963: true,
   enableCoinbase: true,

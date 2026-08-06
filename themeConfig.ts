@@ -1,9 +1,28 @@
+/**
+ * Semantic and brand colours.
+ *
+ * Source of truth: the brand guidelines at polkadex.ee/mediaKit
+ * (BrandGuidelines.md). Aligned 2026-07-31 - success, info and attention had all
+ * drifted from the published palette, which is why the UI read as subtly
+ * off-brand beside the marketing site even though the pink was correct.
+ *
+ * The guidelines' rule for extending this: "Don't add new colours outside this
+ * palette. Extend by adjusting alpha on existing tokens." The -hover and
+ * -pressed steps below are local derivations of a published base, which is
+ * within that rule; a genuinely new hue is not.
+ */
 export const commom = {
   "primary-base": "#E6007A",
   "primary-hover": "#EA268E",
   "primary-pressed": "#9F005F",
   "primary-ghost": "#EA268E22",
+  // NB: a disabled *surface*, not the guidelines' disabled text (#77777D, added
+  // to the text scale below). Repainting this to #77777D would give disabled
+  // buttons a light-grey fill on a near-black background.
   "primary-disabled": "#2B303A",
+  // Violet - the brand's secondary colour and the gradient endpoint. Was absent
+  // from the app entirely, so the brand gradient could not be reproduced.
+  "violet-base": "#6745D2",
   "secondary-base": "#252932",
   "secondary-hover": "#3D4452",
   "secondary-pressed": "#454E5E",
@@ -13,15 +32,21 @@ export const commom = {
   "danger-base": "#EB5757",
   "danger-hover": "#EE6D6D",
   "danger-pressed": "#A41313",
-  "success-base": "#02B671",
-  "success-hover": "#02CA7D",
-  "success-pressed": "#018D58",
-  "attention-base": "#F08205",
-  "attention-hover": "#FA8C0F",
-  "attention-pressed": "#DC7704",
-  "info-base": "#077EED",
-  "info-hover": "#4DA6F9",
-  "info-pressed": "#065FB2",
+  // was #02B671
+  "success-base": "#0CA564",
+  "success-hover": "#12BE75",
+  "success-pressed": "#087F4C",
+  // "Green" in the guidelines: positive metrics and growth. Explicitly NOT for
+  // primary actions - that is what primary-base is for.
+  "positive-base": "#00E676",
+  // "warning" in the guidelines; the app calls it attention. was #F08205
+  "attention-base": "#FFA500",
+  "attention-hover": "#FFB733",
+  "attention-pressed": "#D98C00",
+  // was #077EED
+  "info-base": "#148FE8",
+  "info-hover": "#3FA6EE",
+  "info-pressed": "#0F72BA",
   backgroundBase: "#06070A",
 };
 
@@ -76,11 +101,16 @@ export const themeConfig = {
       colors: {
         ...commom,
         textBase: "#FFFFFF",
-        primary: "#8B909A",
+        // Secondary text per the brand guidelines (was #8B909A). Marginally
+        // lighter, which also lifts contrast against the level-0/1 surfaces -
+        // the old value sat close to the WCAG AA floor for small text.
+        primary: "#A8ADB7",
         secondary: "#575A60",
         placeholder: "#FFFFFF7F",
         actionInput: "#FFFFFF33",
-        disabled: "#2B303A",
+        // Disabled TEXT, per the guidelines (was #2B303A, a surface value).
+        // Distinct from "primary-disabled" above, which is a disabled surface.
+        disabled: "#77777D",
       },
       backgroundColor: {
         ...commom,

@@ -1,6 +1,6 @@
 import classNames from "classnames";
 import React, { ChangeEvent } from "react";
-import { Input } from "@polkadex/ux";
+import { Input } from "@mitrabook/ux";
 import { RiStarLine } from "@remixicon/react";
 
 export const Filters = ({

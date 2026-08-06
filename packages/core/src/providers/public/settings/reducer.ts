@@ -6,7 +6,9 @@ import * as C from "./constants";
 import {
   getNotifications,
   removeAllNotifications,
+  removeNotificationById,
   setNotifications,
+  setRemoteAnnouncements,
 } from "./helpers";
 
 const defaultTheme = "dark";
@@ -89,6 +91,18 @@ export const settingReducer = (
       };
     }
 
+    // Announcements arrived from /api/announcements. Hand them to helpers and
+    // re-derive: getNotifications() already merges announcements with stored
+    // notifications and drops anything dismissed, so there is no separate merge
+    // path to keep in sync.
+    case C.ANNOUNCEMENTS_LOADED: {
+      setRemoteAnnouncements(action.payload);
+      return {
+        ...state,
+        notifications: getNotifications(),
+      };
+    }
+
     case C.NOTIFICATION_PUSH: {
       const prevObj = getNotifications();
       const data: T.Notification = {
@@ -136,11 +150,10 @@ export const settingReducer = (
       };
 
     case C.NOTIFICATION_DELETE_BY_ID: {
-      const prevObj = getNotifications();
-
-      const newObj = prevObj?.filter((item) => item.id !== action.payload);
-
-      setNotifications(newObj);
+      // removeNotificationById, not a filter + setNotifications: a static
+      // announcement also has to be recorded as dismissed, or it is re-injected
+      // on the next read and the delete appears to do nothing.
+      const newObj = removeNotificationById(action.payload);
 
       return {
         ...state,

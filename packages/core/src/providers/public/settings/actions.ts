@@ -39,6 +39,10 @@ export interface ChangeCurrencySettings {
   payload: T.SettingState["currency"];
 }
 
+export interface AnnouncementsLoaded {
+  type: typeof C.ANNOUNCEMENTS_LOADED;
+  payload: T.Notification[];
+}
 export interface NotificationPush {
   type: typeof C.NOTIFICATION_PUSH;
   payload: T.NotificationPayload;
@@ -82,6 +86,7 @@ export type SettingActions =
   | ChangeCurrencySettings
   | NotificationPush
   | NotificationDeleteAll
+  | AnnouncementsLoaded
   | NotificationDeleteById
   | NotificationMarkAsRead
   | AllNotificationMarkAsRead
@@ -138,6 +143,13 @@ export const onChangeCurrencySettings = (
   payload: ChangeCurrencySettings["payload"]
 ): ChangeCurrencySettings => ({
   type: C.SETTINGS_CHANGE_CURRENCY,
+  payload,
+});
+
+export const announcementsLoaded = (
+  payload: T.Notification[]
+): AnnouncementsLoaded => ({
+  type: C.ANNOUNCEMENTS_LOADED,
   payload,
 });
 

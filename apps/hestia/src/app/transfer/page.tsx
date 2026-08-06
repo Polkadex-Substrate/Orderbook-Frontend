@@ -4,5 +4,6 @@ import { defaultConfig } from "@/config";
 
 export default function Page() {
   const defaultPage = defaultConfig.defaultTransferToken;
-  permanentRedirect(`/transfer/${defaultPage}`, "push" as RedirectType);
+  // Next 16: RedirectType is a value (const object), not a type.
+  permanentRedirect(`/transfer/${defaultPage}`, RedirectType.push);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+
 import { BridgeProvider } from "./BridgeProvider";
 
 export function BridgeLayout({

@@ -1,7 +1,7 @@
 "use client";
 
 import { RiInformation2Line } from "@remixicon/react";
-import { Icon, Typography } from "@polkadex/ux";
+import { Icon, Typography } from "@mitrabook/ux";
 
 export const AvailableMessage = () => {
   return (

@@ -120,13 +120,6 @@ export const QUERY_KEYS = {
     assetsAmount,
   ],
   queryPools: () => [PREFIX, "queryPools"],
-  getTheaBalances: (address: string, chain: string, assets: string[]) => [
-    PREFIX,
-    "getTheaBalances",
-    address,
-    chain,
-    assets,
-  ],
   getTheDeposits: (address: string, assets: number) => [
     PREFIX,
     "getTheDeposits",

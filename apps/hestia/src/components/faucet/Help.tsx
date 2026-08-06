@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import {
   RiDropLine,
   RiFeedbackLine,
@@ -8,6 +8,8 @@ import {
 } from "@remixicon/react";
 import Link from "next/link";
 import { forwardRef } from "react";
+
+import { EXTERNAL_LINKS } from "@/config/links";
 
 const HelpCard = ({
   title,
@@ -62,7 +64,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       <HelpCard
         title="Having Trouble?"
         description="Feel free to reach out to our community for support."
-        href="https://discord.gg/G4KMw2sGGe"
+        href={EXTERNAL_LINKS.discord}
       >
         <Button.Icon
           size="2sm"

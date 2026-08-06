@@ -1,5 +1,9 @@
-import { GenericMessage, Table as PolkadexTable, Skeleton } from "@polkadex/ux";
-import { Fragment, forwardRef, useMemo, useState } from "react";
+import {
+  GenericMessage,
+  Table as PolkadexTable,
+  Skeleton,
+} from "@mitrabook/ux";
+import { Fragment, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {
   SortingState,
@@ -13,23 +17,35 @@ import classNames from "classnames";
 import { columns } from "./columns";
 
 import { FilteredAssetProps } from "@/hooks";
-import { picoScale } from "@/helpers";
 
-export const Table = forwardRef<
-  HTMLDivElement,
-  {
-    maxHeight?: string;
-    data: AssetsProps[];
-    loading: boolean;
-    selectedAssetId: string;
-    onChangeAsset: (e: FilteredAssetProps) => void;
-  }
->(({ maxHeight, data, loading, selectedAssetId, onChangeAsset }) => {
+// Plain component: this was wrapped in forwardRef but ignored the ref (no
+// caller ever passed one), which triggered React's "render functions accept
+// exactly two parameters" warning on every mount.
+export const Table = ({
+  maxHeight,
+  data,
+  loading,
+  selectedAssetId,
+  onChangeAsset,
+}: {
+  maxHeight?: string;
+  data: AssetsProps[];
+  loading: boolean;
+  selectedAssetId: string;
+  onChangeAsset: (e: FilteredAssetProps) => void;
+}) => {
   const [sorting, setSorting] = useState<SortingState>([
     { desc: true, id: "fundingAccount" },
   ]);
 
-  const newData = useMemo(() => data.map((item) => item?.ticker === 'USDT' ? { ...item, onChainBalance: picoScale(item?.onChainBalance) } : { ...item }), [data]);
+  const newData = useMemo(
+    () =>
+      // No per-ticker rescaling: fetchOnChainBalance already divides by the
+      // asset's on-chain decimals. The USDT picoScale branch here scaled it a
+      // second time.
+      data.map((item) => ({ ...item })),
+    [data]
+  );
 
   const table = useReactTable({
     data: newData,
@@ -147,5 +163,4 @@ export const Table = forwardRef<
       )}
     </Fragment>
   );
-});
-Table.displayName = "Table";
+};

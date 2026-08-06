@@ -1,7 +1,7 @@
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { useProfile } from "@orderbook/core/providers/user/profile";
-import { Button } from "@polkadex/ux";
+import { Button } from "@mitrabook/ux";
 import { useMemo } from "react";
 
 const ConnectAccount = () => {

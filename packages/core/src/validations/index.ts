@@ -67,15 +67,15 @@ export const bridgeValidations = (
           value
             ? getDigitsAfterDecimal(value) <= MAX_DIGITS_AFTER_DECIMAL
             : false
-      )
-      // .test(
-      //   CrossChainError.NOT_ENOUGH_LIQUIDITY,
-      //   CrossChainError.NOT_ENOUGH_LIQUIDITY,
-      //   () =>
-      //     isDestinationPolkadex && destinationPDEXBalance <= 1
-      //       ? poolReserve !== 0
-      //       : true
-      // ),
+      ),
+    // .test(
+    //   CrossChainError.NOT_ENOUGH_LIQUIDITY,
+    //   CrossChainError.NOT_ENOUGH_LIQUIDITY,
+    //   () =>
+    //     isDestinationPolkadex && destinationPDEXBalance <= 1
+    //       ? poolReserve !== 0
+    //       : true
+    // ),
   });
 };
 
@@ -294,7 +294,7 @@ type MarketOrderValidations = {
   maxVolume: number;
   availableBalance: number;
   qtyStepSize: number;
-  currentMarketPrice: number;
+  currentMarketPrice: number | null;
 };
 
 export const marketOrderValidations = ({
@@ -311,14 +311,21 @@ export const marketOrderValidations = ({
         value ? /^\d+(\.\d+)?$/.test(value) : false
       )
       .test("Min volume", `Minimum volume required: ${minVolume}`, (value) => {
-        return isSell
-          ? Number(value || 0) * currentMarketPrice >= minVolume
-          : Number(value || 0) >= minVolume;
+        if (isSell) {
+          // No current price available (e.g. market has no recent trades) -
+          // this is a data-availability gap, not evidence the amount is too
+          // small, so don't block the order on this check.
+          if (currentMarketPrice == null) return true;
+          return Number(value || 0) * currentMarketPrice >= minVolume;
+        }
+        return Number(value || 0) >= minVolume;
       })
       .test("Max volume", `Maximum volume allowed: ${maxVolume}`, (value) => {
-        return isSell
-          ? Number(value || 0) * currentMarketPrice <= maxVolume
-          : Number(value || 0) <= maxVolume;
+        if (isSell) {
+          if (currentMarketPrice == null) return true;
+          return Number(value || 0) * currentMarketPrice <= maxVolume;
+        }
+        return Number(value || 0) <= maxVolume;
       })
       .test(
         "Balance check",

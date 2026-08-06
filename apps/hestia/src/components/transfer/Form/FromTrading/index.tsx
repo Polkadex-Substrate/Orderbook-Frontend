@@ -5,9 +5,9 @@ import {
   Typography,
   truncateString,
   AccountCombobox,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { Dispatch, Fragment, PropsWithChildren, SetStateAction } from "react";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { InlineAccountCard } from "../../../ui/ReadyToUse";
 import { Card } from "../card";

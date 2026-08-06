@@ -89,6 +89,34 @@ export const SettingProvider: T.SettingComponent = ({
     dispatch(A.getMarketCarousel());
   }, []);
 
+  // Load announcements from the runtime feed.
+  //
+  // A route handler, not a build-time constant, so an announcement can be posted
+  // or retracted by editing a JSON file on the server - see
+  // apps/hestia/src/app/api/announcements/route.ts. Announcements exist for
+  // outages and maintenance windows; needing a rebuild to publish one means the
+  // message often lands after it stopped being true.
+  //
+  // Failures are swallowed deliberately. The endpoint already answers 200 with
+  // an empty list when there is nothing to say or the file is unreadable, so
+  // anything reaching here is a transport problem - and a missing announcement
+  // must never be able to break the trading UI.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/announcements")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((list) => {
+        if (cancelled || !Array.isArray(list) || !list.length) return;
+        dispatch(A.announcementsLoaded(list));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <Provider
       value={{

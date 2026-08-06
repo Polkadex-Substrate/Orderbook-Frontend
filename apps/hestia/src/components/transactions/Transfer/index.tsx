@@ -2,7 +2,7 @@ import { useAssets, useTransferHistory } from "@orderbook/core/hooks";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { PALLET_ADDRESS } from "@orderbook/core/constants";
-import { useExtensionAccounts } from "@polkadex/react-providers";
+import { useExtensionAccounts } from "@aksumite/react-providers";
 import {
   ColumnFiltersState,
   SortingState,
@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { GenericMessage, Loading, Table } from "@polkadex/ux";
+import { GenericMessage, Loading, Table } from "@mitrabook/ux";
 import classNames from "classnames";
 import { useWindowSize } from "usehooks-ts";
 
