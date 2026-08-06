@@ -22,6 +22,7 @@ import {
   GraphQLResponse as GraphQLResult,
 } from "./helpers";
 import { describeWriteError } from "./writeError";
+import { interpretUserActionResponse } from "./userActionResponse";
 import {
   ClaimRewardArgs,
   ClaimWithdrawArgs,
@@ -34,10 +35,6 @@ import {
   WithdrawArgs,
 } from "./../interfaces";
 
-type UserActionLambdaResp = {
-  is_success: boolean;
-  body: string;
-};
 class AppsyncV1Operations implements OrderbookOperationStrategy {
   init(): Promise<void> {
     return Promise.resolve(undefined);
@@ -55,19 +52,21 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         variables: { input: { payload: data.payload } },
         token: data.token,
       });
-      if (result?.data?.place_order) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.place_order);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.place_order)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.place_order,
+        result?.errors
+      );
+      if (!outcome.ok)
         throw new Error(
-          describeWriteError(
-            result,
+          outcome.message ??
             "Cancel order failed: No valid response from server"
-          )
         );
-      }
     } catch (error) {
       // RETHROW UNCONDITIONALLY.
       //
@@ -92,19 +91,20 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         token: data.token,
       });
 
-      if (result?.data?.place_order) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.place_order);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.place_order)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.place_order,
+        result?.errors
+      );
+      if (!outcome.ok)
         throw new Error(
-          describeWriteError(
-            result,
-            "Place order failed: No valid response from server"
-          )
+          outcome.message ?? "Place order failed: No valid response from server"
         );
-      }
     } catch (error) {
       // RETHROW UNCONDITIONALLY.
       //
@@ -127,19 +127,20 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         variables: { input: { payload } },
         token: data.address,
       });
-      if (result?.data?.withdraw) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.withdraw);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.withdraw)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.withdraw,
+        result?.errors
+      );
+      if (!outcome.ok)
         throw new Error(
-          describeWriteError(
-            result,
-            "withdraw failed: No valid response from server"
-          )
+          outcome.message ?? "withdraw failed: No valid response from server"
         );
-      }
     } catch (error) {
       // RETHROW UNCONDITIONALLY.
       //
@@ -163,19 +164,20 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
         variables: { input: { payload } },
         token,
       });
-      if (result?.data?.cancel_all) {
-        const resp: UserActionLambdaResp = JSON.parse(result.data.cancel_all);
-        if (!resp.is_success) {
-          throw new Error(resp.body);
-        }
-      } else {
+      // The reply is an opaque string. The retired Lambda backend put a JSON
+      // envelope in it; the Rust backend returns a bare identifier, so the old
+      // `JSON.parse(result.data.cancel_all)` threw "Unexpected non-whitespace
+      // character after JSON at position 1" on a value like 0xabc123 - AFTER the
+      // engine had already accepted and matched the order. Both shapes are
+      // accepted now; see userActionResponse.test.ts.
+      const outcome = interpretUserActionResponse(
+        result?.data?.cancel_all,
+        result?.errors
+      );
+      if (!outcome.ok)
         throw new Error(
-          describeWriteError(
-            result,
-            "cancelAll failed: No valid response from server"
-          )
+          outcome.message ?? "cancelAll failed: No valid response from server"
         );
-      }
     } catch (error) {
       // RETHROW UNCONDITIONALLY.
       //
