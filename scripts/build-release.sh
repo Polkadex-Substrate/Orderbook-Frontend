@@ -168,6 +168,22 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
     fi
     log "Pre-flight: eslint ok"
   fi
+
+  # Type check. Neither check above can see a missing import: prettier only
+  # formats, and eslint's no-undef is DISABLED for TypeScript on the assumption
+  # that tsc owns that job - so if tsc never runs, nothing owns it. A
+  # `describeRpcError` used without importing it passed both pre-flights and then
+  # failed `next build` at 2m16s, during "Linting and checking validity of types".
+  # That is the same check, just 2 minutes later. tsc takes seconds.
+  if [ -x node_modules/.bin/tsc ]; then
+    log "Pre-flight: tsc (types, ~20s)"
+    if ! tsc_out=$(node_modules/.bin/tsc -p apps/hestia/tsconfig.json --noEmit 2>&1); then
+      printf '%s\n' "$tsc_out" | sed 's/^/  /' >&2
+      die "Type errors above WILL fail next build, but 2 minutes later.
+  Fix them, then re-run. Or pass --no-preflight to build anyway."
+    fi
+    log "Pre-flight: tsc ok"
+  fi
 fi
 
 # ── Guard: no credential-shaped strings in git-tracked files ────────────────

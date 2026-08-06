@@ -30,6 +30,7 @@ import { formatDisplay } from "@orderbook/format";
 import { useBridgeProvider } from "./BridgeProvider";
 
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
+import { describeRpcError } from "@/lib/hyperbridge/rpcTransport";
 import { usePool } from "@/hooks";
 import {
   ErrorMessage,
