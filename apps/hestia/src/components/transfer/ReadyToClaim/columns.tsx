@@ -1,10 +1,10 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { Tokens, Tooltip, Typography, truncateString } from "@polkadex/ux";
-import { getChainFromTicker } from "@orderbook/core/helpers";
+import { Tokens, Tooltip, Typography, truncateString } from "@mitrabook/ux";
 import { RiArrowRightLine } from "@remixicon/react";
 
 import { ReadyToClaimProps } from ".";
 
+import { getChainFromTicker } from "@/config/assetChain";
 import { TokenCard } from "@/components/ui/ReadyToUse";
 
 const columnHelper = createColumnHelper<ReadyToClaimProps>();
@@ -14,7 +14,8 @@ export const columns = [
     id: "token",
     cell: (e) => {
       const tokenTicker = e.getValue().token.ticker;
-      const name = getChainFromTicker(tokenTicker);
+      // ?? tokenTicker: see transfer/History/columns.
+      const name = getChainFromTicker(tokenTicker) ?? tokenTicker;
       return (
         <TokenCard
           tokenName={name}

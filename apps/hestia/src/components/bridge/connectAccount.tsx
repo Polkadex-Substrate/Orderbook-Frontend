@@ -6,13 +6,13 @@ import {
   useInteractableProvider,
   ConnectWallet,
   ExtensionAccounts,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import {
   ExtensionAccount,
   useExtensionAccounts,
   useExtensions,
-} from "@polkadex/react-providers";
+} from "@aksumite/react-providers";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 
 type Extension = (typeof ExtensionsArray)[0] | null;
@@ -21,11 +21,11 @@ export const ConnectAccount = ({
   open,
   onOpenChange,
   setAccount,
-  evm = false,
 }: {
   open: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
   setAccount?: (e: ExtensionAccount) => void;
+  /** Accepted for call-site compatibility; substrate-only picker ignores it. */
   evm?: boolean;
 }) => {
   const [extension, setExtension] = useState<Extension>(null);

@@ -45,6 +45,6 @@ export const useLeaderBoard = (market: string) => {
 
   return {
     accounts: data,
-    isLoading: status === "loading",
+    isLoading: status === "pending",
   };
 };

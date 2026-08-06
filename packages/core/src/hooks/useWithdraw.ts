@@ -7,7 +7,7 @@ import {
   signPayload,
   isValidAddress,
 } from "@orderbook/core/helpers";
-import { useUserAccounts } from "@polkadex/react-providers";
+import { useUserAccounts } from "@aksumite/react-providers";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { Codec } from "@polkadot/types/types";
 
@@ -83,7 +83,8 @@ export const useWithdraw = () => {
       });
     },
     onError: (error) => {
-      const errorMessage = (error as Error).message ?? (error as string);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error ?? "");
       onHandleError(errorMessage);
     },
     onSuccess: () =>
@@ -92,5 +93,5 @@ export const useWithdraw = () => {
       ),
   });
 
-  return { mutateAsync, loading: status === "loading" };
+  return { mutateAsync, loading: status === "pending" };
 };

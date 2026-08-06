@@ -1,4 +1,4 @@
-import { Drawer, Token, Typography, truncateString } from "@polkadex/ux";
+import { Drawer, Token, Typography, truncateString } from "@mitrabook/ux";
 import { Dispatch, SetStateAction } from "react";
 import { intlFormat } from "date-fns";
 import Link from "next/link";

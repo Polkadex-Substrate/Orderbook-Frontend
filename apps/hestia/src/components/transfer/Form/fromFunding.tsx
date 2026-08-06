@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import { AccountInfo, InlineAccountCard } from "../../ui/ReadyToUse";
 
 import { Card } from "./card";
-import { picoScale } from "@/helpers";
 
 export const FromFunding = ({
   isExtensionAccountPresent,
@@ -33,8 +31,13 @@ export const FromFunding = ({
   localAccountBalance?: string;
   selectedAssetTicker?: string;
 }) => {
-
-  const formattedExtensionAccountBalance = selectedAssetTicker === 'USDT' ? useMemo(() => picoScale(extensionAccountBalance), [extensionAccountBalance]) : extensionAccountBalance;
+  /*
+   * No USDT special case any more. This used to run picoScale (x 1e-12) on USDT
+   * only, on top of fetchOnChainBalance already dividing by the asset's on-chain
+   * metadata decimals - so USDT was scaled twice and rendered 1e12 too small.
+   * See the note on the deleted picoScale helper.
+   */
+  const formattedExtensionAccountBalance = extensionAccountBalance;
 
   return (
     <Card
@@ -47,7 +50,9 @@ export const FromFunding = ({
         address={fromFunding ? extensionAccountAddress : localAccountAddress}
         ticker={selectedAssetTicker}
         isBalanceFetching={isBalanceFetching}
-        balance={fromFunding ? formattedExtensionAccountBalance : localAccountBalance}
+        balance={
+          fromFunding ? formattedExtensionAccountBalance : localAccountBalance
+        }
       >
         {((fromFunding && !isExtensionAccountPresent) ||
           (!fromFunding && !isLocalAccountPresent)) && (

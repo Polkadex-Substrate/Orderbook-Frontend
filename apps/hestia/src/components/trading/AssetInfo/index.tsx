@@ -2,11 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Decimal } from "@orderbook/core/utils";
-import {
-  getChainFromTicker,
-  hasOnlyZeros,
-  isNegative,
-} from "@orderbook/core/helpers";
+import { hasOnlyZeros, isNegative } from "@orderbook/core/helpers";
 import { useMarkets, useTickers } from "@orderbook/core/hooks";
 import { Market } from "@orderbook/core/utils/orderbookService";
 import { useResizeObserver } from "usehooks-ts";
@@ -14,6 +10,8 @@ import classNames from "classnames";
 
 import { Asset } from "./asset";
 import { Card } from "./card";
+
+import { getChainFromTicker } from "@/config/assetChain";
 
 export const AssetInfo = ({ currentMarket }: { currentMarket?: Market }) => {
   const [state, setState] = useState("USDT");
@@ -81,6 +79,7 @@ export const AssetInfo = ({ currentMarket }: { currentMarket?: Market }) => {
   return (
     <div
       ref={ref}
+      data-tour="market-selector"
       className={classNames(
         "flex flex-wrap border-b border-primary ",
         maxWidth ? "flex-col" : "gap-3"

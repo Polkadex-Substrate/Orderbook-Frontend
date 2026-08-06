@@ -1,7 +1,8 @@
 import { ClaimRewardArgs } from "@orderbook/core/hooks";
 import { GenericStatus } from "@orderbook/core/providers/user/connectWalletProvider";
-import { Button, Spinner, Typography } from "@polkadex/ux";
+import { Button, Spinner, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
+import { formatDisplay } from "@orderbook/format";
 
 type Props = {
   value: {
@@ -24,7 +25,7 @@ export const ClaimReward = ({
   loadingEpochs,
 }: Props) => {
   const disabled =
-    claimRewardStatus === "loading" && !loadingEpochs.includes(value.epoch);
+    claimRewardStatus === "pending" && !loadingEpochs.includes(value.epoch);
   const loading = loadingEpochs.includes(value.epoch);
 
   const hasClaimed = value.isClaimed;
@@ -51,7 +52,7 @@ export const ClaimReward = ({
         </div>
         <div className="flex flex-1 flex-col">
           <Typography.Text bold size="md">
-            {value.totalReward.toFixed(4)} {value.token}
+            {formatDisplay(value.totalReward)} {value.token}
           </Typography.Text>
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">

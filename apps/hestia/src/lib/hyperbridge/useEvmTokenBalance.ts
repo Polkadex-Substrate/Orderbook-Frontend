@@ -5,12 +5,15 @@
  * Address resolution order:
  *  1. If `address` is a valid EVM address (0x + 40 hex chars), use it directly.
  *  2. Otherwise (e.g. a Substrate ss58 address), call `window.ethereum.eth_accounts`
- *     to discover the active EVM account — covers wallets like Enkrypt that expose
+ *     to discover the active EVM account - covers wallets like Enkrypt that expose
  *     both a Polkadot and an EVM account via different interfaces.
  */
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { createPublicClient, http, formatUnits, isAddress } from "viem";
+import { createPublicClient, formatUnits, isAddress } from "viem";
 import { sepolia } from "viem/chains";
+
+import { rpcTransport } from "./rpcTransport";
+
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig } from "@/config/bridge";
 
@@ -41,7 +44,7 @@ interface UseEvmTokenBalanceResult {
 
 export function useEvmTokenBalance(
   address?: string,
-  options?: UseEvmTokenBalanceOptions,
+  options?: UseEvmTokenBalanceOptions
 ): UseEvmTokenBalanceResult {
   const tokenAddress =
     options?.tokenAddress ??
@@ -53,9 +56,9 @@ export function useEvmTokenBalance(
     () =>
       createPublicClient({
         chain: sepolia,
-        transport: http(rpcUrl),
+        transport: rpcTransport(rpcUrl),
       }),
-    [rpcUrl],
+    [rpcUrl]
   );
 
   const [balance, setBalance] = useState(0);
@@ -74,7 +77,7 @@ export function useEvmTokenBalance(
       if (isAddress(address)) {
         evmAddress = address as `0x${string}`;
       } else {
-        // Substrate ss58 address — try window.ethereum (Enkrypt EVM account)
+        // Substrate ss58 address - try window.ethereum (Enkrypt EVM account)
         if (typeof window !== "undefined") {
           const injected = (window as any).ethereum;
           if (injected) {
@@ -83,9 +86,10 @@ export function useEvmTokenBalance(
                 method: "eth_accounts",
               });
               const first = accounts?.[0];
-              if (first && isAddress(first)) evmAddress = first as `0x${string}`;
+              if (first && isAddress(first))
+                evmAddress = first as `0x${string}`;
             } catch {
-              // Extension present but not authorised — ignore
+              // Extension present but not authorised - ignore
             }
           }
         }
@@ -119,6 +123,7 @@ export function useEvmTokenBalance(
   return { balance, isLoading, refetch: fetchBalance };
 }
 
-// Backwards-compatible alias — existing imports of useWethBalance continue to work
-export const useWethBalance = (address?: string) =>
-  useEvmTokenBalance(address);
+// The useWethBalance alias that used to live here is gone. It was kept for
+// "existing imports", but there were none - it and the useWethBalance.ts
+// re-export shim were both dead. Call useEvmTokenBalance directly; its Sepolia
+// and WETH defaults come from config/bridge.ts.

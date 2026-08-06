@@ -1,16 +1,18 @@
 "use client";
 
-import { Button } from "@polkadex/ux";
+import { Button } from "@mitrabook/ux";
 import { forwardRef } from "react";
 import { RiBookOpenLine, RiFeedbackLine } from "@remixicon/react";
 
 import { Card } from "./card";
 
+import { EXTERNAL_LINKS } from "@/config/links";
+
 export const Help = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div
       ref={ref}
-      className="flex items-start max-md:flex-col max-md:gap-4 max-w-[900px] flex-1 mx-auto w-full mt-20 max-lg:pb-4"
+      className="flex items-start max-md:flex-col max-md:gap-4 max-w-[640px] mx-auto w-full mt-2 px-4 pb-8"
     >
       <Card
         title="Transaction history"
@@ -28,7 +30,7 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
       <Card
         title="Having Trouble?"
         description="Feel free to get in touch."
-        href="https://discord.gg/G4KMw2sGGe"
+        href={EXTERNAL_LINKS.discord}
         target="_blank"
       >
         <Button.Icon

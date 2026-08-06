@@ -1,5 +1,5 @@
 import { Order } from "@orderbook/core/utils/orderbookService/types";
-import { Button, Icon, Popover, Typography } from "@polkadex/ux";
+import { Button, Icon, Popover, Typography } from "@mitrabook/ux";
 import { Table } from "@tanstack/react-table";
 import classNames from "classnames";
 import { useMemo } from "react";

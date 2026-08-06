@@ -1,6 +1,6 @@
 "use client";
 
-import { Interactable, useInteractableProvider } from "@polkadex/ux";
+import { Interactable, useInteractableProvider } from "@mitrabook/ux";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { Fragment, useCallback } from "react";
@@ -77,7 +77,7 @@ const CardsComponent = () => {
       <Interactable.Card pageName="NewTradingAccount">
         <NewTradingAccount
           onCreateAccount={onRegisterTradeAccount}
-          loading={registerStatus === "loading"}
+          loading={registerStatus === "pending"}
           fundWalletPresent={!!Object.keys(selectedWallet ?? {})?.length}
           errorTitle="Error"
           errorMessage={(registerError as Error)?.message ?? registerError}

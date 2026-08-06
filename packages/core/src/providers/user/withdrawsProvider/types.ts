@@ -1,5 +1,5 @@
 import { FC, PropsWithChildren } from "react";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { WithdrawsClaimFetch } from "./actions";
 

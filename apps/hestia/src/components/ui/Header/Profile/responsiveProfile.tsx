@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover } from "@polkadex/ux";
+import { Popover } from "@mitrabook/ux";
 import {
   TradeAccountType,
   useConnectWalletProvider,

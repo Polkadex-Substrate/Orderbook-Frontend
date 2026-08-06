@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { ApiPromise, WsProvider } from "@polkadot/api";
+
+import { getSubstrateApi } from "./substrateApiSingleton";
+
 import { BRIDGE_CHAINS } from "@/config/bridge";
 import type { SubstrateChainConfig } from "@/config/bridge";
 
@@ -10,42 +12,25 @@ interface UseSubstrateNativeBalanceOptions {
   decimals?: number;
 }
 
-// Reuse the per-URL singleton from useSubstrateWethBalance pattern
-const apiInstances = new Map<string, ApiPromise>();
-const connectingUrls = new Set<string>();
-const apiQueues = new Map<string, Array<(api: ApiPromise) => void>>();
-
-async function getApi(wsUrl: string): Promise<ApiPromise> {
-  const existing = apiInstances.get(wsUrl);
-  if (existing?.isConnected) return existing;
-
-  if (connectingUrls.has(wsUrl)) {
-    return new Promise((resolve) => {
-      const q = apiQueues.get(wsUrl) ?? [];
-      q.push(resolve);
-      apiQueues.set(wsUrl, q);
-    });
-  }
-
-  connectingUrls.add(wsUrl);
-  try {
-    const provider = new WsProvider(wsUrl);
-    const api = await ApiPromise.create({ provider });
-    apiInstances.set(wsUrl, api);
-    (apiQueues.get(wsUrl) ?? []).forEach((cb) => cb(api));
-    apiQueues.delete(wsUrl);
-    return api;
-  } finally {
-    connectingUrls.delete(wsUrl);
-  }
-}
+/*
+ * This file used to carry its own copy of the per-URL connection pool - the same
+ * Map/Set/queue code as substrateApiSingleton.ts, with the variables renamed.
+ * A third copy lived in useSubstrateWethBalance.ts (now deleted, nothing
+ * imported it).
+ *
+ * Separate module-level Maps are separate pools, so the "singleton" was opening
+ * one WsProvider socket per copy against the same node. Sharing the real
+ * singleton means one socket per URL for the whole app, which matters when the
+ * chain RPC is the flaky dependency - and it has been.
+ */
 
 export function useSubstrateNativeBalance(
   address?: string,
-  options?: UseSubstrateNativeBalanceOptions,
+  options?: UseSubstrateNativeBalanceOptions
 ) {
   const wsUrl = options?.wsUrl ?? defaultSubstrateChain.wsUrl;
-  const decimals = options?.decimals ?? defaultSubstrateChain.nativeCurrency.decimals;
+  const decimals =
+    options?.decimals ?? defaultSubstrateChain.nativeCurrency.decimals;
   const divisor = Math.pow(10, decimals);
 
   const [balance, setBalance] = useState(0);
@@ -66,7 +51,7 @@ export function useSubstrateNativeBalance(
     let cancelled = false;
     setIsLoading(true);
 
-    getApi(wsUrl)
+    getSubstrateApi(wsUrl)
       .then(async (api) => {
         if (cancelled) return;
 
@@ -79,22 +64,31 @@ export function useSubstrateNativeBalance(
               const raw = BigInt(data?.data?.free ?? 0);
               setBalance(Number(raw) / divisor);
               setIsLoading(false);
-            },
+            }
           );
           unsubRef.current = unsub as unknown as () => void;
         } catch (err) {
           console.error("Failed to fetch native balance:", err);
-          if (!cancelled) { setBalance(0); setIsLoading(false); }
+          if (!cancelled) {
+            setBalance(0);
+            setIsLoading(false);
+          }
         }
       })
       .catch((err) => {
         console.error("Failed to connect to Substrate node:", err);
-        if (!cancelled) { setBalance(0); setIsLoading(false); }
+        if (!cancelled) {
+          setBalance(0);
+          setIsLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
-      if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
     };
   }, [address, wsUrl, divisor]);
 

@@ -1,6 +1,6 @@
 import classNames from "classnames";
 import { PropsWithChildren } from "react";
-import { Typography, Dropdown, Skeleton } from "@polkadex/ux";
+import { Typography, Dropdown, Skeleton } from "@mitrabook/ux";
 
 const Single = ({
   label,

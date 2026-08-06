@@ -1,4 +1,4 @@
-import { Skeleton, Typography } from "@polkadex/ux";
+import { Skeleton, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import React from "react";
 
@@ -28,7 +28,7 @@ export const Tickers = ({
                   role="button"
                   onClick={() => onChangeTicker(marketTicker)}
                   className={classNames(
-                    active && "bg-level-4",
+                    active && "bg-level-4/50",
                     "px-1 rounded-sm uppercase hover:bg-level-2 cursor-pointer transition-colors duration-300"
                   )}
                 >

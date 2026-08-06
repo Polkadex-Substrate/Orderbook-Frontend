@@ -1,6 +1,6 @@
 "use client";
 
-import { Interactable, useInteractableProvider } from "@polkadex/ux";
+import { Interactable, useInteractableProvider } from "@mitrabook/ux";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { Fragment, useCallback } from "react";
 

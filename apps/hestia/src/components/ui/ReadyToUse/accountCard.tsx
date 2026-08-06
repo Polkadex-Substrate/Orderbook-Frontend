@@ -1,6 +1,6 @@
 import classNames from "classnames";
 import { ElementType, Fragment, PropsWithChildren } from "react";
-import { Copy, Typography, truncateString, Icons, Icon } from "@polkadex/ux";
+import { Copy, Typography, truncateString, Icons, Icon } from "@mitrabook/ux";
 import { getExtensionIcon } from "@polkadot-cloud/assets/extensions";
 
 type WalletCardProps = {

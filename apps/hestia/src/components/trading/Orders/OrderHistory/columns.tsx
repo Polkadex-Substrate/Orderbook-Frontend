@@ -1,7 +1,7 @@
-import { parseScientific } from "@polkadex/numericals";
+import { parseScientific } from "@aksumite/numericals";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
-import { HoverCard, Tooltip, Typography } from "@polkadex/ux";
+import { HoverCard, Tooltip, Typography } from "@mitrabook/ux";
 
 import { formatedDate } from "@/helpers";
 import { FilledCard } from "@/components/ui/ReadyToUse";

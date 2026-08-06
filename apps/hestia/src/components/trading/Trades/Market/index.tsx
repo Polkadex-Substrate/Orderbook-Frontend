@@ -11,15 +11,33 @@ import {
   Illustrations,
   GenericMessage,
   Table as PolkadexTable,
-} from "@polkadex/ux";
-import { useMemo, useState } from "react";
+} from "@mitrabook/ux";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ColumnSelector, columns } from "./columns";
 import { Tickers } from "./tickers";
 import { Filters } from "./filters";
 
+// Module-scoped: clicking a pair navigates to a new /trading/[id] route,
+// which remounts this component and would reset the list to the top -
+// losing the user's place. Component state and refs die with the unmount;
+// this survives it (per tab, which is exactly the scope we want).
+let savedScrollTop = 0;
+
 export const Markets = ({ market }: { market: string }) => {
   const [state, setState] = useState<ColumnSelector>("price");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = savedScrollTop;
+    const onScroll = () => {
+      savedScrollTop = el.scrollTop;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  });
   const {
     marketTokens,
     marketTickers,
@@ -68,7 +86,10 @@ export const Markets = ({ market }: { market: string }) => {
         activeFavorite={fieldValue.showFavourite}
       />
       <Skeleton loading={loading} className="h-full">
-        <div className="flex flex-col flex-1 border-t border-t-primary overflow-scroll scrollbar-hide">
+        <div
+          ref={scrollRef}
+          className="flex flex-col flex-1 border-t border-t-primary overflow-scroll scrollbar-hide"
+        >
           {!hasMarkets || !marketTokens.length ? (
             <GenericMessage {...messageProps} />
           ) : (
@@ -116,7 +137,7 @@ export const Markets = ({ market }: { market: string }) => {
                                 firstCol ? "text-left" : "text-right",
                                 firstCol && "font-semibold",
                                 lastCol && "text-primary",
-                                active && "bg-level-1",
+                                active && "bg-level-2/40",
                                 "px-2 py-1 text-xs"
                               )}
                               key={cell.id}

@@ -1,5 +1,5 @@
 import { Decimal } from "@orderbook/core/utils";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitrabook/ux";
 import { createColumnHelper } from "@tanstack/react-table";
 
 const columnHelper = createColumnHelper<string[]>();

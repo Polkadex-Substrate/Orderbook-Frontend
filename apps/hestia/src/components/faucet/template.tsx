@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useMemo } from "react";
 import { RiDropLine } from "@remixicon/react";
@@ -53,8 +53,10 @@ export function Template() {
                 <RiDropLine className="w-6 h-6 text-primary" />
               </div>
               <Form />
+              <div className="max-w-[640px] mx-auto w-full px-4 pb-8">
+                <Help />
+              </div>
             </div>
-            <Help />
           </div>
         </main>
         {mobileView && (browserAccountPresent || extensionAccountPresent) && (

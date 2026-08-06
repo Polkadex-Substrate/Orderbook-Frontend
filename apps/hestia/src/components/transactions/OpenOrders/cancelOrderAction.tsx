@@ -1,4 +1,4 @@
-import { Button, PopConfirm } from "@polkadex/ux";
+import { Button, PopConfirm } from "@mitrabook/ux";
 import { RiDeleteBin2Line } from "@remixicon/react";
 import React from "react";
 

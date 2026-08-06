@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { ReactNode } from "react";
 
 const BridgeLayout = dynamic(
-  () => import("@/components/bridge/BridgeLayout").then((mod) => mod.BridgeLayout),
+  () =>
+    import("@/components/bridge/BridgeLayout").then((mod) => mod.BridgeLayout),
   { ssr: false }
 );
 

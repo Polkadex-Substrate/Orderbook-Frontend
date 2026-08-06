@@ -1,9 +1,9 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import classNames from "classnames";
 import { Decimal, InitialMarkets, isNegative } from "@orderbook/core/index";
-import { Typography, Token, tokenAppearance } from "@polkadex/ux";
+import { Typography, Token, tokenAppearance } from "@mitrabook/ux";
 import { RiStarLine } from "@remixicon/react";
-import { trimFloat } from "@polkadex/numericals";
+import { trimFloat } from "@aksumite/numericals";
 import { Dispatch, SetStateAction } from "react";
 
 export type ColumnSelector = "price" | "volume";

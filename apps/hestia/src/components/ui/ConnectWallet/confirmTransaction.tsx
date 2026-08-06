@@ -11,7 +11,7 @@ import {
   Skeleton,
   Typography,
   truncateString,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import { RiAddLine, RiFileCopyLine, RiGasStationLine } from "@remixicon/react";
 import {
   Dispatch,
@@ -33,6 +33,7 @@ import {
   useTransactionFee,
 } from "@orderbook/core/index";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
+import { formatDisplay } from "@orderbook/format";
 
 import { ErrorMessage, GenericHorizontalItem, Terms } from "../ReadyToUse";
 
@@ -104,7 +105,10 @@ export const ConfirmTransaction = ({
     () =>
       tokenFee?.id && isPDEX
         ? walletBalance < fee + existential
-        : Number(selectedAssetBalance?.onChainBalance) < swapPrice,
+        : // null = no on-chain pool for this token, so the fee cannot be
+          // quoted (let alone paid) in it - that blocks, it isn't "free".
+          swapPrice === null ||
+          Number(selectedAssetBalance?.onChainBalance) < swapPrice,
     [
       tokenFee?.id,
       fee,
@@ -218,7 +222,9 @@ export const ConfirmTransaction = ({
                       <RiGasStationLine className="w-3.5 h-3.5 text-secondary" />
                       <Skeleton loading={swapLoading} className="min-h-4 w-10">
                         <div className="flex items-center gap-1">
-                          <Typography.Text>{`${swapPrice.toFixed(4)} ${tokenFee?.name}`}</Typography.Text>
+                          <Typography.Text>{`${
+                            swapPrice === null ? "-" : formatDisplay(swapPrice)
+                          } ${tokenFee?.name}`}</Typography.Text>
                           <Typography.Text appearance="primary">
                             ≈
                           </Typography.Text>

@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction, useMemo } from "react";
-import { Button, Modal, Separator, Typography } from "@polkadex/ux";
+import { Button, Modal, Separator, Typography } from "@mitrabook/ux";
 import { RiCloseLine } from "@remixicon/react";
 import Image from "next/image";
 import { useWindowSize } from "react-use";

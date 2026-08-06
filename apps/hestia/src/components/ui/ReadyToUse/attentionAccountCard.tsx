@@ -7,7 +7,7 @@ import {
   Skeleton,
   Typography,
   truncateString,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import classNames from "classnames";
 import { TradeAccount } from "@orderbook/core/providers/types";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";

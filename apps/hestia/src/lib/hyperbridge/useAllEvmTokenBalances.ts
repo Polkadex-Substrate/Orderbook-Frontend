@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { createPublicClient, http, formatUnits, isAddress } from "viem";
+import { createPublicClient, formatUnits, isAddress } from "viem";
 import { sepolia } from "viem/chains";
+
+import { rpcTransport } from "./rpcTransport";
+
 import { BRIDGE_CHAINS } from "@/config/bridge";
 import type { EvmChainConfig } from "@/config/bridge";
 
@@ -24,19 +27,20 @@ export type EvmTokenSpec = {
 
 /**
  * Fetches ERC-20 balances for all given EVM tokens in parallel.
- * WETH (native ETH on bridge) is intentionally excluded — pass only ERC-20 tokens.
+ * WETH (native ETH on bridge) is intentionally excluded - pass only ERC-20 tokens.
  */
 export function useAllEvmTokenBalances(
   address?: string,
   tokens?: EvmTokenSpec[],
-  options?: { rpcUrl?: string },
+  options?: { rpcUrl?: string }
 ) {
   const rpcUrl = options?.rpcUrl ?? defaultEvmChain.rpcUrl;
   const tokensKey = tokens?.map((t) => t.ticker).join(",") ?? "";
 
   const publicClient = useMemo(
-    () => createPublicClient({ chain: sepolia, transport: http(rpcUrl) }),
-    [rpcUrl],
+    () =>
+      createPublicClient({ chain: sepolia, transport: rpcTransport(rpcUrl) }),
+    [rpcUrl]
   );
 
   const [balances, setBalances] = useState<Map<string, number>>(new Map());
@@ -66,13 +70,13 @@ export function useAllEvmTokenBalances(
           } catch {
             result.set(ticker, 0);
           }
-        }),
+        })
       );
     } finally {
       setBalances(result);
       setIsLoading(false);
     }
-    // tokensKey is a stable string proxy for the tokens array — intentional
+    // tokensKey is a stable string proxy for the tokens array - intentional
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, publicClient, tokensKey]);
 

@@ -1,5 +1,5 @@
 import { useTradeHistory } from "@orderbook/core/hooks";
-import { GenericMessage, Loading, Table } from "@polkadex/ux";
+import { GenericMessage, Loading, Table } from "@mitrabook/ux";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useWindowSize } from "usehooks-ts";
 import classNames from "classnames";

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import { RiArrowRightLine } from "@remixicon/react";
 
 import { Icons } from "@/components/ui";
+import { EXTERNAL_LINKS } from "@/config/links";
 
 export const QuickLinks = () => {
   return (
@@ -35,13 +36,13 @@ export const QuickLinks = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="https://discord.com/invite/Uvua83QAzk" target="_blank">
+          <Link href={EXTERNAL_LINKS.discord} target="_blank">
             <Button.Light appearance="tertiary">
               <Icons.Discord className="w-4 h-4 mr-4 fill-slate-600" />
               Discord
             </Button.Light>
           </Link>
-          <Link href="https://t.me/Polkadex" target="_blank">
+          <Link href={EXTERNAL_LINKS.telegram} target="_blank">
             <Button.Light appearance="secondary">
               <Icons.Telegram className="w-4 h-4 mr-4 fill-slate-600" />
               Telegram

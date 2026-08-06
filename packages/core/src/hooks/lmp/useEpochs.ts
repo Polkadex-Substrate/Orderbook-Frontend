@@ -46,6 +46,6 @@ export const useEpochs = () => {
   });
   return {
     epochs: data,
-    isLoading: status === "loading",
+    isLoading: status === "pending",
   };
 };

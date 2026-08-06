@@ -10,18 +10,14 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import classNames from "classnames";
-import {
-  Button,
-  GenericMessage,
-  Table as PolkadexTable,
-  Spinner,
-} from "@polkadex/ux";
+import { Button, Table as PolkadexTable, Spinner } from "@mitrabook/ux";
 import { useOrderHistory } from "@orderbook/core/hooks";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { DEFAULT_BATCH_LIMIT } from "@orderbook/core/constants";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 
 import { Loading } from "../loading";
+import { TabEmptyState } from "../emptyState";
 
 import { columns } from "./columns";
 import { ResponsiveTable } from "./responsiveTable";
@@ -54,16 +50,7 @@ export const OrderHistoryTable = ({
   if (isLoading) return <Loading />;
 
   if (!orderHistory.length)
-    return (
-      <GenericMessage
-        title={"No items found"}
-        illustration="NoData"
-        className="bg-level-0"
-        imageProps={{
-          className: "w-10 self-center",
-        }}
-      />
-    );
+    return <TabEmptyState tab="orderHistory" reason="empty" />;
 
   return (
     <Fragment>
@@ -73,7 +60,7 @@ export const OrderHistoryTable = ({
         open={responsiveState}
       />
       <InfiniteScroll
-        className="flex-1 h-full overflow-auto scrollbar-hide"
+        className="flex-1 h-full min-h-0 overflow-auto scrollbar-hide"
         dataLength={orderHistory.length}
         next={() => {
           onFetchNextPage();

@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { Button, Icon } from "@polkadex/ux";
+import { Button } from "@mitrabook/ux";
 
 import * as Icons from "@/components/ui/Icons";
 

@@ -1,4 +1,4 @@
-import { Typography, Dropdown, Pagination } from "@polkadex/ux";
+import { Typography, Dropdown, Pagination } from "@mitrabook/ux";
 import classNames from "classnames";
 import { forwardRef } from "react";
 

@@ -25,7 +25,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
+# Wildcard + exception: see the root .gitignore for why the explicit list was
+# not enough (sync-env.sh backups carry credentials).
+.env*
+!.env.example
 
 # vercel
 .vercel
@@ -38,3 +41,4 @@ next-env.d.ts
 
 yarn.lock
 package-lock.json
+test-results/

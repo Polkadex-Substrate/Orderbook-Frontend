@@ -10,21 +10,27 @@ import {
   truncateString,
   ResponsiveCard,
   HoverInformation,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import {
   RiFileCopyLine,
   RiGasStationLine,
   RiInformationFill,
 } from "@remixicon/react";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { useSwitchChain } from "wagmi";
+import { getAccount, getWalletClient } from "wagmi/actions";
 import {
   CrossChainError,
-  THEA_AUTOSWAP,
+  AUTOSWAP_QUOTE_AMOUNT,
   parseScientific,
 } from "@orderbook/core/index";
-import { useBridgeProvider } from "./BridgeProvider";
-import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
+import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { formatDisplay } from "@orderbook/format";
 
+import { useBridgeProvider } from "./BridgeProvider";
+
+import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
+import { describeRpcError } from "@/lib/hyperbridge/rpcTransport";
 import { usePool } from "@/hooks";
 import {
   ErrorMessage,
@@ -32,8 +38,16 @@ import {
   Terms,
 } from "@/components/ui/ReadyToUse";
 import { formatAmount } from "@/helpers";
+import {
+  BRIDGE_MAINNET_FEES_ENABLED,
+  BRIDGE_RELAYER_FEE,
+} from "@/config/bridgeFees";
 import { transferSubstrateToEvm } from "@/lib/hyperbridge/substrateToEthereum";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { config as wagmiConfig } from "@/config/wagmi";
+import { BRIDGE_CHAINS } from "@/config/bridge";
+import type { EvmChainConfig } from "@/config/bridge";
+
+const SEPOLIA_CHAIN_ID = (BRIDGE_CHAINS.sepolia as EvmChainConfig).chainId;
 
 interface Props {
   openFeeModal: boolean;
@@ -60,31 +74,33 @@ export const ConfirmTransaction = ({
     selectedAssetIdPolkadex,
     isEvmSource,
     substrateAssetIds,
+    sourceChain,
   } = useBridgeProvider();
   const { destinationFee, sourceFee, sourceFeeBalance, sourceFeeExistential } =
     transferConfig ?? {};
 
   const { onHandleAlert, onHandleError } = useSettingsProvider();
+  const { switchChainAsync } = useSwitchChain();
 
   const showAutoSwap = useMemo(
     () => isDestinationPolkadex && !destinationPDEXBalance,
-    [isDestinationPolkadex, destinationPDEXBalance],
+    [isDestinationPolkadex, destinationPDEXBalance]
   );
 
   const { swapPrice: swapPriceRaw = 0, swapLoading } = usePool({
     asset: selectedAssetIdPolkadex,
-    amount: THEA_AUTOSWAP,
+    amount: AUTOSWAP_QUOTE_AMOUNT,
     enabled: showAutoSwap,
   });
 
   const shortSourceAddress = useMemo(
     () => truncateString(sourceAccount?.address ?? "", 4),
-    [sourceAccount?.address],
+    [sourceAccount?.address]
   );
 
   const shortDestinationAddress = useMemo(
     () => truncateString(destinationAccount?.address ?? "", 4),
-    [destinationAccount?.address],
+    [destinationAccount?.address]
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -101,7 +117,7 @@ export const ConfirmTransaction = ({
     if (showAutoSwap && amount <= autoSwapAmount)
       return CrossChainError.AUTO_SWAP(
         autoSwapAmount.toFixed(4),
-        selectedAsset?.ticker as string,
+        selectedAsset?.ticker as string
       );
   }, [
     amount,
@@ -115,7 +131,7 @@ export const ConfirmTransaction = ({
 
   const disabled = useMemo(
     () => !!error || isLoading || !checked,
-    [error, isLoading, checked],
+    [error, isLoading, checked]
   );
 
   const [
@@ -197,7 +213,7 @@ export const ConfirmTransaction = ({
                 {showAutoSwap && (
                   <GenericHorizontalItem
                     label="Swap required"
-                    tooltip={`In order to bridge your funds and sign transactions on Polkadex, you must have at least 1.5 PDEX in your destination wallet. Your current destination wallet balance is ${destinationPDEXBalance} PDEX.
+                    tooltip={`In order to bridge your funds and sign transactions on Polkadex, you must have at least ${AUTOSWAP_QUOTE_AMOUNT} PDEX in your destination wallet. Your current destination wallet balance is ${destinationPDEXBalance} PDEX.
                   A small part of your transfer will be auto-swapped to PDEX to meet this requirement.`}
                     defaultOpen
                   >
@@ -207,7 +223,7 @@ export const ConfirmTransaction = ({
                         <div className="flex items-center gap-1">
                           <Typography.Text>
                             {Number(swapPriceRaw) > 0
-                              ? `${Number(swapPriceRaw).toFixed(4)} ${selectedAsset?.ticker}`
+                              ? `${formatDisplay(Number(swapPriceRaw))} ${selectedAsset?.ticker}`
                               : "--------"}
                           </Typography.Text>
                           <Typography.Text appearance="primary">
@@ -259,7 +275,7 @@ export const ConfirmTransaction = ({
                     </ResponsiveCard>
                     {showAutoSwap && Number(swapPriceRaw) > 0 && (
                       <ResponsiveCard label="Auto swap">
-                        {Number(swapPriceRaw).toFixed(4)}{" "}
+                        {formatDisplay(Number(swapPriceRaw))}{" "}
                         {selectedAsset?.ticker}
                       </ResponsiveCard>
                     )}
@@ -275,58 +291,87 @@ export const ConfirmTransaction = ({
               <Interaction.Action
                 disabled={disabled}
                 appearance={disabled ? "secondary" : "primary"}
-                // onClick={async () => {
-                //   try {
-                //     setIsLoading(true);
-                //     await transferTokens({ amount, recipient: destinationAccount?.address });
-                //     onSuccess();
-                //   } catch (e) {
-                //     console.error("Bridge Error: ", e);
-                //   } finally {
-                //     setIsLoading(false);
-                //   }
-                // }}
                 onClick={async () => {
                   try {
                     setIsLoading(true);
 
                     if (isEvmSource) {
                       // EVM (Sepolia) → Substrate (Polkadex)
+                      const account = getAccount(wagmiConfig);
+                      if (!account.isConnected || !account.address) {
+                        throw new Error(
+                          // Name the chain, not the family: "EVM" appears
+                          // nowhere else the user can see.
+                          `Connect a ${sourceChain?.name ?? "Sepolia Testnet"} wallet before submitting.`
+                        );
+                      }
+
+                      try {
+                        await switchChainAsync({ chainId: SEPOLIA_CHAIN_ID });
+                      } catch {
+                        throw new Error(
+                          "Please switch your wallet's network to Sepolia and try again."
+                        );
+                      }
+
+                      const walletClient = await getWalletClient(wagmiConfig, {
+                        chainId: SEPOLIA_CHAIN_ID,
+                      });
+
                       await transferTokens({
                         amount,
                         recipient: destinationAccount?.address,
                         token: selectedAsset,
+                        walletClient,
+                        address: account.address,
                       });
                     } else {
                       // Substrate (Polkadex) → EVM (Sepolia)
                       // Prefer assetId discovered from chain metadata; fall back to
                       // static config (WETH hardcoded as "3") only if not yet loaded.
                       const discoveredId = substrateAssetIds.get(
-                        selectedAsset?.ticker?.toUpperCase() ?? "",
+                        selectedAsset?.ticker?.toUpperCase() ?? ""
                       );
                       const staticId = selectedAsset?.chains.polkadex?.assetId;
                       const resolvedAssetId = discoveredId ?? staticId;
                       if (!resolvedAssetId) {
                         throw new Error(
                           `Asset ID for ${selectedAsset?.ticker} on Polkadex is not yet known. ` +
-                            "Please wait a moment for the chain data to load and try again.",
+                            "Please wait a moment for the chain data to load and try again."
                         );
                       }
                       await transferSubstrateToEvm({
                         amount,
                         recipient: destinationAccount?.address,
                         senderAddress: sourceAccount?.address,
+                        // 0 unless the mainnet fee flag is on. The form has
+                        // already budgeted funding for amount + fee when it is.
+                        relayerFee: BRIDGE_MAINNET_FEES_ENABLED
+                          ? BRIDGE_RELAYER_FEE
+                          : 0,
                         decimals: selectedAsset?.decimals,
                         assetId: Number(resolvedAssetId),
                       });
                     }
 
                     onHandleAlert(
-                      "These tokens will reflect in your Funding wallet in 2-3 mins",
+                      "These tokens will reflect in your Funding wallet in 2-3 mins"
                     );
                     onSuccess();
                   } catch (e) {
-                    onHandleError("Failed to transfer tokens");
+                    // RPC provider failures (rate limit, plan paywall,
+                    // unreachable endpoint) get a plain-language message. viem's
+                    // raw text is a dump of the request body, contract address,
+                    // function name, a docs link and a version string - which
+                    // told a user nothing about whether their funds were at
+                    // risk. Unrecognised errors keep their original message
+                    // rather than being flattened into something vague.
+                    onHandleError(
+                      describeRpcError(e) ??
+                        (e instanceof Error
+                          ? e.message
+                          : "Failed to transfer tokens")
+                    );
                     console.error("Bridge Error:", e);
                   } finally {
                     setIsLoading(false);

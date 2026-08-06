@@ -6,6 +6,16 @@ const requestHeaders = () => ({
   "X-API-Key": API_KEY,
 });
 
+/** With NEXT_PUBLIC_FAUCET_URL unset, fetch("/api/…") hits the Next app
+ *  itself and 404s - a uselessly misleading error. Fail with the cause. */
+function assertConfigured() {
+  if (!BASE_URL)
+    throw new Error(
+      "Faucet backend is not configured (NEXT_PUBLIC_FAUCET_URL is empty). " +
+        "Set it in apps/hestia/.env and rebuild."
+    );
+}
+
 export type RegisterResult = {
   success: boolean;
   created: boolean;
@@ -43,6 +53,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
 }
 
 export async function faucetRegister(address: string): Promise<RegisterResult> {
+  assertConfigured();
   const response = await fetch(`${BASE_URL}/api/register`, {
     method: "POST",
     headers: requestHeaders(),
@@ -60,6 +71,7 @@ export async function faucetDrip(
   address: string,
   asset: string
 ): Promise<DripResult> {
+  assertConfigured();
   const response = await fetch(`${BASE_URL}/api/drip`, {
     method: "POST",
     headers: requestHeaders(),
@@ -77,6 +89,7 @@ export async function faucetDripSepolia(
   address: string,
   token: string
 ): Promise<DripSepoliaResult> {
+  assertConfigured();
   const response = await fetch(`${BASE_URL}/api/drip/sepolia`, {
     method: "POST",
     headers: requestHeaders(),

@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { WrappedHyperFungibleTokenABI } from "@hyperbridge/sdk";
-import { createPublicClient, http, parseEther, formatEther, toHex } from "viem";
+import { createPublicClient, parseEther, formatEther, toHex } from "viem";
 import { sepolia } from "viem/chains";
+
+import { rpcTransport } from "./rpcTransport";
+
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
 
@@ -65,13 +67,13 @@ export function useHyperbridgeFees({
         if (!hftAddress) {
           throw new Error(
             `No HFT address configured for ${assetTicker}. ` +
-              "Obtain the WrappedHFT contract address from the Hyperbridge team.",
+              "Obtain the WrappedHFT contract address from the Hyperbridge team."
           );
         }
 
         const publicClient = createPublicClient({
           chain: sepolia,
-          transport: http(srcChain.rpcUrl),
+          transport: rpcTransport(srcChain.rpcUrl),
         });
 
         const amountWei = parseEther(amount.toString());
@@ -88,16 +90,43 @@ export function useHyperbridgeFees({
 
         // quote() may revert if the destination chain isn't configured yet.
         // Treat that as 0 native fee (same behaviour as the SDK).
+        // The SDK ABI marks quote() nonpayable; use an inline view ABI so
+        // viem's readContract accepts it.
+        const QUOTE_ABI = [
+          {
+            type: "function",
+            name: "quote",
+            stateMutability: "view",
+            inputs: [
+              {
+                name: "params",
+                type: "tuple",
+                components: [
+                  { name: "dest", type: "bytes" },
+                  { name: "to", type: "bytes" },
+                  { name: "amount", type: "uint256" },
+                  { name: "timeout", type: "uint64" },
+                  { name: "relayerFee", type: "uint256" },
+                  { name: "data", type: "bytes" },
+                ],
+              },
+            ],
+            outputs: [{ name: "", type: "uint256" }],
+          },
+        ] as const;
+
         let nativeValue = 0n;
         try {
-          nativeValue = await publicClient.readContract({
+          nativeValue = (await publicClient.readContract({
             address: hftAddress as `0x${string}`,
-            abi: WrappedHyperFungibleTokenABI,
+            abi: QUOTE_ABI,
             functionName: "quote",
             args: [sendParams],
-          }) as bigint;
+          })) as bigint;
         } catch {
-          console.warn("quote() reverted — destination may not be configured yet in HFT contract.");
+          console.warn(
+            "quote() reverted - destination may not be configured yet in HFT contract."
+          );
         }
 
         setFees({

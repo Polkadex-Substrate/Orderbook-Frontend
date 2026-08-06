@@ -1,5 +1,5 @@
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
-import { Typography, Icon, Illustrations, Interaction } from "@polkadex/ux";
+import { Typography, Icon, Illustrations, Interaction } from "@mitrabook/ux";
 import { RiArrowRightSLine } from "@remixicon/react";
 import Link from "next/link";
 

@@ -8,8 +8,11 @@ import {
   ReactNode,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import { useAccount, useBalance } from "wagmi";
+import { useExtensionAccounts } from "@aksumite/react-providers";
+import { useFunds } from "@orderbook/core/hooks";
 
 import { useHyperbridgeFees } from "@/lib/hyperbridge/useHyperbridgeFees";
 import { useSubstrateNativeBalance } from "@/lib/hyperbridge/useSubstrateNativeBalance";
@@ -28,7 +31,7 @@ import type {
 } from "@/config/bridge";
 
 // ---------------------------------------------------------------------------
-// Static chain / asset definitions — sourced from central config
+// Static chain / asset definitions - sourced from central config
 // ---------------------------------------------------------------------------
 
 export const SEPOLIA_CHAIN = BRIDGE_CHAINS.sepolia;
@@ -69,6 +72,12 @@ interface BridgeContextProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transferConfig: any;
   selectedAssetBalance: number;
+  /** FREE trading-account balance for the selected asset, from the engine.
+   * Lets the bridge offer moving trading funds to funding (with consent)
+   * instead of dead-ending on "Insufficient balance" when funding alone is
+   * short but funding + trading covers the transfer. Reserved (in-order)
+   * balance is deliberately excluded: it cannot be withdrawn. */
+  tradingFreeBalance: number;
   supportedSourceChains: BridgeChainConfig[];
   supportedDestinationChains: BridgeChainConfig[];
   onSwitchChain: () => void;
@@ -97,7 +106,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [substrateAccount, setSubstrateAccount] = useState<any>(null);
   const [transferAmount, setTransferAmount] = useState(0);
-  const [selectedAsset, setSelectedAsset] = useState<BridgeTokenConfig>(WETH_ASSET);
+  const [selectedAsset, setSelectedAsset] =
+    useState<BridgeTokenConfig>(WETH_ASSET);
 
   const isEvmSource = direction === "evm-to-substrate";
 
@@ -112,7 +122,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const allChains = Object.values(BRIDGE_CHAINS);
   const supportedAssets = useMemo(
     () => getRouteSupportedTokens(SEPOLIA_CHAIN.id, POLKADEX_CHAIN.id),
-    [],
+    []
   );
 
   // sourceAccount / destinationAccount are aliases based on direction
@@ -131,14 +141,14 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     else setEvmAccount(account);
   };
 
-  // Swap direction — accounts stay assigned to their wallet type
+  // Swap direction - accounts stay assigned to their wallet type
   const onSwitchChain = () => {
     setDirection((prev) =>
       prev === "evm-to-substrate" ? "substrate-to-evm" : "evm-to-substrate"
     );
   };
 
-  // Sync wagmi connected EVM wallet → evmAccount
+  // Sync wagmi connected EVM wallet -> evmAccount
   const { address, isConnected, connector } = useAccount();
   useEffect(() => {
     if (isConnected && address) {
@@ -148,11 +158,33 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     }
   }, [isConnected, address, connector?.name]);
 
+  // Auto-select the Polkadot account when there is exactly one.
+  //
+  // The EVM side above connects itself, so making the user open a modal to
+  // pick from a list of one was the only manual step left, and it read as a
+  // second "connect your wallet" demand when the wallet was already connected.
+  //
+  // Only fires for a single account: with several, picking one for the user
+  // risks sending funds to the wrong address. The ref makes this a one-shot
+  // per address, so clearing the selection deliberately is not undone on the
+  // next render.
+  const { extensionAccounts } = useExtensionAccounts();
+  const autoPickedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const only = extensionAccounts?.length === 1 ? extensionAccounts[0] : null;
+    if (!only) return;
+    if (substrateAccount) return;
+    if (autoPickedRef.current === only.address) return;
+    autoPickedRef.current = only.address;
+    setSubstrateAccount(only);
+  }, [extensionAccounts, substrateAccount]);
+
   // ── Balances (EVM side) ───────────────────────────────────────────────────
   const evmAddress = evmAccount?.address;
 
   const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({
     address: evmAddress as `0x${string}` | undefined,
+    chainId: evmChain.chainId,
   });
   const ethBalance = ethBalanceData
     ? Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals
@@ -168,21 +200,29 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
           tokenAddress: t.chains.sepolia!.address as `0x${string}`,
           decimals: t.decimals,
         })),
-    [supportedAssets],
+    [supportedAssets]
   );
 
   const {
     balances: evmAllTokenBalances,
     isLoading: evmAllTokensLoading,
     refetch: refetchEvmTokenBalance,
-  } = useAllEvmTokenBalances(evmAddress, evmTokenSpecs, { rpcUrl: evmChain.rpcUrl });
+  } = useAllEvmTokenBalances(evmAddress, evmTokenSpecs, {
+    rpcUrl: evmChain.rpcUrl,
+  });
 
   // ── Balances (Substrate side) ─────────────────────────────────────────────
   const substrateAddress = substrateAccount?.address;
 
+  // Ticker only. `decimals: t.decimals` was passed here and it is the ERC-20
+  // value - correct for evmTokenSpecs above, wrong for the Substrate side, where
+  // pallet_assets stores every bridged asset at 12dp. useAllSubstrateBalances
+  // now reads decimals from assets.metadata, and the optional field on the spec
+  // exists only as a fallback for assets with no metadata. Passing the EVM value
+  // as that fallback would reintroduce the bug whenever metadata is missing.
   const substrateTokenSpecs = useMemo(
-    () => supportedAssets.map((t) => ({ ticker: t.ticker, decimals: t.decimals })),
-    [supportedAssets],
+    () => supportedAssets.map((t) => ({ ticker: t.ticker })),
+    [supportedAssets]
   );
 
   const {
@@ -194,10 +234,11 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     wsUrl: substrateChain.wsUrl,
   });
 
-  const { balance: pdexBalance } = useSubstrateNativeBalance(substrateAddress, {
-    wsUrl: substrateChain.wsUrl,
-    decimals: substrateChain.nativeCurrency.decimals,
-  });
+  const { balance: pdexBalance, isLoading: pdexBalanceLoading } =
+    useSubstrateNativeBalance(substrateAddress, {
+      wsUrl: substrateChain.wsUrl,
+      decimals: substrateChain.nativeCurrency.decimals,
+    });
 
   const selectedAssetBalance = useMemo(() => {
     if (isEvmSource) {
@@ -217,8 +258,24 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
   const sourceBalancesLoading = useMemo(
     () => (isEvmSource ? evmAllTokensLoading : substrateBalancesLoading),
-    [isEvmSource, evmAllTokensLoading, substrateBalancesLoading],
+    [isEvmSource, evmAllTokensLoading, substrateBalancesLoading]
   );
+
+  // Engine (trading account) balances. Same asset ids as pallet_assets, which is
+  // what substrateAssetIds resolves - so the lookup key is shared.
+  const { balances: engineBalances } = useFunds();
+  const tradingFreeBalance = useMemo(() => {
+    if (isEvmSource) return 0; // only meaningful when Polkadex is the source
+    const id =
+      selectedAsset.chains.polkadex?.assetId ??
+      substrateAssetIds.get(selectedAsset.ticker.toUpperCase()) ??
+      "";
+    if (!id) return 0;
+    const entry = engineBalances?.find(
+      (b) => b?.asset?.id?.toString() === id.toString()
+    );
+    return Number(entry?.free ?? 0) || 0;
+  }, [isEvmSource, engineBalances, selectedAsset, substrateAssetIds]);
 
   // All token balances for the token selector dropdown
   const sourceBalances = useMemo(
@@ -231,7 +288,13 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             : (evmAllTokenBalances.get(t.ticker) ?? 0)
           : (substrateAllBalances.get(t.ticker) ?? 0),
       })),
-    [isEvmSource, supportedAssets, ethBalance, evmAllTokenBalances, substrateAllBalances],
+    [
+      isEvmSource,
+      supportedAssets,
+      ethBalance,
+      evmAllTokenBalances,
+      substrateAllBalances,
+    ]
   );
 
   // ── Fees ──────────────────────────────────────────────────────────────────
@@ -287,8 +350,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const onSelectAsset = (asset: BridgeTokenConfig) => setSelectedAsset(asset);
 
   const refetchSourceBalance = useCallback(() => {
-    void refetchEthBalance();
-    void refetchEvmTokenBalance();
+    refetchEthBalance();
+    refetchEvmTokenBalance();
     refetchSubstrateBalances();
   }, [refetchEthBalance, refetchEvmTokenBalance, refetchSubstrateBalances]);
 
@@ -311,14 +374,23 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         sourceBalancesLoading,
         transferConfig,
         selectedAssetBalance,
+        tradingFreeBalance,
         supportedSourceChains: allChains,
         supportedDestinationChains: allChains,
         onSwitchChain,
+        // Empty string when the on-chain assetId isn't known (yet) - usePool
+        // gates its quote query on `!!asset`, so this cleanly disables the
+        // auto-swap quote instead of sending a fake id ("weth-id") that the
+        // runtime rejects with: Could not parse 'AssetId'.
         selectedAssetIdPolkadex:
-          selectedAsset.chains.polkadex?.assetId ?? "weth-id",
+          selectedAsset.chains.polkadex?.assetId ??
+          substrateAssetIds.get(selectedAsset.ticker.toUpperCase()) ??
+          "",
         isDestinationPolkadex: isEvmSource,
-        destinationPDEXBalance: 0,
-        isDestinationPDEXBalanceLoading: false,
+        // substrateAccount is the destination account exactly when isEvmSource
+        // (evm-to-substrate direction), which is the only direction this is used.
+        destinationPDEXBalance: pdexBalance,
+        isDestinationPDEXBalanceLoading: pdexBalanceLoading,
         supportedAssets,
         sourceBalances,
         substrateAssetIds,

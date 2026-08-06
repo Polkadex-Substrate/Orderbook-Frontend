@@ -1,6 +1,6 @@
 "use client";
 
-import { Typography, Chain, Button, Dropdown } from "@polkadex/ux";
+import { Typography, Chain, Button, Dropdown } from "@mitrabook/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { useMeasure } from "react-use";
 
@@ -15,17 +15,44 @@ export const FAUCET_NETWORKS: FaucetNetwork[] = [
   { id: "sepolia", name: "Sepolia Testnet", chainIcon: "Ethereum" },
 ];
 
+/**
+ * Polkadex is the default: it is the network this faucet exists to serve, it
+ * offers all 9 tokens (Sepolia offers 7), and its address autofills from the
+ * connected profile. Starting on "Select network" made every visit begin with a
+ * mandatory click that had one obvious answer.
+ */
+export const DEFAULT_FAUCET_NETWORK = FAUCET_NETWORKS[0];
+
+/**
+ * Persisted so the choice survives a reload and a successful claim. A Sepolia
+ * user would otherwise be reset to Polkadex on every single request.
+ *
+ * Stored by id rather than as the whole object, so renaming a network or
+ * changing its icon does not resurrect a stale copy from localStorage.
+ */
+export const FAUCET_NETWORK_STORAGE_KEY = "faucet_network";
+
+/** Resolve a stored id back to a network, ignoring anything unrecognised. */
+export const findFaucetNetwork = (
+  id?: string | null
+): FaucetNetwork | undefined => FAUCET_NETWORKS.find((n) => n.id === id);
+
 export const SelectNetwork = ({
   selected,
   onSelect,
+  open,
+  onOpenChange,
 }: {
   selected?: FaucetNetwork;
   onSelect: (network: FaucetNetwork) => void;
+  /** Controlled-open pair, so the form's primary button can open this. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) => {
   const [ref, bounds] = useMeasure<HTMLButtonElement>();
 
   return (
-    <Dropdown>
+    <Dropdown open={open} onOpenChange={onOpenChange}>
       <Dropdown.Trigger asChild ref={ref}>
         <Button.Outline
           asChild

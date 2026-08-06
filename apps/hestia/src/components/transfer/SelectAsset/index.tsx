@@ -1,4 +1,4 @@
-import { Button, Checkbox, Modal, Typography, Input } from "@polkadex/ux";
+import { Button, Checkbox, Modal, Typography, Input } from "@mitrabook/ux";
 import { useAssets } from "@orderbook/core/hooks";
 import classNames from "classnames";
 import { RiCloseLine } from "@remixicon/react";

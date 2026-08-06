@@ -45,7 +45,7 @@ const handleRemoveExponent = (value: DecimalProps["children"]) => {
     }
 
     // eslint-disable-next-line
-        return result + str.replace(/^\-/,'');
+    return result + str.replace(/^\-/, "");
   }
 
   power -= str.length;
