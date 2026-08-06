@@ -231,7 +231,12 @@ fi
 # public identifiers that legitimately live in tracked files.
 if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
   secret_pat="AIza""Sy[0-9A-Za-z_-]{33}|sntry""s_[A-Za-z0-9]|sntry""u_[A-Za-z0-9]"
-  if hits=$(git ls-files -z \
+  # Tracked files AND untracked-but-unignored ones. The tracked-only version
+  # missed the real near-miss: sync-env.sh's .env.bak.<timestamp> backups carry
+  # credentials and were not ignored, so they sat in the tree one `git add -A`
+  # away from being committed. A file the guard can see before it is staged is a
+  # file the guard should refuse to build over.
+  if hits=$( { git ls-files -z; git ls-files -z --others --exclude-standard; } \
               | xargs -0 grep -lEI "$secret_pat" 2>/dev/null); then
     if [ -n "$hits" ]; then
       echo "CREDENTIAL-SHAPED STRING IN GIT-TRACKED FILES:" >&2
