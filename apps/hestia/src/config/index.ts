@@ -50,7 +50,4 @@ export const defaultConfig = {
   subscanApi: process.env.SUBSCAN_API || "",
   subqueryUrl: process.env.NEXT_PUBLIC_SUBQUERY_URL || "",
   disabledFeatures: process.env.DISABLED_FEATURES?.split(","),
-  defaultTheaSourceChain: process.env.DEFAULT_THEA_SOURCE_CHAIN ?? "Polkadot",
-  defaultTheaDestinationChain:
-    process.env.DEFAULT_THEA_DESTINATION_CHAIN ?? "Polkadex",
 };

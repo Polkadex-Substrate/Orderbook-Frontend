@@ -1,5 +1,5 @@
 /**
- * Origin chain for the XCM/Thea-bridged Substrate assets.
+ * Origin chain for the XCM-bridged Substrate assets.
  *
  * DO NOT CALL THIS DIRECTLY from the app. Use
  * `apps/hestia/src/config/assetChain.ts`, which consults the Hyperbridge token
@@ -14,7 +14,7 @@
  * caller's fallback (the asset's own name) rather than naming a chain that is
  * not involved.
  *
- * The remaining entries are kept for a future mainnet with the Thea routes live.
+ * The remaining entries are kept for a future mainnet with those routes live.
  * Anything not listed returns "Unknown", which config/assetChain.ts converts to
  * undefined.
  */

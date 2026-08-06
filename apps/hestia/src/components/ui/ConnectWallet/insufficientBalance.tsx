@@ -73,7 +73,7 @@ export const InsufficientBalance = ({
                       <Icons.Bridge className="w-4 h-4 text-primary" />
                     </div>
                     <Typography.Text className="group-hover:text-current duration-300 transition-colors">
-                      THEA - Decentralized bridge
+                      Bridge from another network
                     </Typography.Text>
                   </div>
                   <Separator.Horizontal />

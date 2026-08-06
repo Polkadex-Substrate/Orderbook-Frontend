@@ -33,7 +33,7 @@ export function Template() {
             <div className="flex flex-col gap-4">
               <Typography.Text appearance="primary">
                 If you’re experiencing any issues after withdrawing your tokens
-                from Polkadex Orderbook or Thea, please contact us.
+                from Polkadex Orderbook, please contact us.
               </Typography.Text>
               <div className="flex items-center gap-2 flex-wrap">
                 <Button.Icon

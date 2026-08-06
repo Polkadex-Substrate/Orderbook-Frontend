@@ -21,7 +21,7 @@ import { useSwitchChain } from "wagmi";
 import { getAccount, getWalletClient } from "wagmi/actions";
 import {
   CrossChainError,
-  THEA_AUTOSWAP,
+  AUTOSWAP_QUOTE_AMOUNT,
   parseScientific,
 } from "@orderbook/core/index";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
@@ -89,7 +89,7 @@ export const ConfirmTransaction = ({
 
   const { swapPrice: swapPriceRaw = 0, swapLoading } = usePool({
     asset: selectedAssetIdPolkadex,
-    amount: THEA_AUTOSWAP,
+    amount: AUTOSWAP_QUOTE_AMOUNT,
     enabled: showAutoSwap,
   });
 
@@ -213,7 +213,7 @@ export const ConfirmTransaction = ({
                 {showAutoSwap && (
                   <GenericHorizontalItem
                     label="Swap required"
-                    tooltip={`In order to bridge your funds and sign transactions on Polkadex, you must have at least 1.5 PDEX in your destination wallet. Your current destination wallet balance is ${destinationPDEXBalance} PDEX.
+                    tooltip={`In order to bridge your funds and sign transactions on Polkadex, you must have at least ${AUTOSWAP_QUOTE_AMOUNT} PDEX in your destination wallet. Your current destination wallet balance is ${destinationPDEXBalance} PDEX.
                   A small part of your transfer will be auto-swapped to PDEX to meet this requirement.`}
                     defaultOpen
                   >

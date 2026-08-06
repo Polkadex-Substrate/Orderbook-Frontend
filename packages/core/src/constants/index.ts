@@ -101,7 +101,7 @@ export const DEFAULT_BATCH_LIMIT = 15;
 
 export const CUSTOM_ADDRES_NAME = "Custom address";
 export const OTHER_ASSET_EXISTENTIAL = 0.00000001;
-export const THEA_AUTOSWAP = 1.5;
+export const AUTOSWAP_QUOTE_AMOUNT = 1.5;
 export const GENESIS = [
   "0x3920bcb4960a1eef5580cd5367ff3f430eef052774f78468852f7b9cb39f8a3c",
   "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3",
