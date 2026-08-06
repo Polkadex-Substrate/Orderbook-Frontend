@@ -1,8 +1,6 @@
 import { Drawer, Token, Typography } from "@polkadex/ux";
 import { Dispatch, SetStateAction, useMemo } from "react";
-import { GENESIS } from "@orderbook/core/index";
 
-import { NetworkCard } from "./networkCard";
 import { LinkCard } from "./linkCard";
 
 import { ResponsiveCard, StatusCard } from "@/components/ui/ReadyToUse";
@@ -18,21 +16,12 @@ export const ResponsiveTable = ({
   onOpenChange: Dispatch<SetStateAction<boolean>>;
   data: Transaction | null;
 }) => {
-  const { asset, amount, status = "", from, to, timestamp, hash } = data ?? {};
+  const { asset, amount, status = "", timestamp, hash } = data ?? {};
   const ready = useMemo(
     () => ["CLAIMED", "APPROVED", "READY"].includes(status),
     [status]
   );
 
-  const isFromPolkadotNetwork = useMemo(
-    () => from?.genesis?.includes(GENESIS[0]),
-    [from?.genesis]
-  );
-
-  const isToPolkadotNetwork = useMemo(
-    () => to?.genesis?.includes(GENESIS[0]),
-    [to?.genesis]
-  );
   const date = useMemo(
     () => timestamp && formatedDate(new Date(timestamp), false),
     [timestamp]
@@ -65,18 +54,6 @@ export const ResponsiveTable = ({
           <StatusCard status={ready ? "Completed" : "Pending"} />
         </ResponsiveCard>
         <ResponsiveCard label="Amount">{amount?.toFormat()}</ResponsiveCard>
-        <ResponsiveCard label="From">
-          <NetworkCard
-            name={from?.name}
-            isPolkadotEcosystem={isFromPolkadotNetwork}
-          />
-        </ResponsiveCard>
-        <ResponsiveCard label="To">
-          <NetworkCard
-            name={to?.name}
-            isPolkadotEcosystem={isToPolkadotNetwork}
-          />
-        </ResponsiveCard>
         <ResponsiveCard label="Hash">
           <LinkCard value={hash} />
         </ResponsiveCard>

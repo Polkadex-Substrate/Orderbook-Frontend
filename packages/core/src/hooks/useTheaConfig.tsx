@@ -10,12 +10,14 @@ export const useTheaConfig = ({
   selectedAsset,
   destinationAddress = "",
   connector,
+  isDirectDeposit,
 }: {
   sourceAddress?: string;
   destinationChain: Chain | null;
   selectedAsset: Asset | null;
   destinationAddress?: string;
   connector: BaseChainAdapter | null;
+  isDirectDeposit?: boolean;
 }) => {
   const enabled = useMemo(
     () =>
@@ -48,7 +50,8 @@ export const useTheaConfig = ({
         destinationChain,
         selectedAsset,
         sourceAddress,
-        destinationAddress
+        destinationAddress,
+        isDirectDeposit
       );
       return res;
     },

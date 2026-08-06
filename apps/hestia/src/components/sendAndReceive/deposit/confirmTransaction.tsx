@@ -11,6 +11,7 @@ import {
   ResponsiveCard,
   HoverInformation,
 } from "@polkadex/ux";
+import classNames from "classnames";
 import {
   RiFileCopyLine,
   RiGasStationLine,
@@ -19,12 +20,13 @@ import {
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import {
   CrossChainError,
+  PALLET_ADDRESS,
   THEA_AUTOSWAP,
   parseScientific,
 } from "@orderbook/core/index";
-import { useTheaProvider } from "@orderbook/core/providers";
+import { useDirectDepositProvider } from "@orderbook/core/providers/user/sendAndReceive";
 
-import { useBridge, usePool } from "@/hooks";
+import { useDeposit, usePool } from "@/hooks";
 import {
   ErrorMessage,
   GenericHorizontalItem,
@@ -53,19 +55,19 @@ export const ConfirmTransaction = ({
     transferConfigLoading,
     destinationPDEXBalance,
     selectedAsset,
-    isDestinationPolkadex,
-    selectedAssetIdPolkadex,
-  } = useTheaProvider();
+    selectedAssetIdDestination,
+    isSourcePolkadex,
+  } = useDirectDepositProvider();
   const { destinationFee, sourceFee, sourceFeeBalance, sourceFeeExistential } =
     transferConfig ?? {};
 
   const showAutoSwap = useMemo(
-    () => isDestinationPolkadex && !destinationPDEXBalance,
-    [isDestinationPolkadex, destinationPDEXBalance]
+    () => !isSourcePolkadex && !destinationPDEXBalance,
+    [isSourcePolkadex, destinationPDEXBalance]
   );
 
   const { swapPrice = 0, swapLoading } = usePool({
-    asset: selectedAssetIdPolkadex,
+    asset: selectedAssetIdDestination,
     amount: THEA_AUTOSWAP,
     enabled: showAutoSwap,
   });
@@ -76,12 +78,13 @@ export const ConfirmTransaction = ({
   );
 
   const shortDestinationAddress = useMemo(
-    () => truncateString(destinationAccount?.address ?? "", 4),
-    [destinationAccount?.address]
+    () => truncateString(PALLET_ADDRESS, 3),
+    []
   );
-  const { mutateAsync, isLoading } = useBridge({ onSuccess });
+  const { mutateAsync, isLoading } = useDeposit({ onSuccess });
 
   const error = useMemo(() => {
+    if (isSourcePolkadex) return undefined;
     const autoSwapAmount = showAutoSwap ? swapPrice : 0;
     const balance = sourceFeeBalance?.amount ?? 0;
     const existential = sourceFeeExistential?.amount ?? 0;
@@ -103,6 +106,7 @@ export const ConfirmTransaction = ({
     sourceFeeBalance?.amount,
     sourceFeeExistential?.amount,
     swapPrice,
+    isSourcePolkadex,
   ]);
 
   const disabled = useMemo(
@@ -181,7 +185,7 @@ export const ConfirmTransaction = ({
                     <div className="flex items-center gap-1">
                       <RiFileCopyLine className="w-3 h-3 text-secondary" />
                       <Typography.Text>
-                        {destinationAccount?.name} • {shortDestinationAddress}
+                        {"Polkadex Orderbook"} • {shortDestinationAddress}
                       </Typography.Text>
                     </div>
                   </Copy>
@@ -189,7 +193,7 @@ export const ConfirmTransaction = ({
                 {showAutoSwap && (
                   <GenericHorizontalItem
                     label="Swap required"
-                    tooltip={`In order to bridge your funds and sign transactions on Polkadex, you must have at least 1.5 PDEX in your destination wallet. Your current destination wallet balance is ${destinationPDEXBalance} PDEX.
+                    tooltip={`In order to deposit your funds and sign transactions on Polkadex, you must have at least 1.5 PDEX in your destination wallet. Your current destination wallet balance is ${destinationPDEXBalance} PDEX.
                   A small part of your transfer will be auto-swapped to PDEX to meet this requirement.`}
                     defaultOpen
                   >
@@ -219,7 +223,9 @@ export const ConfirmTransaction = ({
                   </GenericHorizontalItem>
                 )}
                 <HoverInformation>
-                  <HoverInformation.Trigger>
+                  <HoverInformation.Trigger
+                    className={classNames(isSourcePolkadex && "hidden")}
+                  >
                     <div className="w-full flex items-center justify-between gap-2 px-3 py-3 cursor-pointer">
                       <div className="flex items-center gap-1">
                         <RiInformationFill className="w-3 h-3 text-actionInput" />

@@ -6,7 +6,7 @@ import {
   useExtensions,
 } from "@polkadex/react-providers";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
-import { useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { RiCheckLine, RiWalletLine } from "@remixicon/react";
 import { useMeasure } from "react-use";
 import {
@@ -31,9 +31,11 @@ const initialValue = ExtensionsArray.find(({ id }) => id === "talisman");
 export const SelectWallet = ({
   account,
   setAccount,
+  evm,
 }: {
   account?: ExtensionAccount | null;
-  setAccount: (e?: ExtensionAccount | null) => void;
+  setAccount: Dispatch<SetStateAction<ExtensionAccount>>;
+  evm: boolean;
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedExtension, setSelectedExtension] = useState(initialValue);
@@ -55,9 +57,9 @@ export const SelectWallet = ({
         ({ source, address, type }) =>
           source === selectedExtension?.id &&
           address !== account?.address &&
-          type === "ethereum"
+          (evm ? type === "ethereum" : type === "sr25519")
       ),
-    [extensionAccounts, selectedExtension?.id, account?.address]
+    [extensionAccounts, selectedExtension?.id, account?.address, evm]
   );
 
   return (
@@ -65,9 +67,9 @@ export const SelectWallet = ({
       <Popover.Trigger ref={ref} superpositionTrigger className="w-full">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
-            <RiWalletLine className="w-3.5 h-3.5 text-actionInput" />
+            <RiWalletLine className="w-5 h-5 text-actionInput" />
             {account ? (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <Typography.Text>{shortName}</Typography.Text>
                 <Typography.Text
                   appearance={account?.name ? "primary" : "base"}
@@ -94,7 +96,7 @@ export const SelectWallet = ({
                     Number(!!extensionsStatus[b.id]) -
                     Number(!!extensionsStatus[a.id])
                 )
-                  ?.filter((e) => EvmWallets.includes(e.id))
+                  ?.filter((e) => (evm ? EvmWallets.includes(e.id) : true))
                   ?.map((value) => {
                     return (
                       <ProviderCard

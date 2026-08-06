@@ -8,6 +8,8 @@ export function middleware(req: NextRequest) {
     maintenanceMode,
   } = defaultConfig;
 
+  const isTransferPage = req.nextUrl.pathname.startsWith("/transfer");
+
   if (maintenanceMode) {
     return NextResponse.redirect(new URL("/maintenance", req.url));
   }
@@ -16,6 +18,13 @@ export function middleware(req: NextRequest) {
   }
   if (!isBridgeEnabled && req.nextUrl.pathname.startsWith("/thea")) {
     return NextResponse.redirect(new URL("/", req.url));
+  }
+  if (isTransferPage) {
+    const nextUrl = req.nextUrl;
+    if (nextUrl.searchParams.get("type") !== "transfer") {
+      nextUrl.searchParams.set("type", "transfer");
+      return NextResponse.redirect(nextUrl);
+    }
   }
 }
 

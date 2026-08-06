@@ -76,14 +76,19 @@ export const ErrorMessages = (existential = "0", minAmount = "0") => ({
   ZERO: "The amount must be greater than 0",
   MIN: `The amount cannot be less than ${minAmount}`,
   EXISTENTIAL_DEPOSIT: `You need to keep some amount in source chain to cover the existential deposit`,
+  CONNECT_WALLET: "Please connect your account to Orderbook",
 });
 
 export const CrossChainError = {
+  SOURCE_WALLET: "Please choose source account first",
+  DESTINATION_WALLET: "Please choose destination account",
   SOURCE_FEE: "Insufficient balance to pay the transaction fee at source chain",
   NOT_ENOUGH_LIQUIDITY:
     "Not enough PDEX in the destination account. Please transfer 1+ PDEX first.",
-  AUTO_SWAP: (swapAmount: string, ticker: string) =>
-    `Please transfer more than ${swapAmount} ${ticker} since Autoswap is required`,
+  NOT_ENOUGH_LIQUIDITY_WITHDRAW: (asset: string) =>
+    `Insufficient liquidity to convert ${asset} tokens to PDEX for fee payment.`,
+  AUTO_SWAP: (swapAmount: string, ticker: string, withdraw?: boolean) =>
+    `Please transfer more than ${swapAmount} ${ticker} since Autoswap is required ${withdraw ? "to pay the fee" : ""}`,
 };
 
 export const MAX_DIGITS_AFTER_DECIMAL = 8;
@@ -102,6 +107,7 @@ export const DEFAULT_BATCH_LIMIT = 15;
 export const CUSTOM_ADDRES_NAME = "Custom address";
 export const OTHER_ASSET_EXISTENTIAL = 0.00000001;
 export const THEA_AUTOSWAP = 1.5;
+export const THEA_WITHDRAW_FEE = 1.1;
 export const GENESIS = [
   "0x3920bcb4960a1eef5580cd5367ff3f430eef052774f78468852f7b9cb39f8a3c",
   "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3",

@@ -57,12 +57,10 @@ export const FromTrading = ({
     transfer: "Another Funding Account",
   };
 
-  const withDropown = type === "deposit" || type === "transfer";
   return (
     <Card
       label="To"
       title={typeTitle[type]}
-      dropdown={withDropown}
       onChangeDirection={onChangeDirection}
     >
       <RenderConditional

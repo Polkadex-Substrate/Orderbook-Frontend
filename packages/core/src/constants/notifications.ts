@@ -62,15 +62,6 @@ export const NOTIFICATIONS = {
       href: "/history?tab=orderHistory",
     };
   },
-  transferToTradingAccount: (tx: Transaction): NotificationPayload => {
-    return {
-      category: "General",
-      message: `${tx.amount} ${tx.asset.ticker} Transfer 🎉`,
-      description: `Your transfer of ${tx.amount} ${tx.asset.ticker} from your funding account to your trading account has been successfully processed.`,
-      type: "Success",
-      href: "/history",
-    };
-  },
   claimTransfer: (tx: Transaction): NotificationPayload => {
     return {
       category: "General",
@@ -105,9 +96,9 @@ export const NOTIFICATIONS = {
     return {
       category: "General",
       message: `New Trading Account Created 🎉`,
-      description: `Your new trading account have been successfully created. Transfer funds from your funding account to your trading account to start trading.`,
+      description: `Your new trading account have been successfully created. Deposit more funds from your funding account to Polkadex orderbook to start trading.`,
       type: "Success",
-      href: "/transfer/PDEX",
+      href: "/send-and-receive",
     };
   },
   removeTradingAccount: (): NotificationPayload => {
@@ -116,7 +107,7 @@ export const NOTIFICATIONS = {
       message: `Trading account removed`,
       description: `Your trading account have been successfully removed from the blockchain. Don't worry your funds are safe. You can create another trading account to start trading with them.`,
       type: "Success",
-      href: "/transfer/PDEX",
+      href: "/trading/PDEXUSDT",
     };
   },
   claimReward: ({ reward }: { reward: string }): NotificationPayload => {
@@ -145,6 +136,40 @@ export const NOTIFICATIONS = {
       description: `Your transfer of ${amount} ${asset} from ${sourceChain.name} network to ${destinationChain.name} network has been successfully processed. You will recieve asset in destination chain in a few minutes.`,
       type: "Success",
       href: "/history?tab=crossChain",
+    };
+  },
+  directDeposit: ({
+    sourceChain,
+    asset,
+    amount,
+  }: {
+    sourceChain: Chain;
+    asset: string;
+    amount: number;
+  }): NotificationPayload => {
+    return {
+      category: "General",
+      message: "Deposit successful 🎉",
+      description: `Your deposit of ${amount} ${asset} from ${sourceChain.name} network to Polkadex orderbook has been successfully processed. You will recieve asset in Orderbook in a few minutes. Happy trading !!`,
+      type: "Success",
+      href: "/history",
+    };
+  },
+  directWithdraw: ({
+    destinationChain,
+    asset,
+    amount,
+  }: {
+    destinationChain: Chain;
+    asset: string;
+    amount: number;
+  }): NotificationPayload => {
+    return {
+      category: "General",
+      message: "Withdraw successful 🎉",
+      description: `Your withdraw of ${amount} ${asset} from Polkadex orderbook to ${destinationChain.name} network has been successfully processed. You will recieve asset in destination chain in a few minutes.`,
+      type: "Success",
+      href: "/history",
     };
   },
 };

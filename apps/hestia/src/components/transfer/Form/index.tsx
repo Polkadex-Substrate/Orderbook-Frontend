@@ -146,13 +146,6 @@ export const Form = ({
       : onChangeTradingMax();
   };
 
-  const handleChanteType = (e: MouseEvent<HTMLElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    resetForm();
-    onChangeType(isFromFunding ? "withdraw" : "deposit");
-  };
-
   const validationSchema = useMemo(
     () =>
       isFromFunding
@@ -335,10 +328,7 @@ export const Form = ({
               selectedAssetTicker={selectedAsset?.ticker}
             />
 
-            <button
-              onClick={handleChanteType}
-              className="h-full flex items-center justify-center p-2 max-lg:w-full max-lg:border-y border-primary hover:bg-level-1 duration-300 transition-colors"
-            >
+            <button className="h-full flex items-center justify-center p-2 max-lg:w-full max-lg:border-y border-primary hover:bg-level-1 duration-300 transition-colors">
               <RiArrowRightLine
                 className={classNames(
                   "w-6 h-6 transition-all duration-300",

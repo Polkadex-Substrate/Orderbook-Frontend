@@ -1,4 +1,5 @@
 "use client";
+import { Chain as ChainType } from "@polkadex/thea";
 import {
   Typography,
   Chain,
@@ -8,16 +9,17 @@ import {
   ScrollArea,
 } from "@polkadex/ux";
 import { RiArrowDownSLine } from "@remixicon/react";
-import { Dispatch, SetStateAction, useState } from "react";
+import { useState } from "react";
 import { useMeasure } from "react-use";
 
-type Network = (typeof fakeNetworks)[0];
 export const SelectNetwork = ({
-  network,
-  setNetwork,
+  allChains,
+  selectedChain,
+  onSelectChain,
 }: {
-  network: Network;
-  setNetwork: Dispatch<SetStateAction<Network>>;
+  allChains: ChainType[];
+  selectedChain: ChainType | null;
+  onSelectChain: (chain: ChainType) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const [ref, bounds] = useMeasure<HTMLButtonElement>();
@@ -32,9 +34,9 @@ export const SelectNetwork = ({
         >
           <div>
             <div className="flex items-center gap-2">
-              <Chain name={network.name} />
+              <Chain name={selectedChain?.name || ""} />
               <Typography.Text size="lg" bold>
-                {network.name ?? "Select"}
+                {selectedChain?.name ?? "Select"}
               </Typography.Text>
             </div>
             <RiArrowDownSLine className="w-4 h-4" />
@@ -52,14 +54,14 @@ export const SelectNetwork = ({
                 </Searchable.Empty>
                 <ScrollArea className="max-h-[280px]">
                   <Searchable.Group heading="Available chains">
-                    {fakeNetworks.map((e) => {
+                    {allChains.map((e) => {
                       return (
                         <Searchable.Item
                           key={e.name}
                           value={e.name}
                           className="mb-1 mr-1"
                           onSelect={() => {
-                            setNetwork(e);
+                            onSelectChain(e);
                             setOpen(false);
                           }}
                         >
@@ -82,69 +84,3 @@ export const SelectNetwork = ({
     </Popover>
   );
 };
-
-export const fakeNetworks = [
-  {
-    name: "Polkadot",
-    logo: "Polkadot",
-    genesis: "0x003",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Polkadex",
-    logo: "Polkadex",
-    genesis: "0x001",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "AssetHub",
-    logo: "AssetHub",
-    genesis: "0x002",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Astar",
-    logo: "Astar",
-    genesis: "0x004",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Phala",
-    logo: "Phala",
-    genesis: "0x005",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Moonbeam",
-    logo: "Moonbeam",
-    genesis: "0x006",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Unique",
-    logo: "Unique",
-    genesis: "0x007",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Interlay",
-    logo: "Interlay",
-    genesis: "0x008",
-    type: "...",
-    isTestnet: false,
-  },
-  {
-    name: "Bifrost",
-    logo: "Bifrost",
-    genesis: "0x009",
-    type: "...",
-    isTestnet: false,
-  },
-];

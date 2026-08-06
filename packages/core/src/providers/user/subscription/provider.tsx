@@ -301,9 +301,7 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
             }
           );
 
-          if (payload.txType === "DEPOSIT") {
-            onPushNotification(NOTIFICATIONS.transferToTradingAccount(payload));
-          } else if (payload.txType === "WITHDRAW") {
+          if (payload.txType === "WITHDRAW") {
             if (payload.status === "READY")
               onPushNotification(NOTIFICATIONS.claimTransfer(payload));
             else if (payload.status === "CONFIRMED")
