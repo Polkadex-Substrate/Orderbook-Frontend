@@ -4,10 +4,20 @@ import { Button, Dropdown, Icons, Typography } from "@mitrabook/ux";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
 import { useFunds } from "@orderbook/core/hooks";
+import { formatDisplay } from "@orderbook/format";
 
-import { findFundingAmount, isStrandedInFunding } from "./balance.logic";
+import {
+  findFundingAmount,
+  isStrandedInFunding,
+  numericChild,
+} from "./balance.logic";
 
 import { getChainFromTicker } from "@/config/assetChain";
+
+// Matches the balances page (ui/ReadyToUse/amountCard.tsx) so the same holding
+// does not read differently in two places. assetPrecision 8 is the exchange's
+// display precision.
+const BALANCE_DISPLAY = { thousandsSep: ",", assetPrecision: 8 } as const;
 
 export const Balance = ({
   baseTicker,
@@ -32,10 +42,24 @@ export const Balance = ({
   // NaN and both-empty cases are easy to get wrong and both render badly.
   const { balances } = useFunds();
   const fundingAmount = findFundingAmount(balances, baseTicker);
+  const tradingAmount = numericChild(children);
   const strandedInFunding = isStrandedInFunding(
-    Number(children),
+    tradingAmount ?? 0,
     fundingAmount
   );
+
+  // NEVER render a raw number here. React stringifies it, and String(1e-8) is
+  // "1e-8" - the form showed "1e-8 PDEX Available", which reads as a broken
+  // balance rather than a formatting choice. JavaScript goes exponential below
+  // 1e-6, so every dust balance hit this. formatDisplay renders 1e-8 as
+  // 0.00000001, and anything smaller as "<0.00000001" rather than a misleading
+  // rounded zero. It is already covered by packages/format's own suite.
+  //
+  // A non-numeric child (a skeleton element, a dash) passes through untouched.
+  const displayAmount =
+    tradingAmount === null
+      ? children
+      : formatDisplay(tradingAmount, BALANCE_DISPLAY);
 
   return (
     <div className="self-end flex flex-col items-end gap-0.5">
@@ -49,7 +73,7 @@ export const Balance = ({
           title="Transfer between funding and trading account"
         >
           <Typography.Text size="xs">
-            {children} {baseTicker}
+            {displayAmount} {baseTicker}
           </Typography.Text>
           <Typography.Text size="xs" appearance="primary">
             Available
@@ -110,7 +134,8 @@ export const Balance = ({
             className="hover:underline"
             title={`Move ${baseTicker} from your Funding account to your Trading account`}
           >
-            {fundingAmount} {baseTicker} in Funding - transfer to trade
+            {formatDisplay(fundingAmount, BALANCE_DISPLAY)} {baseTicker} in
+            Funding - transfer to trade
           </Link>
         </Typography.Text>
       )}

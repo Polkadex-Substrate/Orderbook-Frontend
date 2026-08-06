@@ -1,4 +1,8 @@
-import { findFundingAmount, isStrandedInFunding } from "./balance.logic";
+import {
+  findFundingAmount,
+  isStrandedInFunding,
+  numericChild,
+} from "./balance.logic";
 
 const rows = [
   { asset: { ticker: "USDT" }, onChainBalance: "100" },
@@ -56,6 +60,55 @@ describe("findFundingAmount", () => {
         "A"
       )
     ).toBeCloseTo(1e-9, 15);
+  });
+});
+
+describe("numericChild", () => {
+  it("recognises the dust values that render exponentially", () => {
+    // THE bug: the form displayed "1e-8 PDEX Available" because React
+    // stringified the raw number. These must be recognised as numbers so the
+    // caller formats them instead of rendering them.
+    expect(numericChild(1e-8)).toBe(1e-8);
+    expect(numericChild(0.00000001)).toBe(1e-8);
+    expect(numericChild(1e-12)).toBe(1e-12);
+  });
+
+  it("passes ordinary numbers through", () => {
+    expect(numericChild(0)).toBe(0);
+    expect(numericChild(100)).toBe(100);
+    expect(numericChild(1234.5678)).toBeCloseTo(1234.5678, 10);
+  });
+
+  it("parses numeric strings, including exponential ones", () => {
+    // If an upstream component has already stringified the value, "1e-8" must
+    // still be recognised rather than passed through and displayed raw.
+    expect(numericChild("1e-8")).toBe(1e-8);
+    expect(numericChild("0.5")).toBe(0.5);
+    expect(numericChild("  42  ")).toBe(42);
+  });
+
+  it("returns null for non-numeric children so they pass through untouched", () => {
+    // A skeleton element or a dash must not become "0".
+    expect(numericChild("-")).toBeNull();
+    expect(numericChild("")).toBeNull();
+    expect(numericChild("   ")).toBeNull();
+    expect(numericChild(null)).toBeNull();
+    expect(numericChild(undefined)).toBeNull();
+    expect(numericChild({})).toBeNull();
+    expect(numericChild(["1"])).toBeNull();
+    expect(numericChild(true)).toBeNull();
+  });
+
+  it("returns null for non-finite numbers rather than rendering Infinity", () => {
+    expect(numericChild(NaN)).toBeNull();
+    expect(numericChild(Infinity)).toBeNull();
+    expect(numericChild(-Infinity)).toBeNull();
+    expect(numericChild("NaN")).toBeNull();
+  });
+
+  it("distinguishes zero from absent - both are falsy but mean different things", () => {
+    expect(numericChild(0)).toBe(0);
+    expect(numericChild("")).toBeNull();
   });
 });
 
