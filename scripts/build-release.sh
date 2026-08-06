@@ -177,12 +177,42 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
   # That is the same check, just 2 minutes later. tsc takes seconds.
   if [ -x node_modules/.bin/tsc ]; then
     log "Pre-flight: tsc (types, ~20s)"
-    if ! tsc_out=$(node_modules/.bin/tsc -p apps/hestia/tsconfig.json --noEmit 2>&1); then
-      printf '%s\n' "$tsc_out" | sed 's/^/  /' >&2
+
+    # STATIC-ASSET IMPORTS ARE IGNORED HERE, ON PURPOSE.
+    #
+    # `import hero from "../../public/img/hero.webp"` is typed by
+    # node_modules/next/image-types/global.d.ts, which is only reachable through
+    # apps/hestia/next-env.d.ts - a file Next GENERATES and .gitignores. On a
+    # fresh server checkout it does not exist yet, so tsc reported 10 bogus
+    # TS2307 "cannot find module ...webp" errors and blocked a deploy. All 10
+    # images are committed and present; `next build` never complains, because it
+    # regenerates that file before type checking.
+    #
+    # `next typegen` is the documented way to generate it without a full build,
+    # but it is not reliable everywhere (it needs rollup's platform binary, which
+    # is absent in some environments), so this gate does not depend on it. Making
+    # the check ignore asset imports is strictly more robust than making it
+    # depend on a step that can fail.
+    #
+    # What this still catches is the failure that motivated the gate: a symbol
+    # used without being imported is TS2304 "Cannot find name", which no filter
+    # here touches. That is the error that reached `next build` and cost 2m16s.
+    tsc_out=$(node_modules/.bin/tsc -p apps/hestia/tsconfig.json --noEmit \
+                --pretty false 2>&1) || true
+    asset_re="error TS2307: Cannot find module '[^']*\.(webp|png|jpe?g|gif|svg|avif|ico)'"
+    tsc_real=$(printf '%s\n' "$tsc_out" | grep -E "error TS" | grep -vE "$asset_re" || true)
+    tsc_skipped=$(printf '%s\n' "$tsc_out" | grep -cE "$asset_re" || true)
+
+    if [ -n "$tsc_real" ]; then
+      printf '%s\n' "$tsc_real" | sed 's/^/  /' >&2
       die "Type errors above WILL fail next build, but 2 minutes later.
   Fix them, then re-run. Or pass --no-preflight to build anyway."
     fi
-    log "Pre-flight: tsc ok"
+    if [ "${tsc_skipped:-0}" -gt 0 ]; then
+      log "Pre-flight: tsc ok ($tsc_skipped asset-import error(s) ignored - next build generates those types)"
+    else
+      log "Pre-flight: tsc ok"
+    fi
   fi
 fi
 
