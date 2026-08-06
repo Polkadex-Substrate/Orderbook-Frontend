@@ -24,6 +24,7 @@ import { Order } from "@orderbook/core/utils/orderbookService/types";
 
 import { Loading } from "../loading";
 import { TabEmptyState } from "../emptyState";
+import { resolveListState } from "../listState";
 
 import { columns } from "./columns";
 import { ResponsiveTable } from "./responsiveTable";
@@ -89,14 +90,19 @@ export const OpenOrdersTable = ({
     }
   }, [responsiveState, responsiveView]);
 
-  if (isLoading) return <Loading />;
+  // resolveListState owns the ordering (loading > failed > empty), because a
+  // failed read also has length 0 and an emptiness-first check made the error
+  // branch unreachable. Tested in ../listState.test.ts.
+  const listState = resolveListState({
+    isLoading,
+    isError,
+    count: openOrders.length,
+  });
 
-  // Order matters: a failed read also yields a zero-length list (initialData is
-  // []), so checking emptiness first would always win and the error would never
-  // be shown.
-  if (isError) return <TabEmptyState tab="openOrders" reason="failed" />;
-
-  if (!openOrders.length)
+  if (listState === "loading") return <Loading />;
+  if (listState === "failed")
+    return <TabEmptyState tab="openOrders" reason="failed" />;
+  if (listState === "empty")
     return <TabEmptyState tab="openOrders" reason="empty" />;
 
   return (

@@ -10,6 +10,7 @@ import {
 import { Websocket_streamsSubscription } from "../../../API";
 
 import { BookUpdateEvent } from "./types";
+import { readGqlPage } from "./pageEnvelope";
 import { PriceLevel, Order } from "./../types";
 
 /**
@@ -74,26 +75,13 @@ export const fetchFullListFromAppSync = async <T = any>(
       variables: nextToken ? { ...variables, nextToken } : variables,
     });
 
-    // A GraphQL server that fails to resolve a field returns that field as NULL
-    // alongside an `errors` array - it does not omit `data`. The unguarded
-    // `res.data[key].nextToken` here then threw
-    //   TypeError: Cannot read properties of null (reading 'nextToken')
-    // which buried the server's actual error message under a frontend type
-    // error, three frames deep in a paginator. Guard the read, then raise the
-    // real cause.
-    const page = res?.data?.[key];
-    if (page == null) {
-      const gqlErrors = (res as { errors?: { message?: string }[] })?.errors;
-      const detail = gqlErrors?.length
-        ? gqlErrors
-            .map((e) => e?.message)
-            .filter(Boolean)
-            .join("; ")
-        : `the server returned no "${key}" field`;
-      throw new Error(`GraphQL query "${key}" returned no data: ${detail}`);
-    }
+    // readGqlPage guards the null-field case and raises the server's own error
+    // message. It lives in its own import-free module so it can be unit tested
+    // without dragging the Apollo transport into the test - see
+    // pageEnvelope.test.ts for the cases this used to get wrong.
+    const page = readGqlPage<any>(res, key);
 
-    fullResponse = [...fullResponse, ...(page.items || [])];
+    fullResponse = [...fullResponse, ...page.items];
     nextToken = page.nextToken;
   } while (nextToken);
   return fullResponse as T[];

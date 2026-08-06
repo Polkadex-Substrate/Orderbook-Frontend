@@ -5,6 +5,8 @@ import Link from "next/link";
 import { PropsWithChildren } from "react";
 import { useFunds } from "@orderbook/core/hooks";
 
+import { findFundingAmount, isStrandedInFunding } from "./balance.logic";
+
 import { getChainFromTicker } from "@/config/assetChain";
 
 export const Balance = ({
@@ -25,11 +27,15 @@ export const Balance = ({
   // for one string, and a missed call site would silently show nothing. useFunds
   // is react-query backed, so this adds no request; it reuses the cache the order
   // form has already populated.
+  //
+  // The two decisions live in balance.logic.ts, where they are unit tested. The
+  // NaN and both-empty cases are easy to get wrong and both render badly.
   const { balances } = useFunds();
-  const fundingAmount = Number(
-    balances?.find((b) => b?.asset?.ticker === baseTicker)?.onChainBalance ?? 0
+  const fundingAmount = findFundingAmount(balances, baseTicker);
+  const strandedInFunding = isStrandedInFunding(
+    Number(children),
+    fundingAmount
   );
-  const strandedInFunding = Number(children) === 0 && fundingAmount > 0;
 
   return (
     <div className="self-end flex flex-col items-end gap-0.5">
