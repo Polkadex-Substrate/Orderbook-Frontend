@@ -15,6 +15,7 @@
 import gql from "graphql-tag";
 
 import { getApolloClient } from "./graphql";
+import { toGqlErrorList } from "./apolloErrors";
 
 export async function sendQuery<T = any>({
   query,
@@ -35,7 +36,17 @@ export async function sendQuery<T = any>({
     fetchPolicy: "network-only",
   });
 
-  return { data: result.data } as unknown as T;
+  // `errors` MUST be forwarded. The client is configured with
+  // errorPolicy: "all", which means Apollo does NOT reject on a GraphQL error -
+  // it resolves with `data: null` and the reason in `errors`. This function used
+  // to return `{ data: result.data }` and drop `errors` on the floor, so the
+  // server's explanation was destroyed one layer below every caller. Callers then
+  // saw a null field and could say nothing more useful than "no data", which is
+  // how "my order was placed but is not in the list" became undiagnosable.
+  return {
+    data: result.data,
+    errors: toGqlErrorList(result.error),
+  } as unknown as T;
 }
 
 export async function sendMutation<T = any>({
@@ -54,7 +65,14 @@ export async function sendMutation<T = any>({
     variables,
   });
 
-  return { data: result.data } as unknown as T;
+  // Same reasoning as sendQuery: errorPolicy "all" means a rejected mutation
+  // still resolves. Dropping `errors` here would let a FAILED order placement
+  // resolve as success, and the UI fires its "Order Placed" notification off
+  // exactly that resolution.
+  return {
+    data: result.data,
+    errors: toGqlErrorList(result.error),
+  } as unknown as T;
 }
 
 export function subscribe({

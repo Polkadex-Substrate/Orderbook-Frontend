@@ -21,6 +21,7 @@ import {
   sendQueryToAppSync,
   GraphQLResponse as GraphQLResult,
 } from "./helpers";
+import { describeWriteError } from "./writeError";
 import {
   ClaimRewardArgs,
   ClaimWithdrawArgs,
@@ -60,18 +61,24 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
           throw new Error(resp.body);
         }
       } else {
-        throw new Error("Cancel order failed: No valid response from server");
+        throw new Error(
+          describeWriteError(
+            result,
+            "Cancel order failed: No valid response from server"
+          )
+        );
       }
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -91,18 +98,24 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
           throw new Error(resp.body);
         }
       } else {
-        throw new Error("Place order failed: No valid response from server");
+        throw new Error(
+          describeWriteError(
+            result,
+            "Place order failed: No valid response from server"
+          )
+        );
       }
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -120,18 +133,24 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
           throw new Error(resp.body);
         }
       } else {
-        throw new Error("withdraw failed: No valid response from server");
+        throw new Error(
+          describeWriteError(
+            result,
+            "withdraw failed: No valid response from server"
+          )
+        );
       }
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
@@ -150,18 +169,24 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
           throw new Error(resp.body);
         }
       } else {
-        throw new Error("cancelAll failed: No valid response from server");
+        throw new Error(
+          describeWriteError(
+            result,
+            "cancelAll failed: No valid response from server"
+          )
+        );
       }
     } catch (error) {
-      const errors = (error as GraphQLResult).errors;
-      if (errors && errors.length > 0) {
-        let concatError = "";
-        errors.forEach((error) => {
-          concatError += error.message;
-          concatError += ":";
-        });
-        throw new Error(concatError);
-      }
+      // RETHROW UNCONDITIONALLY.
+      //
+      // This block used to rethrow only when `(error as GraphQLResult).errors`
+      // was a non-empty array. A plain Error has no `.errors`, so the strategy's
+      // OWN failures - `throw new Error(resp.body)` when the engine reports
+      // is_success: false, and the "No valid response from server" throw above -
+      // fell through and were discarded. The async method then resolved, React
+      // Query ran onSuccess, and the UI announced "Order Placed" for an order
+      // that did not exist.
+      throw new Error(describeWriteError(error));
     }
   }
 
