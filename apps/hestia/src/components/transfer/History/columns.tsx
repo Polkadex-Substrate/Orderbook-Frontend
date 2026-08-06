@@ -3,14 +3,14 @@
 import { Fragment } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Transaction } from "@orderbook/core/utils/orderbookService";
-import { Tokens, Typography, truncateString } from "@polkadex/ux";
+import { Tokens, Typography, truncateString } from "@mitrabook/ux";
 import { intlFormat } from "date-fns";
 import Link from "next/link";
-import { getChainFromTicker } from "@orderbook/core/helpers";
 import { RiExternalLinkLine } from "@remixicon/react";
 
 import { filters } from ".";
 
+import { getChainFromTicker } from "@/config/assetChain";
 import {
   StatusCard,
   TokenCard,
@@ -19,8 +19,10 @@ import {
 const formatAccount = (value: string, replaceValue = "Account") =>
   value.replace(replaceValue, "").trim();
 
-export interface DepositData
-  extends Omit<Transaction, "asset" | "timestamp" | "txType" | "stid"> {
+export interface DepositData extends Omit<
+  Transaction,
+  "asset" | "timestamp" | "txType" | "stid"
+> {
   timestamp: Date;
   token: {
     name: string;
@@ -44,7 +46,9 @@ export const columns = [
     id: "token",
     cell: (e) => {
       const tokenTicker = e.getValue().token.ticker;
-      const name = getChainFromTicker(tokenTicker);
+      // ?? tokenTicker: the chain is unknown for assets outside the bridge
+      // config; show the ticker rather than the old "Unknown" placeholder.
+      const name = getChainFromTicker(tokenTicker) ?? tokenTicker;
       return (
         <TokenCard
           tokenName={name}

@@ -1,6 +1,6 @@
 import classNames from "classnames";
-import { Checkbox, Icon, Typography } from "@polkadex/ux";
-import type { IconsProps } from "@polkadex/ux";
+import { Checkbox, Icon, Typography } from "@mitrabook/ux";
+import type { IconsProps } from "@mitrabook/ux";
 
 export const GenericSelectCard = ({
   title,

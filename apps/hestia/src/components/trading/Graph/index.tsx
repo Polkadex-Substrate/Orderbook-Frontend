@@ -1,56 +1,23 @@
-// TODO: Replace expand and screenshot button style
-
 "use client";
 
-import dynamic from "next/dynamic";
-import Script from "next/script";
-import { Tabs } from "@polkadex/ux";
+/**
+ * The trading chart.
+ *
+ * This file used to be a 759-line component (GraphV1) plus a
+ * NEXT_PUBLIC_NATIVE_CHART flag that chose between it and GraphV2. Both are
+ * gone, and the flag caused a genuinely expensive confusion while it existed:
+ * the deployed server set it to `true` while a developer's env file omitted it
+ * entirely, and the check was a strict `=== "true"`, so the two environments
+ * silently rendered *different chart components reading from different
+ * backends*. Days were spent debugging a data path that production was not
+ * even using.
+ *
+ * There is one chart now. It renders GraphV2's UI - resolution picker, chart
+ * types, indicators, depth chart, order and fill markers - against the REST
+ * datafeed gateway that GraphV1 used to call. See ./datafeed.ts for the UDF
+ * adapter.
+ *
+ * GraphV1 itself is in git history if any of its behaviour is ever wanted back.
+ */
 
-import { Header } from "./header";
-import { useTradingView } from "./useTradingView";
-
-const TVChartContainer = dynamic(
-  () => import("./tradingView").then((mod) => mod.TVChartContainer),
-  { ssr: false }
-);
-
-export const Graph = ({ id }: { id: string }) => {
-  const {
-    activeResolution,
-    onChangeResolution,
-    tvWidget,
-    widgetOptions,
-    onChartReady,
-    isChartReady,
-    onChangeFullScreen,
-    onScreenshot,
-  } = useTradingView({ id });
-
-  return (
-    <>
-      <Script src="/datafeeds/udf/dist/bundle.js" strategy="lazyOnload" />
-      <Tabs defaultValue="tradingView" className="flex flex-1">
-        <div className="flex flex-1 flex-col h-full">
-          <Header
-            activeResolution={activeResolution}
-            onChangeResolution={onChangeResolution}
-            onChangeFullScreen={onChangeFullScreen}
-            onScreenshot={onScreenshot}
-          />
-          <Tabs.Content
-            value="tradingView"
-            className="flex flex-col h-full flex-1"
-          >
-            <TVChartContainer
-              tvWidget={tvWidget}
-              widgetOptions={widgetOptions}
-              isChartReady={isChartReady}
-              onChartReady={onChartReady}
-              id={id}
-            />
-          </Tabs.Content>
-        </div>
-      </Tabs>
-    </>
-  );
-};
+export { GraphV2 as Graph } from "./GraphV2";

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, MouseEvent, useCallback, useMemo } from "react";
-import { Interactable, useInteractableProvider } from "@polkadex/ux";
+import { Interactable, useInteractableProvider } from "@mitrabook/ux";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { TradeAccount } from "@orderbook/core/providers/types";
@@ -85,7 +85,7 @@ const TriggerComponent = ({ onClose, onNext }: InteractableProps) => {
       onClose={onClose}
       onReadMore={() =>
         window.open(
-          "https://docs.polkadex.trade/orderbookPolkadexFAQHowToTradeStep3",
+          "https://docs.polkadex.ee/orderbookPolkadexFAQHowToTradeStep3",
           "_blank",
           "noopener, noreferrer"
         )
@@ -219,14 +219,14 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
             onClose();
           }}
           fundWallet={selectedWallet}
-          loading={registerStatus === "loading"}
+          loading={registerStatus === "pending"}
           onClose={onReset}
         />
       </Interactable.Card>
       <Interactable.Card pageName="NewTradingAccount">
         <NewTradingAccount
           onCreateAccount={onRegisterTradeAccount}
-          loading={registerStatus === "loading"}
+          loading={registerStatus === "pending"}
           fundWalletPresent={!!Object.keys(selectedWallet ?? {})?.length}
           errorTitle="Error"
           errorMessage={(registerError as Error)?.message ?? registerError}
@@ -257,7 +257,7 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
           onRemoveFromChain={async (e) =>
             await onRemoveTradingAccountFromChain?.({ ...e, selectedWallet })
           }
-          loading={removingStatus === "loading" || removeGoogleDriveLoading}
+          loading={removingStatus === "pending" || removeGoogleDriveLoading}
           errorTitle="Error"
           errorMessage={(removingError as Error)?.message ?? removingError}
           selectedExtension={selectedExtension}
@@ -276,7 +276,7 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
             e.stopPropagation();
             setPage("ConnectTradingAccount");
           }}
-          loading={importFromFileStatus === "loading"}
+          loading={importFromFileStatus === "pending"}
           whitelistBrowserAccounts={mainProxiesAccounts}
         />
       </Interactable.Card>
@@ -287,7 +287,7 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
             onClose();
           }}
           onCancel={() => setPage("ConnectTradingAccount")}
-          loading={importFromMnemonicStatus === "loading"}
+          loading={importFromMnemonicStatus === "pending"}
           errorMessage={
             (importFromMnemonicError as Error)?.message ??
             importFromMnemonicError

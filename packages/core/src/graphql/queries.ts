@@ -12,7 +12,8 @@ export const getTime = /* GraphQL */ `query GetTime {
   getTime
 }
 ` as GeneratedQuery<APITypes.GetTimeQueryVariables, APITypes.GetTimeQuery>;
-export const getOrderbook = /* GraphQL */ `query GetOrderbook($market: String!, $limit: Int, $nextToken: String) {
+export const getOrderbook =
+  /* GraphQL */ `query GetOrderbook($market: String!, $limit: Int, $nextToken: String) {
   getOrderbook(market: $market, limit: $limit, nextToken: $nextToken) {
     items {
       p
@@ -26,14 +27,21 @@ export const getOrderbook = /* GraphQL */ `query GetOrderbook($market: String!, 
   }
 }
 ` as GeneratedQuery<
-  APITypes.GetOrderbookQueryVariables,
-  APITypes.GetOrderbookQuery
->;
-export const getKlinesByMarketInterval = /* GraphQL */ `query GetKlinesByMarketInterval(
+    APITypes.GetOrderbookQueryVariables,
+    APITypes.GetOrderbookQuery
+  >;
+// NB: from/to are declared String! (ISO 8601), not AWSDateTime! - the
+// self-hosted Rust GraphQL server (orderbook/server, async-graphql) has no
+// AWSDateTime scalar and rejects the whole query with 'Unknown type
+// "AWSDateTime"'. Values were always ISO strings; only the declaration
+// changes. If this app is ever pointed back at real AppSync, these two
+// declarations must revert to AWSDateTime!.
+export const getKlinesByMarketInterval =
+  /* GraphQL */ `query GetKlinesByMarketInterval(
   $market: String!
   $interval: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime!
+  $from: String!
+  $to: String!
 ) {
   getKlinesByMarketInterval(
     market: $market
@@ -55,10 +63,11 @@ export const getKlinesByMarketInterval = /* GraphQL */ `query GetKlinesByMarketI
   }
 }
 ` as GeneratedQuery<
-  APITypes.GetKlinesByMarketIntervalQueryVariables,
-  APITypes.GetKlinesByMarketIntervalQuery
->;
-export const getAllAssets = /* GraphQL */ `query GetAllAssets($limit: Int, $nextToken: String) {
+    APITypes.GetKlinesByMarketIntervalQueryVariables,
+    APITypes.GetKlinesByMarketIntervalQuery
+  >;
+export const getAllAssets =
+  /* GraphQL */ `query GetAllAssets($limit: Int, $nextToken: String) {
   getAllAssets(limit: $limit, nextToken: $nextToken) {
     items {
       symbol
@@ -71,13 +80,13 @@ export const getAllAssets = /* GraphQL */ `query GetAllAssets($limit: Int, $next
   }
 }
 ` as GeneratedQuery<
-  APITypes.GetAllAssetsQueryVariables,
-  APITypes.GetAllAssetsQuery
->;
+    APITypes.GetAllAssetsQueryVariables,
+    APITypes.GetAllAssetsQuery
+  >;
 export const listTradesByMarket = /* GraphQL */ `query ListTradesByMarket(
   $m: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String!
   $limit: Int
   $nextToken: String
 ) {
@@ -108,7 +117,8 @@ export const listTradesByMarket = /* GraphQL */ `query ListTradesByMarket(
   APITypes.ListTradesByMarketQueryVariables,
   APITypes.ListTradesByMarketQuery
 >;
-export const listRecentTrades = /* GraphQL */ `query ListRecentTrades($m: String!, $limit: Int, $nextToken: String) {
+export const listRecentTrades =
+  /* GraphQL */ `query ListRecentTrades($m: String!, $limit: Int, $nextToken: String) {
   listRecentTrades(m: $m, limit: $limit, nextToken: $nextToken) {
     items {
       m
@@ -127,13 +137,13 @@ export const listRecentTrades = /* GraphQL */ `query ListRecentTrades($m: String
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListRecentTradesQueryVariables,
-  APITypes.ListRecentTradesQuery
->;
+    APITypes.ListRecentTradesQueryVariables,
+    APITypes.ListRecentTradesQuery
+  >;
 export const getMarketTickers = /* GraphQL */ `query GetMarketTickers(
   $market: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime!
+  $from: String!
+  $to: String!
 ) {
   getMarketTickers(market: $market, from: $from, to: $to) {
     items {
@@ -172,7 +182,8 @@ export const getAllMarkets = /* GraphQL */ `query GetAllMarkets {
   APITypes.GetAllMarketsQueryVariables,
   APITypes.GetAllMarketsQuery
 >;
-export const findUserByTradeAccount = /* GraphQL */ `query FindUserByTradeAccount($trade_account: String!) {
+export const findUserByTradeAccount =
+  /* GraphQL */ `query FindUserByTradeAccount($trade_account: String!) {
   findUserByTradeAccount(trade_account: $trade_account) {
     items {
       main
@@ -185,10 +196,11 @@ export const findUserByTradeAccount = /* GraphQL */ `query FindUserByTradeAccoun
   }
 }
 ` as GeneratedQuery<
-  APITypes.FindUserByTradeAccountQueryVariables,
-  APITypes.FindUserByTradeAccountQuery
->;
-export const findUserByMainAccount = /* GraphQL */ `query FindUserByMainAccount($main_account: String!) {
+    APITypes.FindUserByTradeAccountQueryVariables,
+    APITypes.FindUserByTradeAccountQuery
+  >;
+export const findUserByMainAccount =
+  /* GraphQL */ `query FindUserByMainAccount($main_account: String!) {
   findUserByMainAccount(main_account: $main_account) {
     items {
       main
@@ -201,10 +213,11 @@ export const findUserByMainAccount = /* GraphQL */ `query FindUserByMainAccount(
   }
 }
 ` as GeneratedQuery<
-  APITypes.FindUserByMainAccountQueryVariables,
-  APITypes.FindUserByMainAccountQuery
->;
-export const findBalanceByMainAccount = /* GraphQL */ `query FindBalanceByMainAccount($main_account: String!, $asset: String!) {
+    APITypes.FindUserByMainAccountQueryVariables,
+    APITypes.FindUserByMainAccountQuery
+  >;
+export const findBalanceByMainAccount =
+  /* GraphQL */ `query FindBalanceByMainAccount($main_account: String!, $asset: String!) {
   findBalanceByMainAccount(main_account: $main_account, asset: $asset) {
     a
     f
@@ -213,10 +226,11 @@ export const findBalanceByMainAccount = /* GraphQL */ `query FindBalanceByMainAc
   }
 }
 ` as GeneratedQuery<
-  APITypes.FindBalanceByMainAccountQueryVariables,
-  APITypes.FindBalanceByMainAccountQuery
->;
-export const getAllBalancesByMainAccount = /* GraphQL */ `query GetAllBalancesByMainAccount($main_account: String!) {
+    APITypes.FindBalanceByMainAccountQueryVariables,
+    APITypes.FindBalanceByMainAccountQuery
+  >;
+export const getAllBalancesByMainAccount =
+  /* GraphQL */ `query GetAllBalancesByMainAccount($main_account: String!) {
   getAllBalancesByMainAccount(main_account: $main_account) {
     items {
       a
@@ -229,10 +243,11 @@ export const getAllBalancesByMainAccount = /* GraphQL */ `query GetAllBalancesBy
   }
 }
 ` as GeneratedQuery<
-  APITypes.GetAllBalancesByMainAccountQueryVariables,
-  APITypes.GetAllBalancesByMainAccountQuery
->;
-export const findOrderById = /* GraphQL */ `query FindOrderById($order_id: String!) {
+    APITypes.GetAllBalancesByMainAccountQueryVariables,
+    APITypes.GetAllBalancesByMainAccountQuery
+  >;
+export const findOrderById =
+  /* GraphQL */ `query FindOrderById($order_id: String!) {
   findOrderById(order_id: $order_id) {
     u
     cid
@@ -254,13 +269,14 @@ export const findOrderById = /* GraphQL */ `query FindOrderById($order_id: Strin
   }
 }
 ` as GeneratedQuery<
-  APITypes.FindOrderByIdQueryVariables,
-  APITypes.FindOrderByIdQuery
->;
-export const listOrderHistoryByMainAccount = /* GraphQL */ `query ListOrderHistoryByMainAccount(
+    APITypes.FindOrderByIdQueryVariables,
+    APITypes.FindOrderByIdQuery
+  >;
+export const listOrderHistoryByMainAccount =
+  /* GraphQL */ `query ListOrderHistoryByMainAccount(
   $main_account: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String
   $limit: Int
   $nextToken: String
 ) {
@@ -295,13 +311,14 @@ export const listOrderHistoryByMainAccount = /* GraphQL */ `query ListOrderHisto
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListOrderHistoryByMainAccountQueryVariables,
-  APITypes.ListOrderHistoryByMainAccountQuery
->;
-export const listOrderHistoryByTradeAccount = /* GraphQL */ `query ListOrderHistoryByTradeAccount(
+    APITypes.ListOrderHistoryByMainAccountQueryVariables,
+    APITypes.ListOrderHistoryByMainAccountQuery
+  >;
+export const listOrderHistoryByTradeAccount =
+  /* GraphQL */ `query ListOrderHistoryByTradeAccount(
   $trade_account: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String
   $limit: Int
   $nextToken: String
 ) {
@@ -336,10 +353,11 @@ export const listOrderHistoryByTradeAccount = /* GraphQL */ `query ListOrderHist
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListOrderHistoryByTradeAccountQueryVariables,
-  APITypes.ListOrderHistoryByTradeAccountQuery
->;
-export const listOpenOrdersByMainAccount = /* GraphQL */ `query ListOpenOrdersByMainAccount(
+    APITypes.ListOrderHistoryByTradeAccountQueryVariables,
+    APITypes.ListOrderHistoryByTradeAccountQuery
+  >;
+export const listOpenOrdersByMainAccount =
+  /* GraphQL */ `query ListOpenOrdersByMainAccount(
   $main_account: String!
   $limit: Int
   $nextToken: String
@@ -373,10 +391,11 @@ export const listOpenOrdersByMainAccount = /* GraphQL */ `query ListOpenOrdersBy
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListOpenOrdersByMainAccountQueryVariables,
-  APITypes.ListOpenOrdersByMainAccountQuery
->;
-export const listOpenOrdersByTradeAccount = /* GraphQL */ `query ListOpenOrdersByTradeAccount(
+    APITypes.ListOpenOrdersByMainAccountQueryVariables,
+    APITypes.ListOpenOrdersByMainAccountQuery
+  >;
+export const listOpenOrdersByTradeAccount =
+  /* GraphQL */ `query ListOpenOrdersByTradeAccount(
   $trade_account: String!
   $limit: Int
   $nextToken: String
@@ -410,13 +429,14 @@ export const listOpenOrdersByTradeAccount = /* GraphQL */ `query ListOpenOrdersB
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListOpenOrdersByTradeAccountQueryVariables,
-  APITypes.ListOpenOrdersByTradeAccountQuery
->;
-export const listTransactionsByMainAccount = /* GraphQL */ `query ListTransactionsByMainAccount(
+    APITypes.ListOpenOrdersByTradeAccountQueryVariables,
+    APITypes.ListOpenOrdersByTradeAccountQuery
+  >;
+export const listTransactionsByMainAccount =
+  /* GraphQL */ `query ListTransactionsByMainAccount(
   $main_account: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String!
   $transaction_type: TransactionType!
   $limit: Int
   $nextToken: String
@@ -446,13 +466,14 @@ export const listTransactionsByMainAccount = /* GraphQL */ `query ListTransactio
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListTransactionsByMainAccountQueryVariables,
-  APITypes.ListTransactionsByMainAccountQuery
->;
-export const listTradesByMainAccount = /* GraphQL */ `query ListTradesByMainAccount(
+    APITypes.ListTransactionsByMainAccountQueryVariables,
+    APITypes.ListTransactionsByMainAccountQuery
+  >;
+export const listTradesByMainAccount =
+  /* GraphQL */ `query ListTradesByMainAccount(
   $main_account: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String
   $limit: Int
   $nextToken: String
 ) {
@@ -479,13 +500,14 @@ export const listTradesByMainAccount = /* GraphQL */ `query ListTradesByMainAcco
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListTradesByMainAccountQueryVariables,
-  APITypes.ListTradesByMainAccountQuery
->;
-export const listTradesByTradeAccount = /* GraphQL */ `query ListTradesByTradeAccount(
+    APITypes.ListTradesByMainAccountQueryVariables,
+    APITypes.ListTradesByMainAccountQuery
+  >;
+export const listTradesByTradeAccount =
+  /* GraphQL */ `query ListTradesByTradeAccount(
   $trade_account: String!
-  $from: AWSDateTime!
-  $to: AWSDateTime
+  $from: String!
+  $to: String
   $limit: Int
   $nextToken: String
 ) {
@@ -512,6 +534,6 @@ export const listTradesByTradeAccount = /* GraphQL */ `query ListTradesByTradeAc
   }
 }
 ` as GeneratedQuery<
-  APITypes.ListTradesByTradeAccountQueryVariables,
-  APITypes.ListTradesByTradeAccountQuery
->;
+    APITypes.ListTradesByTradeAccountQueryVariables,
+    APITypes.ListTradesByTradeAccountQuery
+  >;

@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import dynamic from "next/dynamic";
 
 const Template = dynamic(
@@ -9,6 +10,7 @@ const Template = dynamic(
     ssr: false,
   }
 );
-export default function Page({ params }: { params: { id: string } }) {
-  return <Template id={params.id} />;
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return <Template id={id} />;
 }

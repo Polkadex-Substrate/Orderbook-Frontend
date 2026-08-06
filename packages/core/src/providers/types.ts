@@ -12,11 +12,7 @@ export interface CommonActionState {
 export type OrderSide = "Sell" | "Buy";
 export type OrderType = "LIMIT" | "MARKET";
 export type OrderStatus =
-  | "OPEN"
-  | "CLOSED"
-  | "Expired"
-  | "CANCELLED"
-  | "Failed";
+  "OPEN" | "CLOSED" | "Expired" | "CANCELLED" | "Failed";
 export type TradeAccount = KeyringPair;
 
 export interface ExtensionAccount {

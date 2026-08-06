@@ -1,4 +1,4 @@
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitrabook/ux";
 import { PropsWithChildren } from "react";
 
 export const FilledCard = ({

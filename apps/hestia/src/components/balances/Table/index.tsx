@@ -1,6 +1,6 @@
-import { Table as PolkadexTable, GenericMessage } from "@polkadex/ux";
+import { Table as PolkadexTable, GenericMessage } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
-import { Fragment, forwardRef, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AssetsProps } from "@orderbook/core/hooks";
 import {
   SortingState,
@@ -14,12 +14,20 @@ import classNames from "classnames";
 import { columns } from "./columns";
 import { Loading } from "./loading";
 import { ResponsiveTable } from "./responsiveTable";
+
 const responsiveKeys = ["inOrders", "fundingAccount"];
 
-export const Table = forwardRef<
-  HTMLDivElement,
-  { maxHeight: string; data: AssetsProps[]; loading: boolean }
->(({ maxHeight, data, loading }) => {
+// Plain component: was forwardRef but ignored the ref and no caller
+// passed one - triggered React's forwardRef-arity warning on mount.
+export const Table = ({
+  maxHeight,
+  data,
+  loading,
+}: {
+  maxHeight: string;
+  data: AssetsProps[];
+  loading: boolean;
+}) => {
   const [responsiveState, setResponsiveState] = useState(false);
   const [responsiveData, setResponsiveData] = useState<AssetsProps | null>(
     null
@@ -31,8 +39,17 @@ export const Table = forwardRef<
 
   const { width } = useWindowSize();
 
+  const newData = useMemo(
+    () =>
+      // No per-ticker rescaling: fetchOnChainBalance already divides by the
+      // asset's on-chain decimals. The USDT picoScale branch here scaled it a
+      // second time.
+      data.map((item) => ({ ...item })),
+    [data]
+  );
+
   const table = useReactTable({
-    data,
+    data: newData,
     state: { sorting },
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
@@ -155,5 +172,4 @@ export const Table = forwardRef<
       )}
     </Fragment>
   );
-});
-Table.displayName = "Table";
+};

@@ -1,4 +1,4 @@
-import { Market } from "../utils/orderbookService";
+import { Market } from "../utils/orderbookService/types";
 
 export const getCurrentMarket = (
   markets: Market[],

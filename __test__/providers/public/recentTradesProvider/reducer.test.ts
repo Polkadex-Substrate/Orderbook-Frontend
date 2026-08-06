@@ -40,7 +40,12 @@ test("fetched data should be pushed in the list of the state", () => {
       price: "12",
       timestamp: 1678452609042,
     },
-    lastTrade: { amount: "1", market_id: "PDEX-1", price: "10", timestamp: 1678452307235 },
+    lastTrade: {
+      amount: "1",
+      market_id: "PDEX-1",
+      price: "10",
+      timestamp: 1678452307235,
+    },
     list: [
       {
         amount: "0.25",

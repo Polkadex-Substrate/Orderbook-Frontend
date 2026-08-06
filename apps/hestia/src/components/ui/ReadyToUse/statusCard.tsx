@@ -1,4 +1,4 @@
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import React from "react";
 

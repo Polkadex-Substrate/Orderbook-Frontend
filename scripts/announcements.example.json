@@ -1,0 +1,11 @@
+[
+  {
+    "id": "trading-paused-undefined-arithmetic",
+    "category": "Announcements",
+    "type": "Attention",
+    "message": "Trading is paused",
+    "description": "Trading is temporarily paused while we fix an arithmetic error on the chain. Your balances are unaffected. Existing orders remain on the book and trading will resume once the fix is deployed.",
+    "date": 1785369600000,
+    "active": true
+  }
+]

@@ -1,6 +1,6 @@
 "use client";
 
-import { Interactable, Modal, useInteractableProvider } from "@polkadex/ux";
+import { Interactable, Modal, useInteractableProvider } from "@mitrabook/ux";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { Dispatch, Fragment, SetStateAction } from "react";
 

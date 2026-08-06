@@ -40,21 +40,22 @@ export function useTradeHistory(
       basedOnFundingAccount
     ),
     enabled: shouldFetchTradeHistory,
-    queryFn: async ({ pageParam = null }) => {
+    queryFn: async ({ pageParam }) => {
       return await appsyncOrderbookService.query.getTradeHistory({
         address,
-        from: dateFrom,
-        to: dateTo,
+        from: dateFrom?.toISOString(),
+        to: dateTo?.toISOString(),
         pageParams: pageParam,
         limit: TRADE_HISTORY_PER_PAGE_LIMIT,
         batchLimit: rowsPerPage,
         basedOnFundingAccount,
       });
     },
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => {
       // If the last page contains nextToken as null, don't fetch the next page
       if (!lastPage.nextToken) {
-        return false;
+        return undefined;
       }
       return lastPage.nextToken;
     },
@@ -93,7 +94,8 @@ export function useTradeHistory(
     trades: updatedTradeList,
     isLoading: fetching,
     hasNextPage,
-    error: error as string,
+    // consumers render this directly, so surface the message (not the Error)
+    error: error?.message ?? "",
     onFetchNextPage,
     isFetchingNextPage,
   };

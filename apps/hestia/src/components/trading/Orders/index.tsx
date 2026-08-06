@@ -8,7 +8,7 @@ import {
   RangeKeyDict,
   defaultStaticRanges,
 } from "react-date-range";
-import { Button, Tabs, Checkbox, Popover, ScrollArea } from "@polkadex/ux";
+import { Button, Tabs, Checkbox, Popover, ScrollArea } from "@mitrabook/ux";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useOpenOrders } from "@orderbook/core/hooks";
 import { Ifilters } from "@orderbook/core/providers/types";
@@ -19,11 +19,11 @@ import { OpenOrdersTable } from "./OpenOrders";
 import { OrderHistoryTable } from "./OrderHistory";
 import { BalancesTable } from "./Balances";
 import { TradeHistoryTable } from "./TradeHistory";
+import { TabEmptyState } from "./emptyState";
 
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import "@/styles/calendar.scss";
-import { ConnectAccountWrapper } from "@/components/ui/ReadyToUse";
 import { useSizeObserver } from "@/hooks";
 
 const initialFilters: Ifilters = {
@@ -46,8 +46,6 @@ export const Orders = () => {
     selectedAddresses: { tradeAddress, mainAddress },
   } = useProfile();
   const connected = tradeAddress?.length > 0;
-
-  const isFundingType = useMemo(() => !mainAddress, [mainAddress]);
 
   const [show, setShow] = useState(true);
   const [filters, setFilters] = useState<Ifilters>(initialFilters);
@@ -95,7 +93,11 @@ export const Orders = () => {
   );
 
   return (
-    <Tabs defaultValue="openOrders" className="flex-1 h-full">
+    <Tabs
+      data-tour="orders-panel"
+      defaultValue="openOrders"
+      className="flex-1 h-full"
+    >
       <div className="flex items-center justify-between border-b border-primary">
         <ScrollArea className=" overflow-hidden" style={{ maxWidth }}>
           <Tabs.List className="px-2 py-2.5 whitespace-nowrap">
@@ -171,6 +173,7 @@ export const Orders = () => {
                     </Button.Icon>
                   </Popover.Trigger>
                   <Popover.Content>
+                    {/* @ts-expect-error react-date-range ships incorrect prop types for DateRangePicker */}
                     <DateRangePicker
                       ranges={ranges}
                       onChange={onChangeDateRange}
@@ -193,7 +196,7 @@ export const Orders = () => {
           {connected ? (
             <OpenOrdersTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} />
+            <TabEmptyState tab="openOrders" reason="disconnected" />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -203,7 +206,7 @@ export const Orders = () => {
           {connected ? (
             <OrderHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} />
+            <TabEmptyState tab="orderHistory" reason="disconnected" />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -213,7 +216,7 @@ export const Orders = () => {
           {connected ? (
             <TradeHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper funding={isFundingType} />
+            <TabEmptyState tab="tradeHistory" reason="disconnected" />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -223,7 +226,7 @@ export const Orders = () => {
           {mainAddress?.length > 0 ? (
             <BalancesTable height={height} />
           ) : (
-            <ConnectAccountWrapper funding />
+            <TabEmptyState tab="balances" reason="disconnected" />
           )}
         </Tabs.Content>
       </div>

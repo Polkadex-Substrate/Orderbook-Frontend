@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import { Icon, Typography } from "@polkadex/ux";
+import { Icon, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 
 import { Icons } from "..";

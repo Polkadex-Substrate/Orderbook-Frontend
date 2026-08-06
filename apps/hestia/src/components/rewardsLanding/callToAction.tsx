@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import Image from "next/image";
 
 import OrderbookImage from "../../../public/img/obHestia.webp";

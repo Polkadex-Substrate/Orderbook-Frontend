@@ -15,12 +15,7 @@ import {
   CancelOrderArgs,
   useCancelAllOrders,
 } from "@orderbook/core/hooks";
-import {
-  GenericMessage,
-  Modal,
-  Table as PolkadexTable,
-  Spinner,
-} from "@polkadex/ux";
+import { Modal, Table as PolkadexTable, Spinner } from "@mitrabook/ux";
 import { useWindowSize } from "usehooks-ts";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";
@@ -28,6 +23,8 @@ import { useConnectWalletProvider } from "@orderbook/core/providers/user/connect
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 
 import { Loading } from "../loading";
+import { TabEmptyState } from "../emptyState";
+import { resolveListState } from "../listState";
 
 import { columns } from "./columns";
 import { ResponsiveTable } from "./responsiveTable";
@@ -47,7 +44,7 @@ export const OpenOrdersTable = ({
 }) => {
   const { mutateAsync: cancelOrder } = useCancelOrder();
   const { selectedTradingAccount } = useConnectWalletProvider();
-  const { isLoading, openOrders } = useOpenOrders(filters);
+  const { isLoading, openOrders, isError } = useOpenOrders(filters);
   const { mutateAsync: onCancelAllOrders } = useCancelAllOrders();
   const { width } = useWindowSize();
 
@@ -93,19 +90,20 @@ export const OpenOrdersTable = ({
     }
   }, [responsiveState, responsiveView]);
 
-  if (isLoading) return <Loading />;
+  // resolveListState owns the ordering (loading > failed > empty), because a
+  // failed read also has length 0 and an emptiness-first check made the error
+  // branch unreachable. Tested in ../listState.test.ts.
+  const listState = resolveListState({
+    isLoading,
+    isError,
+    count: openOrders.length,
+  });
 
-  if (!openOrders.length)
-    return (
-      <GenericMessage
-        title={"No items found"}
-        illustration="NoData"
-        className="bg-level-0"
-        imageProps={{
-          className: "w-10 self-center",
-        }}
-      />
-    );
+  if (listState === "loading") return <Loading />;
+  if (listState === "failed")
+    return <TabEmptyState tab="openOrders" reason="failed" />;
+  if (listState === "empty")
+    return <TabEmptyState tab="openOrders" reason="empty" />;
 
   return (
     <Fragment>
@@ -125,7 +123,7 @@ export const OpenOrdersTable = ({
         onCancelOrder={onCancelOrder}
       />
       <InfiniteScroll
-        className="flex-1 h-full overflow-auto scrollbar-hide"
+        className="flex-1 h-full min-h-0 overflow-auto scrollbar-hide"
         dataLength={openOrders.length}
         next={() => {}}
         hasMore={false}

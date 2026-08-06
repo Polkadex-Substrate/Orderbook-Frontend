@@ -3,7 +3,7 @@ import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import {
   useUserAccounts,
   useExtensionAccounts,
-} from "@polkadex/react-providers";
+} from "@aksumite/react-providers";
 import { useProxyAccounts } from "@orderbook/core/hooks";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import { appsyncOrderbookService } from "@orderbook/core/utils/orderbookService";

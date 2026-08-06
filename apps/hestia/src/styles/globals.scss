@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "driver.js/dist/driver.css";
+@import "./tour.css";
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -61,3 +64,17 @@ body {
   background: var(--scroll-hover);
 }
 
+
+/* High-resolution font scaling: Tailwind sizes are rem-based, so scaling the
+   root font upsizes the entire app proportionally.
+
+   Fluid, not stepped: 16px up to 1680px viewports, then linear growth to
+   21px at 3840px (4K). The linear function is
+     size = 16px + 5px * (vw - 1680) / (3840 - 1680)
+   which simplifies to calc(12.11px + 0.2315vw); clamp() pins both ends so
+   nothing shrinks below 16px or grows past 21px on >4K displays. */
+@media (min-width: 1680px) {
+  html {
+    font-size: clamp(16px, calc(12.11px + 0.2315vw), 21px);
+  }
+}

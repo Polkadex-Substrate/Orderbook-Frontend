@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Tabs } from "@polkadex/ux";
+import { Tabs } from "@mitrabook/ux";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
@@ -44,7 +44,11 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
   }, [selectedTradingAccount]);
 
   return (
-    <Tabs defaultValue="limit" className="flex-1 flex h-full">
+    <Tabs
+      data-tour="place-order"
+      defaultValue="limit"
+      className="flex-1 flex h-full min-h-0"
+    >
       <div className="flex items-center justify-between border-b border-primary">
         <Tabs.List className="px-2 py-2.5">
           <Tabs.Trigger value="limit">Limit</Tabs.Trigger>
@@ -54,7 +58,12 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
           </Tabs.Trigger>
         </Tabs.List>
       </div>
-      <div className="flex flex-1 h-full overflow-auto scrollbar-hide">
+      {/* min-h-0 is load-bearing: a flex child defaults to min-height:auto,
+          which refuses to shrink below its content. Without it `overflow-auto`
+          never engages, the form grows past the panel, and the panel group's
+          `overflow: hidden` CLIPS the Buy/Sell buttons - which reads as the
+          ticker bar overlapping them. */}
+      <div className="flex flex-1 h-full min-h-0 overflow-auto scrollbar-hide">
         {isPasswordProtected ? (
           <Unlock
             onAction={() => setIsPasswordProtected(false)}

@@ -2,7 +2,6 @@ import { ApiPromise } from "@polkadot/api";
 import { SubmittableExtrinsic } from "@polkadot/api/types";
 import { ISubmittableResult, Signer } from "@polkadot/types/types";
 import { EventRecord } from "@polkadot/types/interfaces";
-import { SubmittableExtrinsic as SubmittableExtrinsicPromise } from "@polkadot/api/promise/types";
 
 export interface ExtrinsicResult {
   isSuccess: boolean;
@@ -93,7 +92,7 @@ export const handleExtrinsicErrors = (
 };
 
 export const handleTransaction = async (
-  signedExtrinsic: SubmittableExtrinsicPromise
+  signedExtrinsic: SubmittableExtrinsic<"promise">
 ) =>
   await new Promise<ExtrinsicResult>((resolve, reject) => {
     signedExtrinsic

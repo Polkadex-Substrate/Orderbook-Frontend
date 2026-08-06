@@ -2,7 +2,16 @@
   "extends": "@orderbook/tsconfig/nextjs.json",
   "compilerOptions": {
     "strict": true,
-    "lib": ["DOM"],
+    // No "lib" override here. It used to say ["DOM"], and `lib` REPLACES the
+    // inherited value rather than merging with it - so this package silently lost
+    // dom.iterable and esnext from @orderbook/tsconfig/nextjs.json, leaving only
+    // the ES5 declarations implied by the base target.
+    //
+    // Result: `tsc -p packages/core` reported 5 errors on Array.prototype.at()
+    // (ES2022) that do not exist. It never broke `next build`, because that
+    // type-checks through apps/hestia's tsconfig, which declares its own lib -
+    // so the package's own type-check was the only thing wrong, and therefore
+    // the thing nobody trusted. Inherit instead.
     "types": [
       "jest",
     ],

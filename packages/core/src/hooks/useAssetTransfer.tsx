@@ -5,8 +5,8 @@ import { NOTIFICATIONS, UNIT_BN } from "@orderbook/core/constants";
 import {
   ExtensionAccount,
   useTransactionManager,
-} from "@polkadex/react-providers";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
+} from "@aksumite/react-providers";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import { useSettingsProvider } from "../providers/public/settings";
 import { appsyncOrderbookService } from "../utils/orderbookService";
@@ -52,7 +52,7 @@ export const useAssetTransfer = (onRefetch: () => Promise<void>) => {
           dest,
           tokenFeeId,
         }
-      )) as SubmittableExtrinsic;
+      )) as SubmittableExtrinsic<"promise">;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       addToTxQueue(signedExtrinsic);

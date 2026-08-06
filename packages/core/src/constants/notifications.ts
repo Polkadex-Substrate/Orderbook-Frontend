@@ -5,8 +5,6 @@ import {
   Transaction,
 } from "@orderbook/core/utils/orderbookService";
 import { NotificationPayload } from "@orderbook/core/providers/public/settings";
-import { Chain } from "@polkadex/thea";
-
 export const NOTIFICATIONS = {
   placeOrder: (
     _side: OrderSide,
@@ -126,25 +124,6 @@ export const NOTIFICATIONS = {
       description: `You have just claimed your reward of ${reward}. You can check your balance now.`,
       type: "Success",
       href: `/balances`,
-    };
-  },
-  crossChainTransfer: ({
-    sourceChain,
-    destinationChain,
-    asset,
-    amount,
-  }: {
-    sourceChain: Chain;
-    destinationChain: Chain;
-    asset: string;
-    amount: number;
-  }): NotificationPayload => {
-    return {
-      category: "General",
-      message: "Cross chain transfer successful 🎉",
-      description: `Your transfer of ${amount} ${asset} from ${sourceChain.name} network to ${destinationChain.name} network has been successfully processed. You will recieve asset in destination chain in a few minutes.`,
-      type: "Success",
-      href: "/history?tab=crossChain",
     };
   },
 };

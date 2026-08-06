@@ -9,7 +9,7 @@ import {
   Tooltip,
   Modal,
   Spinner,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 import {
   Fragment,
   MouseEvent,
@@ -18,14 +18,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { RiArrowDownSLine, RiArrowRightLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiArrowLeftRightLine } from "@remixicon/react";
 import classNames from "classnames";
 import {
   TradeAccountType,
   useConnectWalletProvider,
 } from "@orderbook/core/providers/user/connectWalletProvider";
 import {
-  getChainFromTicker,
   isAssetPDEX,
   parseScientific,
   trimFloat,
@@ -49,7 +48,7 @@ import {
   useTransactionFeeModal,
   useWithdraw,
 } from "@orderbook/core/hooks";
-import { ExtensionAccount } from "@polkadex/react-providers";
+import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { FromFunding } from "./fromFunding";
 import { FromTrading } from "./FromTrading";
@@ -57,6 +56,7 @@ import { FromTrading } from "./FromTrading";
 import { FilteredAssetProps, SwitchType } from "@/hooks";
 import { UnlockAccount } from "@/components/ui/ReadyToUse/unlockAccount";
 import { ConfirmTransaction } from "@/components/ui/ConnectWallet/confirmTransaction";
+import { getChainFromTicker } from "@/config/assetChain";
 const initialValues = { amount: 0.0 };
 export const Form = ({
   isBalanceFetching,
@@ -104,7 +104,7 @@ export const Form = ({
   const { mutateAsync: onFetchWithdraws, loading: withdrawLoading } =
     useWithdraw();
 
-  const { mutateAsync, isLoading: transferLoading } = useAssetTransfer(refetch);
+  const { mutateAsync, isPending: transferLoading } = useAssetTransfer(refetch);
   const { loading: fundLoading, onChangeChainBalance } = useFunds();
 
   const { onToogleConnectTrading, onToogleConnectExtension } =
@@ -339,7 +339,7 @@ export const Form = ({
               onClick={handleChanteType}
               className="h-full flex items-center justify-center p-2 max-lg:w-full max-lg:border-y border-primary hover:bg-level-1 duration-300 transition-colors"
             >
-              <RiArrowRightLine
+              <RiArrowLeftRightLine
                 className={classNames(
                   "w-6 h-6 transition-all duration-300",
                   isFromFunding

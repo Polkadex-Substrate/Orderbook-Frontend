@@ -10,7 +10,7 @@ import {
   InteractionProps,
   Spinner,
   Typography,
-} from "@polkadex/ux";
+} from "@mitrabook/ux";
 
 interface AuthorizationProps extends InteractionProps {
   extensionName?: string;

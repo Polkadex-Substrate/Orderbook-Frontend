@@ -1,6 +1,6 @@
 import { TIME_INTERVAL } from "@orderbook/core/constants";
 import { secondsToHm } from "@orderbook/core/helpers";
-import { Typography } from "@polkadex/ux";
+import { Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import { useMemo } from "react";
 

@@ -82,13 +82,13 @@ export interface PublicTrade {
 
 export type Ticker = {
   market: string;
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-  baseVolume: number;
-  quoteVolume: number;
-  currentPrice: number;
+  open: number | null;
+  close: number | null;
+  high: number | null;
+  low: number | null;
+  baseVolume: number | null;
+  quoteVolume: number | null;
+  currentPrice: number | null;
 };
 export type Balance = {
   asset: Asset;
@@ -138,10 +138,14 @@ export interface Subscription {
   unsubscribe: () => void;
 }
 
-export interface UserHistoryProps<T = null> {
+// `pageParams` is forwarded to the GraphQL query as `nextToken`, i.e. a
+// pagination cursor: a string on subsequent pages, null on the first one.
+// (It previously defaulted to `null`, which no call site could satisfy once
+// react-query v5 started inferring the page-param type from initialPageParam.)
+export interface UserHistoryProps<T = string | null> {
   address: string;
-  from: Date;
-  to: Date;
+  from: string;
+  to: string;
   limit: number;
   pageParams: T;
   market?: string;
@@ -156,8 +160,8 @@ export interface UserAllHistoryProps {
 
 export interface TransactionHistoryProps<T = null> {
   address: string;
-  from: Date;
-  to: Date;
+  from: string;
+  to: string;
   limit: number;
   pageParams: T;
   transaction_type: "DEPOSIT" | "WITHDRAW";

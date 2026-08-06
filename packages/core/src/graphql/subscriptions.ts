@@ -8,7 +8,8 @@ type GeneratedSubscription<InputType, OutputType> = string & {
   __generatedSubscriptionOutput: OutputType;
 };
 
-export const websocket_streams = /* GraphQL */ `subscription Websocket_streams($name: String!) {
+export const websocket_streams =
+  /* GraphQL */ `subscription Websocket_streams($name: String!) {
   websocket_streams(name: $name) {
     name
     data
@@ -16,6 +17,6 @@ export const websocket_streams = /* GraphQL */ `subscription Websocket_streams($
   }
 }
 ` as GeneratedSubscription<
-  APITypes.Websocket_streamsSubscriptionVariables,
-  APITypes.Websocket_streamsSubscription
->;
+    APITypes.Websocket_streamsSubscriptionVariables,
+    APITypes.Websocket_streamsSubscription
+  >;

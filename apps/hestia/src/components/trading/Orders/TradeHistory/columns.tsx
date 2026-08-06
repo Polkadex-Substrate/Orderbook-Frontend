@@ -1,6 +1,6 @@
 import { Trade } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Tooltip, Typography } from "@polkadex/ux";
+import { Tooltip, Typography } from "@mitrabook/ux";
 
 import { formatedDate } from "@/helpers";
 

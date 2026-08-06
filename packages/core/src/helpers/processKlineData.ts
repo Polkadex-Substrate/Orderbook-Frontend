@@ -1,4 +1,4 @@
-import { Kline } from "../utils/orderbookService";
+import { Kline } from "../utils/orderbookService/types";
 
 // This function aims to provide a timestamp that represents the same point in time as the input ISO date string
 // but without accounting for any time zone offset.

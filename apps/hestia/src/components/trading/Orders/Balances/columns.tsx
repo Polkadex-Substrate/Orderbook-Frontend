@@ -1,8 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { Typography, Token, tokenAppearance } from "@polkadex/ux";
+import { Typography, Token, tokenAppearance } from "@mitrabook/ux";
 import { AssetsProps } from "@orderbook/core/hooks";
-import { getChainFromTicker } from "@orderbook/core/helpers";
 
+import { getChainFromTicker } from "@/config/assetChain";
 import { ActionsCard } from "@/components/balances/Table/actionsCard";
 import { AmountCard } from "@/components/ui/ReadyToUse/amountCard";
 
@@ -92,7 +92,7 @@ export const columns = [
         <ActionsCard
           hideButton
           withdrawLink={{
-            pathname: "/thea",
+            pathname: "/bridge",
             query: {
               from: "Polkadex",
               to: chainName,
@@ -100,7 +100,7 @@ export const columns = [
             },
           }}
           depositLink={{
-            pathname: "/thea",
+            pathname: "/bridge",
             query: {
               from: chainName,
               to: "Polkadex",

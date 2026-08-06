@@ -4,19 +4,12 @@ import {
   PublicTrade,
   appsyncOrderbookService,
 } from "@orderbook/core/utils/orderbookService";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 
 import { QUERY_KEYS, RECENT_TRADES_LIMIT } from "../constants";
 import { getIsDecreasingArray } from "../helpers";
 
 export function useRecentTrades(market: string) {
-  const { onHandleError } = useSettingsProvider();
-
-  const {
-    data: recentTradesList,
-    isLoading,
-    isFetching,
-  } = useQuery<PublicTrade[]>({
+  const { data: recentTradesList, isLoading } = useQuery<PublicTrade[]>({
     queryKey: QUERY_KEYS.recentTrades(market),
     enabled: Boolean(market?.length > 0),
     queryFn: async () =>
@@ -24,11 +17,6 @@ export function useRecentTrades(market: string) {
         market,
         limit: RECENT_TRADES_LIMIT,
       }),
-    onError: (error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : (error as string);
-      onHandleError(errorMessage);
-    },
     refetchOnMount: false,
   });
 
@@ -46,7 +34,10 @@ export function useRecentTrades(market: string) {
 
   return {
     list: recentTradesList ?? [],
-    loading: isLoading || isFetching,
+    // isLoading only: background refetches (isFetching) must not blank the
+    // list behind a skeleton - that's the "data disappears" flicker when
+    // hopping between markets.
+    loading: isLoading,
     isDecreasing,
     isPriceUp: currentTradePrice >= lastTradePrice,
   };

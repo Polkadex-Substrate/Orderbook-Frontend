@@ -5,18 +5,59 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "release": "scripts/build-release.sh",
+    "deploy": "scripts/deploy.sh"
   },
   "devDependencies": {
+    "@orderbook/eslint-config": "*",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsconfig": "*",
-    "turbo": "latest",
-    "@orderbook/eslint-config": "*"
+    "turbo": "^2.10.6"
   },
-  "packageManager": "yarn@1.22.19",
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "resolutions": {
+    "@polkadot/api": "^14.0.0",
+    "@polkadot/types": "^14.0.0",
+    "@polkadot/util": "^13.0.0",
+    "@polkadot/util-crypto": "^13.0.0",
+    "@polkadot/keyring": "^13.0.0",
+    "@polkadot/wasm-crypto": "^7.5.3",
+    "@polkadot/x-global": "^13.0.0",
+    "@polkadot/x-randomvalues": "^13.0.0",
+    "@polkadot/x-textdecoder": "^13.0.0",
+    "@polkadot/x-textencoder": "^13.0.0",
+    "@polkadot/x-bigint": "^13.0.0",
+    "axios": "^1.15.2",
+    "postcss": "^8.5.10",
+    "picomatch": "^4.0.4",
+    "flatted": "^3.4.2",
+    "serialize-javascript": "^7.0.5",
+    "fast-xml-parser": "^5.7.0",
+    "follow-redirects": "^1.16.0",
+    "brace-expansion": "^2.0.3",
+    "uuid": "^14.0.0",
+    "lodash": "^4.18.1",
+    "lodash-es": "^4.18.1",
+    "fast-uri": "^3.1.2",
+    "rollup": "^4.0.0",
+    "@babel/plugin-transform-modules-systemjs": "^7.29.4",
+    "ws": "^8.21.1",
+    "@coinbase/wallet-sdk": "^4.3.0",
+    "@tanstack/react-query": "5.101.4",
+    "graphql-request": "5.1.0"
+  },
+  "dependencies": {
+    "driver.js": "^1.6.0",
+    "minimatch": "^10.2.4"
+  }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Popover, Tooltip } from "@polkadex/ux";
+import { Button, Popover, Tooltip } from "@mitrabook/ux";
 import { useMemo } from "react";
 import Link from "next/link";
 import {
@@ -48,7 +48,11 @@ export const Profile = ({
     return (
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <Button.Solid size="2sm" onClick={onOpenFundWallet}>
+          <Button.Solid
+            size="2sm"
+            data-tour="fund-account-btn"
+            onClick={onOpenFundWallet}
+          >
             Fund Account
           </Button.Solid>
           <Tooltip>
@@ -115,9 +119,14 @@ export const Profile = ({
       </div>
     );
   return (
-    <div className="flex items-center gap-2">
+    <div data-tour="connect-wallet-btn" className="flex items-center gap-2">
       <Button.Solid size="2sm" className="font-medium" onClick={onClick}>
-        Connect wallet
+        {/* Always names the chain, on every route. This button has only ever
+            connected the Polkadex account, and both /bridge and /faucet also
+            offer a Sepolia wallet - so a bare "Connect wallet" is ambiguous
+            wherever it matters. Making it route-dependent meant the header
+            changed wording as you navigated, which is its own confusion. */}
+        Connect Polkadex wallet
       </Button.Solid>
       <Button.Icon variant="ghost" onClick={onOpenMenu}>
         <RiMenuLine className="h-full w-full" />

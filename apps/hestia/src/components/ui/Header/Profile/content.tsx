@@ -1,6 +1,6 @@
 "use client";
 
-import { Multistep } from "@polkadex/ux";
+import { Multistep } from "@mitrabook/ux";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { useMemo } from "react";
@@ -8,7 +8,7 @@ import {
   ExtensionAccount,
   useExtensionAccounts,
   useExtensions,
-} from "@polkadex/react-providers";
+} from "@aksumite/react-providers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { TradeAccount } from "@orderbook/core/providers/types";
@@ -184,7 +184,7 @@ export const Content = () => {
             <NewTradingAccount
               key="NewTradingAccount"
               onCreateAccount={onRegisterTradeAccount}
-              loading={registerStatus === "loading"}
+              loading={registerStatus === "pending"}
               fundWalletPresent={!!Object.keys(selectedWallet ?? {})?.length}
               errorTitle="Error"
               errorMessage={(registerError as Error)?.message ?? registerError}
@@ -272,7 +272,7 @@ export const Content = () => {
               key="RegisterFundingAccount"
               onCreateAccount={onRegisterTradeAccount}
               fundWallet={selectedWallet}
-              loading={registerStatus === "loading"}
+              loading={registerStatus === "pending"}
               onClose={() => props?.onPage("UserActions", true)}
             />
             <TradingAccountList
@@ -296,7 +296,7 @@ export const Content = () => {
                   selectedWallet,
                 })
               }
-              loading={removingStatus === "loading" || removeGoogleDriveLoading}
+              loading={removingStatus === "pending" || removeGoogleDriveLoading}
               errorTitle="Error"
               errorMessage={(removingError as Error)?.message ?? removingError}
               selectedExtension={tempSelectedExtension}
@@ -329,7 +329,7 @@ export const Content = () => {
               onImport={async (e) => await onImportFromFile?.(e)}
               onRedirect={() => props?.onPage("ConnectTradingAccount")}
               onClose={() => props?.onPage("ConnectTradingAccount")}
-              loading={importFromFileStatus === "loading"}
+              loading={importFromFileStatus === "pending"}
               whitelistBrowserAccounts={mainProxiesAccounts}
             />
             <ImportTradingAccountMnemonic
@@ -339,7 +339,7 @@ export const Content = () => {
                 props?.onChangeInteraction(false);
               }}
               onCancel={() => props?.onPage("ConnectTradingAccount")}
-              loading={importFromMnemonicStatus === "loading"}
+              loading={importFromMnemonicStatus === "pending"}
               errorMessage={
                 (importFromMnemonicError as Error)?.message ??
                 importFromMnemonicError

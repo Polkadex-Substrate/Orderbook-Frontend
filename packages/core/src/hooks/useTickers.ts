@@ -3,17 +3,16 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { QUERY_KEYS, defaultTicker } from "../constants";
-import { useSettingsProvider } from "../providers/public/settings";
 import { useOrderbookService } from "../providers/public/orderbookServiceProvider/useOrderbookService";
 import { appsyncOrderbookService } from "../utils/orderbookService";
-import { decimalPlaces } from "../helpers";
+import { decimalPlaces, getCurrentMarket } from "../helpers";
 
 import { useRecentTrades } from "./useRecentTrades";
 
 export function useTickers(defaultMarket?: string) {
   const { markets } = useOrderbookService();
-  const { onHandleError } = useSettingsProvider();
-  const { list: recentTrades } = useRecentTrades(defaultMarket as string);
+  const currentMarket = getCurrentMarket(markets, defaultMarket || null);
+  const { list: recentTrades } = useRecentTrades(currentMarket?.id as string);
 
   const shouldFetchTickers = Boolean(markets && markets?.length > 0);
 
@@ -46,11 +45,6 @@ export function useTickers(defaultMarket?: string) {
           priceChangePercent24Hr,
         };
       });
-    },
-    onError: (error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : (error as string);
-      onHandleError(errorMessage);
     },
     refetchOnMount: false,
   });

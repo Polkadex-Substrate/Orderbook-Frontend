@@ -1,6 +1,6 @@
 "use client";
 
-import { FilterGroup, Typography } from "@polkadex/ux";
+import { FilterGroup, Typography } from "@mitrabook/ux";
 import { Column } from "@tanstack/react-table";
 import classNames from "classnames";
 

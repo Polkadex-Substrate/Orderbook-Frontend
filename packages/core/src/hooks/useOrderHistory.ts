@@ -41,21 +41,22 @@ export const useOrderHistory = (
       basedOnFundingAccount
     ),
     enabled: shouldFetchOrderHistory,
-    queryFn: async ({ pageParam = null }) => {
+    queryFn: async ({ pageParam }) => {
       return await appsyncOrderbookService.query.getOrderHistory({
         address,
-        from: dateFrom,
-        to: dateTo,
+        from: dateFrom.getTime().toString(),
+        to: dateTo.getTime().toString(),
         limit: 25,
         pageParams: pageParam,
         batchLimit: rowsPerPage,
         basedOnFundingAccount,
       });
     },
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => {
       // If the last page contains nextToken as null, don't fetch the next page
       if (!lastPage.nextToken) {
-        return false;
+        return undefined;
       }
       return lastPage.nextToken;
     },
@@ -120,7 +121,8 @@ export const useOrderHistory = (
     isLoading: isOrderHistoryLoading,
     hasNextPage: hasNextOrderHistoryPage,
     onFetchNextPage: fetchNextOrderHistoryPage,
-    error: orderHistoryError as string,
+    // consumers render this directly, so surface the message (not the Error)
+    error: orderHistoryError?.message ?? "",
     isFetchingNextPage,
   };
 };

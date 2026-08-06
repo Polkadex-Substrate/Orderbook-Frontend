@@ -1,12 +1,24 @@
 import { appsyncOperations } from "./writeStrategy";
 import { appsyncReader } from "./readStrategy";
-import { appsyncSubscriptions } from "./subscriptionStrategy";
+import { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
 import {
   OrderbookOperationStrategy,
   OrderbookReadStrategy,
   OrderbookService,
   OrderbookSubscriptionStrategy,
 } from "./../interfaces";
+export * from "./readStrategy";
+export * from "./writeStrategy";
+export * from "./constants";
+
+export { GraphQLWebSocketSubscriptions } from "./newSubscriptionStrategy";
+
+// There is one subscription transport now: graphql-ws against the Orderbook
+// backend. The factory that chose between this and AppSync's MQTT/`/realtime`
+// protocol is gone along with the USE_NEW_BACKEND flag that drove it.
+export const orderbookSubscriptions = new GraphQLWebSocketSubscriptions(
+  appsyncReader
+);
 
 type ConstructorArgs = {
   operation: OrderbookOperationStrategy;
@@ -42,5 +54,5 @@ class AppsyncV1 implements OrderbookService {
 export const appsyncOrderbookService = new AppsyncV1({
   operation: appsyncOperations,
   query: appsyncReader,
-  subscriber: appsyncSubscriptions,
+  subscriber: orderbookSubscriptions,
 });

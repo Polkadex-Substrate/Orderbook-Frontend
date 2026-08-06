@@ -40,5 +40,5 @@ export const useClaimableRewards = (market: string) => {
     enabled,
   });
 
-  return { claimableRewards: data, isLoading: status === "loading" };
+  return { claimableRewards: data, isLoading: status === "pending" };
 };

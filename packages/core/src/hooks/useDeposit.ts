@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import {
   ExtensionAccount,
   useTransactionManager,
-} from "@polkadex/react-providers";
-import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
+} from "@aksumite/react-providers";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import { useSettingsProvider } from "../providers/public/settings";
 import { useNativeApi } from "../providers/public/nativeApi";
@@ -42,7 +42,7 @@ export const useDeposit = () => {
         asset,
         amount,
         tokenFeeId,
-      })) as SubmittableExtrinsic;
+      })) as SubmittableExtrinsic<"promise">;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       addToTxQueue(signedExtrinsic);
@@ -50,7 +50,8 @@ export const useDeposit = () => {
     },
 
     onError: (error) => {
-      const errorMessage = (error as Error).message ?? (error as string);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error ?? "");
       onHandleError(errorMessage);
     },
     onSuccess: () =>
@@ -59,5 +60,5 @@ export const useDeposit = () => {
       ),
   });
 
-  return { mutateAsync, loading: status === "loading" };
+  return { mutateAsync, loading: status === "pending" };
 };

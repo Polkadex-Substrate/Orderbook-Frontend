@@ -1,6 +1,7 @@
 "use client";
 // import type { Metadata } from "next";
 
+import { use } from "react";
 import dynamic from "next/dynamic";
 const Template = dynamic(
   () => import("@/components/trading/template").then((mod) => mod.Template),
@@ -17,6 +18,7 @@ const Template = dynamic(
 //   const title = ` ${id} | Polkadex Orderbook`;
 //   return { title };
 // }
-export default function Page({ params }: { params: { id: string } }) {
-  return <Template id={params.id} />;
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return <Template id={id} />;
 }

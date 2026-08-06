@@ -1,4 +1,4 @@
-import { Skeleton } from "@polkadex/ux";
+import { Skeleton } from "@mitrabook/ux";
 
 export const RewardsSkeleton = () => {
   return (

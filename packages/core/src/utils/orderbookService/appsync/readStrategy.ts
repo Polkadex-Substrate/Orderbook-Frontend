@@ -1,4 +1,3 @@
-import { GraphQLResult } from "@aws-amplify/api";
 import { unknownAsset } from "@orderbook/core/utils/orderbookService/appsync/constants";
 import {
   DEFAULT_BATCH_LIMIT,
@@ -49,7 +48,12 @@ import {
   fetchBatchFromAppSync,
   fetchFullListFromAppSync,
   sendQueryToAppSync,
+  toNullableNumber,
+  // Aliased so the ~8 usages below read unchanged: same two-field GraphQL
+  // envelope, declared locally now that Amplify is gone.
+  GraphQLResponse as GraphQLResult,
 } from "./helpers";
+import { splitByKnownMarket, describeSkippedMarkets } from "./knownMarkets";
 
 class AppsyncV1Reader implements OrderbookReadStrategy {
   ready = false;
@@ -213,10 +217,30 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       queryKey
     );
 
-    const openOrders = openOrderQueryResult?.map((item): Order => {
-      return this.mapApiOrderToOrder(item, this._marketList);
-    });
-    return openOrders || [];
+    // Drop rows whose market this client cannot resolve, INSTEAD of mapping them.
+    //
+    // mapApiOrderToOrder throws on an unresolvable market id. This used to be a
+    // bare `.map`, so one such row threw out of the map, rejected the whole query
+    // and emptied the order list - while the rows sat in the SpotOrders table.
+    // getOrderHistory and getTrades below already filtered first; open orders was
+    // the one that did not, which is why it was the one that broke.
+    //
+    // A market id can be absent legitimately: a closed (or closed and
+    // re-registered) pair still has orders referencing it, and a pair added since
+    // the market list was cached is unknown until the next refresh.
+    const split = splitByKnownMarket(
+      openOrderQueryResult,
+      this._marketList.map((m) => m.id)
+    );
+
+    // Warn, do not swallow. Silently returning fewer orders than exist is the
+    // same class of bug as this fix - the user must be able to find out why.
+    const skipped = describeSkippedMarkets(split, "getOpenOrders");
+    if (skipped) console.warn(skipped);
+
+    return split.known.map((item) =>
+      this.mapApiOrderToOrder(item, this._marketList)
+    );
   }
 
   async getOrderHistory(
@@ -234,8 +258,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       [args.basedOnFundingAccount ? "main_account" : "trade_account"]:
         args.address,
       limit: args.limit,
-      from: args.from.toISOString(),
-      to: args.to.toISOString(),
+      from: args.from.toString(),
+      to: args.to.toString(),
       nextToken: args.pageParams,
     };
 
@@ -306,13 +330,13 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
     const tickerItem = tickersQueryResult?.data?.getMarketTickers?.items;
     return {
       market,
-      open: Number(tickerItem?.o) || 0,
-      close: Number(tickerItem?.c) || 0,
-      high: Number(tickerItem?.h) || 0,
-      low: Number(tickerItem?.l) || 0,
-      baseVolume: Number(tickerItem?.vb) || 0,
-      quoteVolume: Number(tickerItem?.vq) || 0,
-      currentPrice: Number(tickerItem?.c) || 0,
+      open: toNullableNumber(tickerItem?.o),
+      close: toNullableNumber(tickerItem?.c),
+      high: toNullableNumber(tickerItem?.h),
+      low: toNullableNumber(tickerItem?.l),
+      baseVolume: toNullableNumber(tickerItem?.vb),
+      quoteVolume: toNullableNumber(tickerItem?.vq),
+      currentPrice: toNullableNumber(tickerItem?.c),
     };
   }
 
@@ -331,8 +355,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       [args.basedOnFundingAccount ? "main_account" : "trade_account"]:
         args.address,
       limit: args.limit,
-      from: args.from.toISOString(),
-      to: args.to.toISOString(),
+      from: args.from.toString(),
+      to: args.to.toString(),
       nextToken: args.pageParams,
     };
 
@@ -416,8 +440,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       {
         main_account: args.address,
         limit: args.limit,
-        from: args.from.toISOString(),
-        to: args.to.toISOString(),
+        from: args.from.toString(),
+        to: args.to.toString(),
         transaction_type: args.transaction_type,
       },
       "listTransactionsByMainAccount",
@@ -473,8 +497,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       QUERIES.listOrderHistoryByMainAccount,
       {
         main_account: args.address,
-        from: args.from.toISOString(),
-        to: args.to.toISOString(),
+        from: args.from.toString(),
+        to: args.to.toString(),
       },
       "listOrderHistoryByMainAccount"
     );
@@ -498,8 +522,8 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       QUERIES.listTradesByMainAccount,
       {
         main_account: args.address,
-        from: args.from.toISOString(),
-        to: args.to.toISOString(),
+        from: args.from.toString(),
+        to: args.to.toString(),
       },
       "listTradesByMainAccount"
     );

@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { sortOrdersDescendingTime } from "../helpers";
-import { useSettingsProvider } from "../providers/public/settings";
 import { useProfile } from "../providers/user/profile";
 import { appsyncOrderbookService } from "../utils/orderbookService";
 import { QUERY_KEYS } from "../constants";
@@ -12,7 +11,6 @@ export const useOpenOrders = (
   filters?: Ifilters,
   basedOnFundingAccount?: boolean
 ) => {
-  const { onHandleError } = useSettingsProvider();
   const {
     selectedAddresses: { tradeAddress, mainAddress },
   } = useProfile();
@@ -28,6 +26,8 @@ export const useOpenOrders = (
     data: openOrders,
     isLoading,
     isFetching,
+    isError,
+    error,
   } = useQuery({
     queryKey: QUERY_KEYS.openOrders(address, basedOnFundingAccount),
     enabled: shouldFetchOpenOrders,
@@ -38,10 +38,6 @@ export const useOpenOrders = (
       });
     },
     initialData: [],
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : "";
-      onHandleError(errorMessage);
-    },
   });
 
   const filteredOpenOrders = useMemo(() => {
@@ -65,5 +61,14 @@ export const useOpenOrders = (
   return {
     openOrders: filteredOpenOrders,
     isLoading: !shouldFetchOpenOrders || isLoading || isFetching,
+    /**
+     * A FAILED read and an EMPTY list are not the same thing, and this hook used
+     * to report only the latter. Because `initialData: []` means the query always
+     * has an array, a backend error rendered as "You have no open orders" - which
+     * is what made "my order was placed but is not in the list" impossible to
+     * diagnose from the screen. Callers must distinguish the two states.
+     */
+    isError,
+    error,
   };
 };

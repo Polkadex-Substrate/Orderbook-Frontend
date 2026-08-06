@@ -1,5 +1,5 @@
 "use client";
-import { HoverCard, Typography } from "@polkadex/ux";
+import { HoverCard, Typography } from "@mitrabook/ux";
 import { useState } from "react";
 import { RiEyeOffLine, RiEyeLine } from "@remixicon/react";
 
@@ -44,13 +44,10 @@ export const Overview = () => {
         </HoverCard>
       </div>
       <div className="flex items-center gap-2 sm:max-w-[25rem] w-full flex-wrap">
-        <OverviewCard icon="RiSkipDownLine" href="/thea">
+        <OverviewCard icon="RiSkipDownLine" href="/bridge">
           Deposit
         </OverviewCard>
-        <OverviewCard
-          icon="RiSkipUpLine"
-          href="/thea?from=Polkadex&to=Polkadot"
-        >
+        <OverviewCard icon="RiSkipUpLine" href="/bridge">
           Withdraw
         </OverviewCard>
         <OverviewCard icon="RiArrowLeftRightLine" href="/transfer">

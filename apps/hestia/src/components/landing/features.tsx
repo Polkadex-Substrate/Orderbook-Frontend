@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button, Typography } from "@polkadex/ux";
+import { Button, Typography } from "@mitrabook/ux";
 import Image from "next/image";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { RiArrowRightLine } from "@remixicon/react";
@@ -28,7 +28,7 @@ export const Features = () => {
         <div className="max-md:flex-col flex items-center justify-between max-md:pt-10 md:px-10 border-y border-primary">
           <div className="flex flex-col gap-2 md:max-w-xs md:min-w-[250px]">
             <Typography.Heading size="2xl">
-              Lightening fast trades
+              Lightning fast trades
             </Typography.Heading>
             <Typography.Paragraph appearance="primary">
               Trade crypto with sub-milisecond latency on a DEX that’s as fast

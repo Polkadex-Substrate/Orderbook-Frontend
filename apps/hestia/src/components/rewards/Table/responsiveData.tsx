@@ -1,8 +1,9 @@
 import { Dispatch, SetStateAction } from "react";
-import { Button, Drawer, Tokens } from "@polkadex/ux";
+import { Button, Drawer, Tokens } from "@mitrabook/ux";
 import { useRouter } from "next/navigation";
 import { LmpMarketConfig } from "@orderbook/core/index";
-import { millify } from "@polkadex/numericals";
+import { millify } from "@aksumite/numericals";
+import { formatDisplay } from "@orderbook/format";
 
 import { MarketCard } from "./marketCard";
 
@@ -41,7 +42,7 @@ export const ResponsiveData = ({
           {millify(data?.traderScore)}
         </ResponsiveCard>
         <ResponsiveCard label="Volume 24h">
-          {data?.quoteVolume24h.toFixed(4)} {data?.quoteAsset?.ticker}
+          {formatDisplay(data?.quoteVolume24h)} {data?.quoteAsset?.ticker}
         </ResponsiveCard>
       </Drawer.Content>
       <Drawer.Footer className="p-4">

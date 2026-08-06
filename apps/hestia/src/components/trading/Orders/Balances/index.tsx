@@ -9,9 +9,10 @@ import {
 } from "@tanstack/react-table";
 import classNames from "classnames";
 import { AssetsProps, useAssets } from "@orderbook/core/hooks";
-import { GenericMessage, Table as PolkadexTable } from "@polkadex/ux";
+import { Table as PolkadexTable } from "@mitrabook/ux";
 
 import { Loading } from "../loading";
+import { TabEmptyState } from "../emptyState";
 
 import { columns } from "./columns";
 import { ResponsiveTable } from "./responsiveTable";
@@ -56,16 +57,7 @@ export const BalancesTable = ({ height }: { height: number }) => {
 
   if (loading) return <Loading />;
 
-  if (!assets?.length)
-    return (
-      <GenericMessage
-        title={"No assets found"}
-        illustration="NoData"
-        imageProps={{
-          className: "w-10 self-center",
-        }}
-      />
-    );
+  if (!assets?.length) return <TabEmptyState tab="balances" reason="empty" />;
 
   return (
     <Fragment>
@@ -75,7 +67,7 @@ export const BalancesTable = ({ height }: { height: number }) => {
         open={responsiveState}
       />
       <div
-        className="flex-1 h-full overflow-auto scrollbar-hide"
+        className="flex-1 h-full min-h-0 overflow-auto scrollbar-hide"
         style={{ maxHeight: height }}
       >
         <PolkadexTable className="w-full [&_th]:border-b [&_th]:border-primary mb-1">

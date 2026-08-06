@@ -14,11 +14,17 @@ export const DEFAULTLANGUAGENAME = "language";
 export const DEFAULTCURRENCYNAME = "currency";
 export const DEFAULTTHEMENAME = "theme";
 export const DEFAULTNOTIFICATIONNAME = "localnotifications";
+// Ids of static announcements the user has dismissed. Needed as a separate key
+// because announcements are injected from code, not stored: absence from
+// `localnotifications` is their "not yet seen" signal, so deleting one made it
+// reappear immediately. See helpers.ts.
+export const DISMISSEDANNOUNCEMENTSNAME = "dismissedannouncements";
 export const DEFAULTMARKETCAROUSEL = "marketCarouselSelector";
 
 export const NOTIFICATION_DELETE_ALL =
   "Settings Provider/NOTIFICATION_DELETE_ALL";
 export const NOTIFICATION_PUSH = "Settings Provider/NOTIFICATION_PUSH";
+export const ANNOUNCEMENTS_LOADED = "Settings Provider/ANNOUNCEMENTS_LOADED";
 export const NOTIFICATION_DELETE_BY_ID =
   "Settings Provider/NOTIFICATION_DELETE_BY_ID";
 export const NOTIFICATION_MARK_AS_READ =

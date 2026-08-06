@@ -3,7 +3,7 @@
 import { Fragment, forwardRef, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
-import { Logo } from "@polkadex/ux";
+import { Logo } from "@mitrabook/ux";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { defaultConfig } from "@orderbook/core/config";
 import {
@@ -23,7 +23,7 @@ import { ResponsiveMenuModal } from "./responsiveMenuModal";
 import { NotificationsModal } from "./NotificationsModal";
 import { FundWalletModal } from "./fundWalletModal";
 
-const { defaultTheaSourceChain, defaultTheaDestinationChain } = defaultConfig;
+import { EXTERNAL_LINKS } from "@/config/links";
 
 export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const [menu, setMenu] = useState(false);
@@ -38,6 +38,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const lastUsedMarketUrl = getMarketUrl();
   const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
+  const isFaucetDisabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
 
   const unreadNotifications = useMemo(() => {
     return allNotifications.filter((e) => e.active).length;
@@ -58,6 +59,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
       />
       <header
         ref={ref}
+        data-tour="header"
         className="flex justify-between items-center px-3 flex-wrap border-b border-primary sticky top-0 left-0 bg-backgroundBase z-10"
       >
         <div className="flex-1 flex items-center gap-5 py-2 overflow-auto">
@@ -67,95 +69,74 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
           >
             <Logo.Orderbook className="max-md:pointer-events-none max-md:h-8 max-md:[&_g]:hidden" />
           </Link>
-          <div className="gap-5 hidden items-center lg:!flex">
+          {/* Wider gap once the links themselves grow, or they crowd. */}
+          <div className="gap-5 min-[1680px]:gap-7 hidden items-center lg:!flex">
             <HeaderLink.Single href={lastUsedMarketUrl}>
               Trade
             </HeaderLink.Single>
-            <HeaderLink.Single
-              href={`/thea?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
-              disabled={isBridgeDisabled}
-            >
+            <HeaderLink.Single href="/bridge" disabled={isBridgeDisabled}>
               Bridge
             </HeaderLink.Single>
             <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
               Rewards
             </HeaderLink.Single>
+            <HeaderLink.Single href="/faucet" disabled={isFaucetDisabled}>
+              Faucet
+            </HeaderLink.Single>
+            {/* Analytics is a product feature and was buried under "More"
+                between five legal documents. Promoted to a top-level link. */}
+            <HeaderLink.Single href={EXTERNAL_LINKS.analytics}>
+              Analytics
+            </HeaderLink.Single>
+            {/* Was "Support", which duplicated Discord with the Community menu
+                below. Help is now purely documentation; Discord lives once, in
+                Community, where people look for it. */}
             <HeaderLink.Dropdown
               items={[
                 {
-                  href: "https://discord.gg/G4KMw2sGGe",
-                  label: "Community support",
-                },
-                {
-                  href: "https://docs.polkadex.trade/orderbookPolkadexFAQHowToTradeStep1",
+                  href: EXTERNAL_LINKS.testnetGuide,
                   label: "Orderbook guide",
                 },
                 {
-                  href: "https://docs.polkadex.trade/orderbookPolkadexFAQWallets",
+                  href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
                   label: "FAQ",
                 },
+                {
+                  href: EXTERNAL_LINKS.docs,
+                  label: "Documentation",
+                },
               ]}
             >
-              Support
+              Help
             </HeaderLink.Dropdown>
             <HeaderLink.Dropdown
               items={[
                 {
-                  href: "https://pdexanalytics.com",
-                  label: "Analytics",
-                },
-                {
-                  href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf",
-                  label: "Terms of use",
-                },
-                {
-                  href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Privacy_Policy.pdf",
-                  label: "Privacy policy",
-                },
-                {
-                  href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Disclaimer_and_Legal_Notice.pdf",
-                  label: "Disclaimer",
-                },
-                {
-                  href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Excluded_Jurisdictions.pdf",
-                  label: "Excluded Jurisdictions",
-                },
-                {
-                  href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Data_Retention_Policy.pdf",
-                  label: "Data Retention Policy",
-                },
-              ]}
-            >
-              More
-            </HeaderLink.Dropdown>
-            <HeaderLink.Dropdown
-              items={[
-                {
-                  href: "https://t.me/Polkadex",
+                  href: EXTERNAL_LINKS.telegram,
                   label: "Telegram",
                   svg: (
                     <RiTelegramFill className="bg-sky-500 rounded-full w-5 h-5" />
                   ),
                 },
                 {
-                  href: "https://discord.com/invite/Uvua83QAzk/",
+                  href: EXTERNAL_LINKS.discord,
                   label: "Discord",
                   svg: (
                     <RiDiscordFill className="bg-blue-700 rounded-full w-5 h-5 p-0.5" />
                   ),
                 },
                 {
-                  href: "https://twitter.com/polkadex",
-                  label: "Twitter",
+                  href: EXTERNAL_LINKS.twitter,
+                  label: "X",
                   svg: <RiTwitterXFill className="rounded-full w-5 h-5" />,
                 },
                 {
-                  href: "https://github.com/Polkadex-Substrate",
+                  href: EXTERNAL_LINKS.github,
                   label: "Github",
                   svg: <RiGithubFill className="rounded-full w-5 h-5" />,
                 },
                 {
-                  href: "https://www.reddit.com/r/polkadex/",
+                  href: EXTERNAL_LINKS.reddit,
                   label: "Reddit",
                   svg: (
                     <RiRedditFill className="bg-red-500 rounded-full w-5 h-5" />

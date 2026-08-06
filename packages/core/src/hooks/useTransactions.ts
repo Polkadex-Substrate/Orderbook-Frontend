@@ -1,6 +1,5 @@
 import { ChangeEvent, useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 
 import { QUERY_KEYS } from "../constants";
@@ -21,7 +20,6 @@ export function useTransactions() {
   const {
     selectedAddresses: { mainAddress },
   } = useProfile();
-  const { onHandleError } = useSettingsProvider();
 
   const [filterBy, setFilterBy] = useState({
     type: "all",
@@ -32,17 +30,17 @@ export function useTransactions() {
     queryKey: QUERY_KEYS.transactions(mainAddress, DEPOSIT),
     queryFn: async () => {
       const fromDate = subtractMonthsFromDateOrNow(3);
+      const toDate = new Date();
       return await appsyncOrderbookService.query.getTransactions({
         address: mainAddress,
         limit: 100000,
-        from: fromDate,
-        to: new Date(),
+        from: fromDate.getTime().toString(),
+        to: toDate.getTime().toString(),
         pageParams: null,
         transaction_type: DEPOSIT,
       });
     },
     enabled: Boolean(mainAddress?.length > 0),
-    onError: onHandleError,
   });
 
   const { data: withdrawTransactions, isLoading: isWithdrawLoading } = useQuery(
@@ -50,17 +48,17 @@ export function useTransactions() {
       queryKey: QUERY_KEYS.transactions(mainAddress, WITHDRAW),
       queryFn: async () => {
         const fromDate = subtractMonthsFromDateOrNow(3);
+        const toDate = new Date();
         return await appsyncOrderbookService.query.getTransactions({
           address: mainAddress,
           limit: 100000,
-          from: fromDate,
-          to: new Date(),
+          from: fromDate.getTime().toString(),
+          to: toDate.getTime().toString(),
           pageParams: null,
           transaction_type: WITHDRAW,
         });
       },
       enabled: Boolean(mainAddress?.length > 0),
-      onError: onHandleError,
       refetchInterval: 30 * 1000,
     }
   );

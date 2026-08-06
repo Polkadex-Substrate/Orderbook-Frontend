@@ -4,7 +4,7 @@ import {
   ExtensionAccount,
   useTransactionManager,
   useUserAccounts,
-} from "@polkadex/react-providers";
+} from "@aksumite/react-providers";
 import {
   enabledFeatures,
   getAddressFromMnemonic,

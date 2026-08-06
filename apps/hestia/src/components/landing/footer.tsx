@@ -1,8 +1,9 @@
-import { Logo, Typography } from "@polkadex/ux";
+import { Logo, Typography } from "@mitrabook/ux";
 import Link from "next/link";
 import React from "react";
 
 import { Icons } from "@/components/ui";
+import { EXTERNAL_LINKS } from "@/config/links";
 
 export const Footer = () => {
   return (
@@ -37,10 +38,7 @@ export const Footer = () => {
             appearance="primary"
             className="hover:text-current duration-300 transition-colors"
           >
-            <Link
-              href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf"
-              target="_blank"
-            >
+            <Link href="/legal/terms" target="_blank">
               Terms and conditions
             </Link>
           </Typography.Text>
@@ -48,10 +46,7 @@ export const Footer = () => {
             appearance="primary"
             className="hover:text-current duration-300 transition-colors"
           >
-            <Link
-              href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Privacy_Policy.pdf"
-              target="_blank"
-            >
+            <Link href="/legal/privacy" target="_blank">
               Privacy policy
             </Link>
           </Typography.Text>
@@ -83,17 +78,17 @@ const data = [
     links: [
       {
         title: "Overview",
-        href: "https://docs.polkadex.trade/",
+        href: "https://docs.polkadex.ee/",
         target: "_blank",
       },
       {
         title: "Roadmap",
-        href: "https://polkadex.trade/roadmap",
+        href: "https://polkadex.ee/roadmap",
         target: "_blank",
       },
       {
         title: "Token economics",
-        href: "https://polkadex.trade/tokeneconomics",
+        href: "https://polkadex.ee/tokeneconomics",
         target: "_blank",
       },
     ],
@@ -103,12 +98,12 @@ const data = [
     links: [
       {
         title: "Orderbook",
-        href: "https://orderbook.polkadex.trade",
+        href: "https://orderbook.polkadex.ee",
         target: "_blank",
       },
       {
-        title: "THEA Crosschain",
-        href: "https://orderbook.polkadex.trade/thea",
+        title: "Bridge",
+        href: "/bridge",
         target: "_blank",
       },
     ],
@@ -118,12 +113,12 @@ const data = [
     links: [
       {
         title: "Github Repository",
-        href: "https://github.com/Polkadex-Substrate",
+        href: EXTERNAL_LINKS.github,
         target: "_blank",
       },
       {
         title: "Tutorials",
-        href: "https://www.youtube.com/channel/UC6fXRDT4lLKlXG3gP0PP06Q",
+        href: EXTERNAL_LINKS.youtube,
         target: "_blank",
       },
       {
@@ -138,17 +133,17 @@ const data = [
     links: [
       {
         title: "Help center",
-        href: "https://discord.com/invite/Uvua83QAzk",
+        href: EXTERNAL_LINKS.discord,
         target: "_blank",
       },
       {
         title: "Report issues",
-        href: "https://t.me/Polkadex",
+        href: EXTERNAL_LINKS.telegram,
         target: "_blank",
       },
       {
         title: "Beginner's guide",
-        href: "https://docs.polkadex.trade/orderbookPolkadexFAQWallets",
+        href: "https://polkadex.ee/testnet-guide",
         target: "_blank",
       },
     ],
@@ -157,33 +152,33 @@ const data = [
 
 const socialMedia = [
   {
-    alt: "Twitter logo",
+    alt: "X logo",
     iconName: "Twitter",
-    href: "https://twitter.com/polkadex",
+    href: EXTERNAL_LINKS.twitter,
     target: "_blank",
   },
   {
     alt: "Telegram logo",
     iconName: "Telegram",
-    href: "https://t.me/Polkadex",
+    href: EXTERNAL_LINKS.telegram,
     target: "_blank",
   },
   {
     alt: "Medium logo",
     iconName: "Medium",
-    href: "https://polkadex.medium.com/",
+    href: EXTERNAL_LINKS.medium,
     target: "_blank",
   },
   {
     alt: "Reddit logo",
     iconName: "Reddit",
-    href: "https://www.reddit.com/r/polkadex",
+    href: EXTERNAL_LINKS.reddit,
     target: "_blank",
   },
   {
     alt: "Discord logo",
     iconName: "Discord",
-    href: "https://discord.com/invite/Uvua83QAzk/",
+    href: EXTERNAL_LINKS.discord,
     target: "_blank",
   },
 ];

@@ -1,5 +1,5 @@
 import CSVLink from "react-csv-downloader";
-import { Button } from "@polkadex/ux";
+import { Button } from "@mitrabook/ux";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 import { useCallback } from "react";
 import { RiDownload2Line } from "@remixicon/react";

@@ -1,6 +1,6 @@
 import { ComponentPropsWithoutRef, PropsWithChildren } from "react";
-import { Icon, Loading, Typography } from "@polkadex/ux";
-import type { IconsProps } from "@polkadex/ux";
+import { Icon, Loading, Typography } from "@mitrabook/ux";
+import type { IconsProps } from "@mitrabook/ux";
 import classNames from "classnames";
 
 import { ErrorMessage } from ".";

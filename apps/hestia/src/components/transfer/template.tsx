@@ -1,6 +1,6 @@
 "use client";
 
-import { GenericMessage, Tabs, Typography } from "@polkadex/ux";
+import { GenericMessage, Tabs, Typography } from "@mitrabook/ux";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { RiInformation2Line } from "@remixicon/react";
 import { useTransactions, useTransferHistory } from "@orderbook/core/hooks";
@@ -84,7 +84,7 @@ export function Template() {
   const [activeTab, setActiveTab] = useState("history");
 
   const { data, isLoading, refetch } = useTransferHistory(
-    defaultConfig.subscanApi,
+    defaultConfig.subqueryUrl,
     selectedWallet?.address as string,
     !!selectedWallet
   );
