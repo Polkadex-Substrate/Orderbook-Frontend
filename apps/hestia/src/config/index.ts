@@ -39,4 +39,7 @@ export const defaultConfig = {
   blockedAssets: process.env.BLOCKED_ASSETS?.split(",") || [],
   subscanApi: process.env.SUBSCAN_API || "",
   disabledFeatures: process.env.DISABLED_FEATURES?.split(","),
+  defaultTheaSourceChain: process.env.DEFAULT_THEA_SOURCE_CHAIN ?? "Polkadot",
+  defaultTheaDestinationChain:
+    process.env.DEFAULT_THEA_DESTINATION_CHAIN ?? "Polkadex",
 };

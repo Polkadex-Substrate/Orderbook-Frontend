@@ -101,7 +101,8 @@ export type AccountUpdates =
   | typeof USER_EVENTS.RegisterAccount;
 
 export type AccountUpdateEvent = {
-  address: string;
+  main: string;
+  proxy: string;
   type: AccountUpdates;
 };
 export type Kline = {

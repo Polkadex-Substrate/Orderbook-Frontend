@@ -7,6 +7,7 @@ import { Card } from "./card";
 export const FromFunding = ({
   isExtensionAccountPresent,
   isLocalAccountPresent,
+  isBalanceFetching,
   focused,
   fromFunding,
   extensionAccountName,
@@ -19,6 +20,7 @@ export const FromFunding = ({
 }: {
   isExtensionAccountPresent?: boolean;
   isLocalAccountPresent?: boolean;
+  isBalanceFetching: boolean;
   focused?: boolean;
   fromFunding?: boolean;
   extensionAccountName?: string;
@@ -39,6 +41,7 @@ export const FromFunding = ({
         name={fromFunding ? extensionAccountName : localAccountName}
         address={fromFunding ? extensionAccountAddress : localAccountAddress}
         ticker={selectedAssetTicker}
+        isBalanceFetching={isBalanceFetching}
         balance={fromFunding ? extensionAccountBalance : localAccountBalance}
       >
         {((fromFunding && !isExtensionAccountPresent) ||

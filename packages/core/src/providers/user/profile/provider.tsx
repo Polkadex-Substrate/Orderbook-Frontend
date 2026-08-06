@@ -82,11 +82,17 @@ export const ProfileProvider: T.ProfileComponent = ({ children }) => {
       onHandleError("Invalid main Address");
       return;
     }
+    // Get proxies for mainAddress
+    const proxies =
+      await appsyncOrderbookService.query.getTradingAddresses(mainAddress);
+    const isExtensionProxy = proxies.includes(mainAccount.address);
+    const tradeAddress = isExtensionProxy ? mainAccount.address : "";
+
     LOCAL_STORE.setLastUsedAccount({
-      tradeAddress: "", // TODO: we can set this the first local account linked to this main account
+      tradeAddress,
       mainAddress: mainAccount.address,
     });
-    setActiveAccount({ tradeAddress: "", mainAddress: mainAccount.address });
+    setActiveAccount({ tradeAddress, mainAddress: mainAccount.address });
   };
 
   const onUserResetMainAddress = () => {
@@ -145,19 +151,6 @@ export const ProfileProvider: T.ProfileComponent = ({ children }) => {
       setAvatar(avatar);
     }
   }, []);
-
-  // Select extension if user is logged in
-  useEffect(() => {
-    if (activeAccount?.mainAddress) {
-      const sourceExtension = extensionAccounts?.find(
-        (acc) => acc.address === activeAccount?.mainAddress
-      )?.source;
-      const extension = ExtensionsArray?.find(
-        (value) => value.id === sourceExtension
-      );
-      extension && setSelectedExtension(extension);
-    }
-  }, [activeAccount?.mainAddress, extensionAccounts, selectedExtension]);
 
   const getSigner = useCallback(
     (address: string) => {

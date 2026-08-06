@@ -14,6 +14,7 @@ import {
   Ticker,
   Balance,
   Kline,
+  AccountUpdateEvent,
 } from "@orderbook/core/utils/orderbookService";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import {
@@ -37,8 +38,9 @@ import {
   replaceOrPushOrder,
 } from "@orderbook/core/utils/orderbookService/appsync/helpers";
 import { useOrderbook } from "@orderbook/core/hooks";
+import { useExtensionAccounts } from "@polkadex/react-providers";
 
-import { useProfile } from "../profile";
+import { UserAddressTuple, useProfile } from "../profile";
 import { useSettingsProvider } from "../../public/settings";
 import { useSessionProvider } from "../sessionProvider";
 import { useNativeApi } from "../../public/nativeApi";
@@ -58,8 +60,10 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
   const { dateFrom, dateTo } = useSessionProvider();
   const {
     selectedAddresses: { tradeAddress, mainAddress },
+    onUserSelectTradingAddress,
   } = useProfile();
   const { api } = useNativeApi();
+  const { extensionAccounts } = useExtensionAccounts();
 
   const isTradingPage = path.startsWith("/trading");
   const marketName = isTradingPage ? marketId : null;
@@ -68,11 +72,13 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
   const { asks, bids } = useOrderbook(market as string);
 
   const onOrderUpdates = useCallback(
-    (payload: Order) => {
+    (payload: Order, fromMainAddress?: boolean) => {
       try {
         // Update OpenOrders Realtime
         queryClient.setQueryData(
-          QUERY_KEYS.openOrders(tradeAddress),
+          fromMainAddress
+            ? QUERY_KEYS.openOrders(mainAddress, true)
+            : QUERY_KEYS.openOrders(tradeAddress),
           (oldOpenOrders?: Order[]) => {
             const prevOpenOrders = [...(oldOpenOrders || [])];
 
@@ -83,7 +89,10 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
             );
 
             if (payload.status === "OPEN") {
-              if (findOrder) {
+              if (
+                findOrder &&
+                payload.filledQuantity > findOrder.filledQuantity
+              ) {
                 const notf = NOTIFICATIONS.partialFilledOrder(findOrder);
                 onPushNotification(notf);
                 onHandleInfo?.(notf.message, notf.description);
@@ -108,12 +117,20 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
 
         // Update OrderHistory Realtime
         queryClient.setQueryData(
-          QUERY_KEYS.orderHistory(
-            dateFrom,
-            dateTo,
-            tradeAddress,
-            DEFAULT_BATCH_LIMIT
-          ),
+          fromMainAddress
+            ? QUERY_KEYS.orderHistory(
+                dateFrom,
+                dateTo,
+                mainAddress,
+                DEFAULT_BATCH_LIMIT,
+                true
+              )
+            : QUERY_KEYS.orderHistory(
+                dateFrom,
+                dateTo,
+                tradeAddress,
+                DEFAULT_BATCH_LIMIT
+              ),
           (
             oldOrderHistory: InfiniteData<MaybePaginated<Order[]>> | undefined
           ) => {
@@ -161,6 +178,7 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       onHandleError,
       queryClient,
       tradeAddress,
+      mainAddress,
       onHandleInfo,
       onPushNotification,
     ]
@@ -283,9 +301,7 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
             }
           );
 
-          if (payload.txType === "DEPOSIT") {
-            onPushNotification(NOTIFICATIONS.transferToTradingAccount(payload));
-          } else if (payload.txType === "WITHDRAW") {
+          if (payload.txType === "WITHDRAW") {
             if (payload.status === "READY")
               onPushNotification(NOTIFICATIONS.claimTransfer(payload));
             else if (payload.status === "CONFIRMED")
@@ -356,6 +372,60 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
     [api, mainAddress]
   );
 
+  const onAccountsUpdate = useCallback(
+    async (payload: AccountUpdateEvent) => {
+      if (payload.type === "AddProxy" || payload.type === "RegisterAccount") {
+        // Update for selected extension account
+        queryClient.setQueryData(
+          QUERY_KEYS.singleProxyAccounts(mainAddress),
+          (proxies?: string[]): string[] => {
+            return proxies ? [...proxies, payload.proxy] : [payload.proxy];
+          }
+        );
+
+        // Update for all extension accounts
+        queryClient.setQueryData(
+          QUERY_KEYS.proxyAccounts(
+            extensionAccounts.map(({ address }) => address)
+          ),
+          (userAddresses?: UserAddressTuple[]): UserAddressTuple[] => {
+            return [
+              ...(userAddresses || []),
+              { mainAddress: payload.main, tradeAddress: payload.proxy },
+            ];
+          }
+        );
+
+        // Select newly created trading account
+        await onUserSelectTradingAddress({
+          tradeAddress: payload.proxy,
+          isNew: true,
+        });
+      } else if (payload.type === "RemoveProxy") {
+        // Update for selected extension account
+        queryClient.setQueryData(
+          QUERY_KEYS.singleProxyAccounts(mainAddress),
+          (proxies?: string[]) => {
+            return proxies?.filter((value) => value !== payload.proxy);
+          }
+        );
+
+        // Update for all extension accounts
+        queryClient.setQueryData(
+          QUERY_KEYS.proxyAccounts(
+            extensionAccounts.map(({ address }) => address)
+          ),
+          (userAddresses?: UserAddressTuple[]): UserAddressTuple[] => {
+            return (userAddresses || [])?.filter(
+              (e) => e.tradeAddress !== payload.proxy
+            );
+          }
+        );
+      }
+    },
+    [extensionAccounts, mainAddress, onUserSelectTradingAddress, queryClient]
+  );
+
   const onBalanceUpdate = useCallback(
     async (payload: Balance) => {
       try {
@@ -363,37 +433,9 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
           await updateBalanceFromEvent(payload);
 
         // Update trading account balance
-        queryClient.setQueryData(
-          QUERY_KEYS.tradingBalances(mainAddress),
-          (oldData?: Balance[]): Balance[] => {
-            const prevData = [...((oldData || []) as Balance[])];
-            const old = prevData.find(
-              (i) => i.asset.id.toString() === updateBalance.assetId.toString()
-            );
-            if (!old) {
-              return prevData;
-            }
-            const newBalance: Balance = {
-              asset: {
-                decimal: 8,
-                id: updateBalance.assetId,
-                name: updateBalance.name,
-                ticker: updateBalance.symbol,
-              },
-              free: updateBalance.free_balance,
-              reserved: updateBalance.reserved_balance,
-            };
-
-            // Filter out old balances from the balance state
-            const balanceFiltered = prevData?.filter(
-              (balance) =>
-                balance.asset.id.toString() !== updateBalance.assetId.toString()
-            );
-
-            // Apply updates to the balances in the state
-            return [...balanceFiltered, newBalance];
-          }
-        );
+        queryClient.refetchQueries({
+          queryKey: QUERY_KEYS.tradingBalances(mainAddress),
+        });
 
         // Update chain balance
         queryClient.setQueryData(
@@ -481,7 +523,7 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
     return () => subscription.unsubscribe();
   }, [isReady, market, onOrderbookUpdates, queryClient]);
 
-  // Open Orders & Order history subscription
+  // Open Orders & Order history subscription (For tradeAddress)
   useEffect(() => {
     if (tradeAddress?.length && isReady) {
       const subscription = appsyncOrderbookService.subscriber.subscribeOrders(
@@ -492,6 +534,18 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       return () => subscription.unsubscribe();
     }
   }, [tradeAddress, onOrderUpdates, isReady]);
+
+  // Open Orders & Order history subscription (For mainAddress)
+  useEffect(() => {
+    if (mainAddress?.length && isReady) {
+      const subscription = appsyncOrderbookService.subscriber.subscribeOrders(
+        mainAddress,
+        (e) => onOrderUpdates(e, true)
+      );
+
+      return () => subscription.unsubscribe();
+    }
+  }, [mainAddress, onOrderUpdates, isReady]);
 
   // Trade history subscription
   useEffect(() => {
@@ -546,6 +600,20 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       };
     }
   }, [mainAddress, onBalanceUpdate, isReady]);
+
+  // Account update subscription
+  useEffect(() => {
+    if (mainAddress && isReady) {
+      const subscription =
+        appsyncOrderbookService.subscriber.subscribeAccountUpdate(
+          mainAddress,
+          onAccountsUpdate
+        );
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [isReady, mainAddress, onAccountsUpdate]);
 
   return <Provider value={{ onCandleSubscribe }}>{children}</Provider>;
 };

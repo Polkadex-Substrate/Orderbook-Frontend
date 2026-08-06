@@ -9,7 +9,6 @@ export * from "./genericExternalCard";
 export * from "./tradingAccountCard";
 export * from "./genericHorizontalCard";
 export * from "./accountCard";
-export * from "./SelectChain";
 export * from "./providerCard";
 export * from "./tokenCard";
 export * from "./accountInfo";

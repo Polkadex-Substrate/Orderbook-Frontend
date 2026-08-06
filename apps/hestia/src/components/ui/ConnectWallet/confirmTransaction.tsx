@@ -12,12 +12,7 @@ import {
   Typography,
   truncateString,
 } from "@polkadex/ux";
-import {
-  RiAddLine,
-  RiExternalLinkLine,
-  RiFileCopyLine,
-  RiGasStationLine,
-} from "@remixicon/react";
+import { RiAddLine, RiFileCopyLine, RiGasStationLine } from "@remixicon/react";
 import {
   Dispatch,
   Fragment,
@@ -25,6 +20,7 @@ import {
   SetStateAction,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { useResizeObserver } from "usehooks-ts";
 import Link from "next/link";
@@ -63,6 +59,7 @@ export const ConfirmTransaction = ({
   openFeeModal,
   setOpenFeeModal,
 }: Props) => {
+  const [checked, setChecked] = useState(false);
   const { walletBalance = 0, selectedWallet } = useConnectWalletProvider();
 
   const { fee, hash, palletName, extrinsicName, loading, success } =
@@ -125,7 +122,10 @@ export const ConfirmTransaction = ({
     [selectedWallet?.address]
   );
 
-  const disabled = useMemo(() => !!error || !tokenFee, [error, tokenFee]);
+  const disabled = useMemo(
+    () => !!error || !tokenFee || !checked,
+    [error, tokenFee, checked]
+  );
 
   return (
     <Modal
@@ -240,6 +240,9 @@ export const ConfirmTransaction = ({
                     </div>
                   </GenericHorizontalItem>
                 )}
+                <GenericHorizontalItem label="Existential Amount">
+                  <Typography.Text>1 PDEX</Typography.Text>
+                </GenericHorizontalItem>
                 <Dropdown>
                   <Dropdown.Trigger
                     ref={ref}
@@ -336,29 +339,14 @@ export const ConfirmTransaction = ({
                     )}
                   </Dropdown.Content>
                 </Dropdown>
-                {error && (
+                {!actionLoading && error && (
                   <ErrorMessage className="p-3">
                     Your balance is not enough to pay the fee.
                   </ErrorMessage>
                 )}
               </div>
-              <div className="flex flex-col gap-3 px-3 pt-4">
-                <Link
-                  href="https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf"
-                  className="flex items-center gap-1"
-                  target="_blank"
-                >
-                  <Typography.Text appearance="secondary" bold>
-                    Terms and conditions
-                  </Typography.Text>
-                  <RiExternalLinkLine className="w-3 h-3 text-secondary" />
-                </Link>
-                <div className="overflow-hidden relative">
-                  <div className=" max-h-24 overflow-auto pb-6">
-                    <Terms />
-                  </div>
-                  <div className="absolute bottom-0 left-0 w-full h-[45px] bg-gradient-to-t from-level-0 to-transparent" />
-                </div>
+              <div className="px-3 pt-4">
+                <Terms checked={checked} setChecked={setChecked} />
               </div>
             </Interaction.Content>
             <Interaction.Footer>

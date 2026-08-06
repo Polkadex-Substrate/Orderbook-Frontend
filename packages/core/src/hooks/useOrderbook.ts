@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { decimalPlaces, getCurrentMarket } from "@orderbook/core/helpers";
+import { useEffect, useMemo, useState } from "react";
+import {
+  decimalPlaces,
+  getCurrentMarket,
+  mergeDuplicateOrders,
+} from "@orderbook/core/helpers";
+import { trimFloat } from "@polkadex/numericals";
 import { useQuery } from "@tanstack/react-query";
 import {
   MAX_DIGITS_AFTER_DECIMAL,
@@ -11,16 +16,18 @@ import { useOrderbookService } from "../providers/public/orderbookServiceProvide
 import { useSettingsProvider } from "../providers/public/settings";
 import { appsyncOrderbookService } from "../utils/orderbookService";
 
-const initialState = [
-  { size: 0.1, length: 1 },
-  { size: 0.01, length: 2 },
-  { size: 0.001, length: 3 },
-  { size: 0.0001, length: 4 },
-  { size: 0.00001, length: 5 },
-  { size: 0.000001, length: 6 },
-];
+export type DecimalSize = { size: number; length: number };
 
 export function useOrderbook(defaultMarket: string) {
+  const [initialState, setInitialState] = useState<DecimalSize[]>([
+    { size: 0.1, length: 1 },
+    { size: 0.01, length: 2 },
+    { size: 0.001, length: 3 },
+    { size: 0.0001, length: 4 },
+    { size: 0.00001, length: 5 },
+    { size: 0.000001, length: 6 },
+  ]);
+
   const [filterState, setFilterState] = useState("Order");
   const [sizeState, setSizeState] = useState(initialState[1]);
 
@@ -57,13 +64,27 @@ export function useOrderbook(defaultMarket: string) {
       onHandleError(errorMessage);
     },
     refetchOnMount: false,
+    refetchOnWindowFocus: true,
     refetchInterval: 30 * 1000, // 30s
   });
 
-  const [asks, bids] = [
-    sortArrayDescending(data?.asks ?? []),
-    sortArrayDescending(data?.bids ?? []),
-  ];
+  const [asks, bids] = useMemo(() => {
+    const askOrders = mergeDuplicateOrders(
+      (data?.asks || []).map((e) => [
+        +trimFloat({ value: e[0], digitsAfterDecimal: sizeState.length }),
+        +e[1],
+      ])
+    );
+
+    const bidOrders = mergeDuplicateOrders(
+      (data?.bids || []).map((e) => [
+        +trimFloat({ value: e[0], digitsAfterDecimal: sizeState.length }),
+        +e[1],
+      ])
+    );
+
+    return [sortArrayDescending(askOrders), sortArrayDescending(bidOrders)];
+  }, [data?.asks, data?.bids, sizeState.length]);
 
   const currentMarket = getCurrentMarket(list, defaultMarket);
 
@@ -81,12 +102,21 @@ export function useOrderbook(defaultMarket: string) {
     : MAX_DIGITS_AFTER_DECIMAL;
 
   useEffect(() => {
-    const precision = Math.min(
-      initialState.length - 1,
-      Math.max(1, pricePrecision - 1)
+    // Generate array from 1 to (pricePrecision + 1) & take last 5 elements only
+    setInitialState(
+      Array.from(
+        { length: pricePrecision + 1 },
+        (_, i): DecimalSize => ({
+          size: 1 / Math.pow(10, i + 1),
+          length: i + 1,
+        })
+      ).slice(-5)
     );
-    setSizeState(initialState[precision]);
-  }, [pricePrecision, setSizeState]);
+  }, [pricePrecision]);
+
+  useEffect(() => {
+    setSizeState(initialState.at(-2) ?? (initialState.at(-1) as DecimalSize));
+  }, [initialState]);
 
   return {
     isPriceUp,

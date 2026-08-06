@@ -14,32 +14,34 @@ export const Tickers = ({
   loading: boolean;
 }) => {
   return (
-    <div className="flex sticky bottom-0 justify-between items-center p-2 bg-level-1 border-t border-primary">
-      <ul className=" list-none flex items-center gap-2">
-        {tickers.map((marketTicker) => {
-          const active = marketTicker === activeTicker;
-          if (loading)
-            return <Skeleton key={marketTicker} loading className="w-10 h-5" />;
-          return (
-            <li
-              key={marketTicker}
-              role="button"
-              onClick={() => onChangeTicker(marketTicker)}
-              className={classNames(
-                active && "bg-level-4",
-                "px-1 rounded-sm uppercase hover:bg-level-2 cursor-pointer transition-colors duration-300"
-              )}
-            >
-              <Typography.Text
-                size="xs"
-                bold
-                appearance={active ? "base" : "secondary"}
-              >
-                {marketTicker}
-              </Typography.Text>
-            </li>
-          );
-        })}
+    <div className="flex w-full sticky bottom-0 z-[2] justify-between items-center p-2 bg-level-1 border-t border-primary">
+      <ul className="list-none flex items-center gap-2">
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} loading className="w-10 h-5" />
+            ))
+          : tickers.map((marketTicker) => {
+              const active = marketTicker === activeTicker;
+              return (
+                <li
+                  key={marketTicker}
+                  role="button"
+                  onClick={() => onChangeTicker(marketTicker)}
+                  className={classNames(
+                    active && "bg-level-4",
+                    "px-1 rounded-sm uppercase hover:bg-level-2 cursor-pointer transition-colors duration-300"
+                  )}
+                >
+                  <Typography.Text
+                    size="xs"
+                    bold
+                    appearance={active ? "base" : "secondary"}
+                  >
+                    {marketTicker}
+                  </Typography.Text>
+                </li>
+              );
+            })}
       </ul>
     </div>
   );

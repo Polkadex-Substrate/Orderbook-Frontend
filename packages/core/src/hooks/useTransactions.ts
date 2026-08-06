@@ -61,6 +61,7 @@ export function useTransactions() {
       },
       enabled: Boolean(mainAddress?.length > 0),
       onError: onHandleError,
+      refetchInterval: 30 * 1000,
     }
   );
 

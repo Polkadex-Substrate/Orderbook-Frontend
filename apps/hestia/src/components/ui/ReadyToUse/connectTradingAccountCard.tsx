@@ -25,7 +25,7 @@ export const ConnectTradingAccountCard = ({
           onClick={onOpenInteraction}
           className="flex items-center gap-2 p-3 hover:bg-level-1 duration-300 transition-colors rounded-md"
         >
-          <Icon name="Wallet" className="w-7 h-7 p-1" />
+          <Icon name="Wallet" className="w-6 h-6 p-1" />
 
           <Typography.Text>
             Trading account{" "}

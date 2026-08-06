@@ -18,6 +18,7 @@ import {
   AddProxyAccountArgs,
   useCall,
   useTransactionFeeModal,
+  KeyringTypeProxy,
 } from "@orderbook/core/hooks";
 import { RiEyeOffLine, RiEyeLine } from "@remixicon/react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
@@ -35,12 +36,6 @@ import {
 
 import { ConfirmTransaction } from "./confirmTransaction";
 const { googleDriveStore } = enabledFeatures;
-
-const initialValues = {
-  name: generateUsername({ useRandomNumber: false }),
-  mnemonic: mnemonicGenerate(),
-};
-const initialState = "";
 
 export const NewTradingAccount = ({
   onClose,
@@ -65,11 +60,16 @@ export const NewTradingAccount = ({
   connectGDriveLoading?: boolean;
   gDriveReady?: boolean;
 }) => {
+  const initialValues = {
+    name: generateUsername({ useRandomNumber: false }),
+    mnemonic: mnemonicGenerate(),
+  };
+  const initialState = "";
+
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const [show, setShow] = useState(false);
-  const [active, setActive] =
-    useState<AddProxyAccountArgs["importType"]>("Local");
+  const [active, setActive] = useState<KeyringTypeProxy["importType"]>("Local");
 
   const isLoading = false;
   const error = false;

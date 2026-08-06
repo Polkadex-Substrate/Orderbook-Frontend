@@ -61,7 +61,7 @@ export const USER_EVENTS = {
 
 export type UserEvents = keyof typeof USER_EVENTS;
 
-export const ErrorMessages = (existential = "0") => ({
+export const ErrorMessages = (existential = "0", minAmount = "0") => ({
   OCEX_ALREADY_REGISTERED: "ocex.MainAccountAlreadyRegistered: ",
 
   CHECK_VALID_AMOUNT: "Use a valid amount instead",
@@ -73,7 +73,23 @@ export const ErrorMessages = (existential = "0") => ({
   WHITESPACE_NOT_ALLOWED: "Whitespace not allowed",
   MUST_BE_A_NUMBER: "Must be a number",
   TOO_SMALL: "Too Small!",
+  ZERO: "The amount must be greater than 0",
+  MIN: `The amount cannot be less than ${minAmount}`,
+  EXISTENTIAL_DEPOSIT: `You need to keep some amount in source chain to cover the existential deposit`,
+  CONNECT_WALLET: "Please connect your account to Orderbook",
 });
+
+export const CrossChainError = {
+  SOURCE_WALLET: "Please choose source account first",
+  DESTINATION_WALLET: "Please choose destination account",
+  SOURCE_FEE: "Insufficient balance to pay the transaction fee at source chain",
+  NOT_ENOUGH_LIQUIDITY:
+    "Not enough PDEX in the destination account. Please transfer 1+ PDEX first.",
+  NOT_ENOUGH_LIQUIDITY_WITHDRAW: (asset: string) =>
+    `Insufficient liquidity to convert ${asset} tokens to PDEX for fee payment.`,
+  AUTO_SWAP: (swapAmount: string, ticker: string, withdraw?: boolean) =>
+    `Please transfer more than ${swapAmount} ${ticker} since Autoswap is required ${withdraw ? "to pay the fee" : ""}`,
+};
 
 export const MAX_DIGITS_AFTER_DECIMAL = 8;
 export const MIN_DIGITS_AFTER_DECIMAL = 2;
@@ -88,7 +104,15 @@ export const TRADE_HISTORY_PER_PAGE_LIMIT = 25;
 export const RECENT_TRADES_LIMIT = 30;
 export const DEFAULT_BATCH_LIMIT = 15;
 
+export const CUSTOM_ADDRES_NAME = "Custom address";
 export const OTHER_ASSET_EXISTENTIAL = 0.00000001;
+export const THEA_AUTOSWAP = 1.5;
+export const THEA_WITHDRAW_FEE = 1.1;
+export const GENESIS = [
+  "0x3920bcb4960a1eef5580cd5367ff3f430eef052774f78468852f7b9cb39f8a3c",
+  "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3",
+  "0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9",
+];
 
 export const PALLET_ADDRESS =
   "esoEt6uZ3GuFV8EzKB2EAREe3KE9WuRVfmhK1RRtwffY78ArH";
@@ -105,3 +129,6 @@ export const START_EPOCH = 1;
 export const EVM_TOKENS = ["GLMR"];
 
 export const MINIMUM_PDEX_REQUIRED = 1;
+export const ESTIMATED_FEE = 0.02;
+
+export const SS58_DEFAULT_FORMAT = 42;

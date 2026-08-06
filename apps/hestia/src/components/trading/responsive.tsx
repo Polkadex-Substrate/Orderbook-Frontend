@@ -29,7 +29,7 @@ export function Responsive({ id }: { id: string }) {
         <Orderbook id={id} />
       </Tabs.Content>
       <Tabs.Content value="markets" className="flex-1 flex flex-col h-full">
-        <Markets />
+        <Markets market={id} />
       </Tabs.Content>
       <Tabs.Content
         value="recentTrades"

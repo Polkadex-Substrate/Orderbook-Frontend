@@ -2,18 +2,23 @@
 
 import { useExtensionAccounts, useExtensions } from "@polkadex/react-providers";
 import { Fragment, useCallback, useMemo } from "react";
-import { Interactable, useInteractableProvider } from "@polkadex/ux";
+import {
+  Interactable,
+  useInteractableProvider,
+  ExtensionAccounts,
+  ConnectWallet,
+} from "@polkadex/ux";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { TradeAccount } from "@orderbook/core/providers/types";
+import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { useProfile } from "@orderbook/core/providers/user/profile";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ConnectTradingAccount } from "../ConnectWallet/connectTradingAccount";
 import { ImportTradingAccount } from "../ConnectWallet/importTradingAccount";
 import { ImportTradingAccountMnemonic } from "../ConnectWallet/importTradingAccountMnemonic";
 import { RemoveTradingAccount } from "../ConnectWallet/removeTradingAccount";
 import { ConnectTradingAccountCard } from "../ReadyToUse/connectTradingAccountCard";
-import { ExtensionAccounts } from "../ConnectWallet/extensionAccounts";
-import { Authorization } from "../ConnectWallet/authorization";
-import { ConnectWallet } from "../ConnectWallet/connectWallet";
 import { UnlockAccount } from "../ReadyToUse/unlockAccount";
 
 import { InteractableProps } from ".";
@@ -42,7 +47,7 @@ const TriggerCompontent = ({ onClose }: { onClose: () => void }) => {
       installedExtensions={extensionsStatus}
       onConnectProvider={(e) => onSelectExtension?.(e)}
       onBack={onClose}
-      onConnectCallback={() => setPage("Authorization")}
+      onConnectCallback={() => setPage("ConnectFundingWallets")}
     >
       <ConnectTradingAccountCard
         tradingAccountLentgh={localTradingAccounts?.length ?? 0}
@@ -53,6 +58,8 @@ const TriggerCompontent = ({ onClose }: { onClose: () => void }) => {
 };
 
 const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
+  const path = usePathname();
+  const router = useRouter();
   const {
     selectedExtension,
     selectedWallet,
@@ -80,7 +87,10 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
     gDriveReady,
     onRemoveGoogleDrive,
     removeGoogleDriveLoading,
+    browserAccountPresent,
   } = useConnectWalletProvider();
+  const { onToogleConnectExtension } = useSettingsProvider();
+  const { allAccounts } = useProfile();
 
   const { setPage, onReset } = useInteractableProvider();
   const sourceId = selectedExtension?.id;
@@ -89,15 +99,32 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
     useExtensionAccounts();
 
   const walletsFiltered = useMemo(
-    () => extensionAccounts?.filter(({ source }) => source === sourceId),
+    () =>
+      extensionAccounts?.filter(
+        ({ source, type }) => source === sourceId && type === "sr25519"
+      ),
     [extensionAccounts, sourceId]
   );
 
-  const onRedirect = useCallback(
-    () =>
-      selectedWallet ? onNext(hasAccount ? "ExistingUser" : "NewUser") : null,
-    [selectedWallet, onNext, hasAccount]
-  );
+  const onRedirect = useCallback(() => {
+    if (!selectedWallet) return null;
+
+    if (browserAccountPresent || !hasAccount) {
+      if (path === "/") router.push("/trading/PDEXUSDT");
+      onToogleConnectExtension(false);
+      return;
+    }
+
+    return onNext("ExistingUser");
+  }, [
+    hasAccount,
+    onNext,
+    onToogleConnectExtension,
+    browserAccountPresent,
+    selectedWallet,
+    path,
+    router,
+  ]);
 
   const availableOnDevice = useMemo(
     () =>
@@ -107,25 +134,25 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
     [tempTrading?.address, localTradingAccounts]
   );
 
+  // Used only for removing trading account from blockchain
+  const choosenfundingWallet = useMemo(() => {
+    const mainAddress = allAccounts.find(
+      (a) => a.tradeAddress === tempTrading?.address
+    )?.mainAddress;
+
+    if (!mainAddress) return undefined;
+
+    return extensionAccounts.find((e) => e.address === mainAddress);
+  }, [allAccounts, extensionAccounts, tempTrading?.address]);
+
   return (
     <Fragment>
-      <Interactable.Card pageName="Authorization">
-        <Authorization
-          onAction={async () =>
-            await connectExtensionAccounts(selectedExtension?.id as string)
-          }
-          extensionIcon={selectedExtension?.id as string}
-          extensionName={selectedExtension?.title}
-          onActionCallback={() => setPage("ConnectFundingWallets")}
-          onClose={onReset}
-        />
-      </Interactable.Card>
       <Interactable.Card pageName="ConnectFundingWallets">
         <ExtensionAccounts
           extensionAccounts={walletsFiltered}
           loading={!!mainProxiesLoading}
           success={!!mainProxiesSuccess}
-          onSelectExtensionAccount={(e) => onSelectWallet?.(e)}
+          onSelectExtensionAccount={async (e) => await onSelectWallet?.(e)}
           onTryAgain={() =>
             selectedExtension && onSelectExtension?.(selectedExtension)
           }
@@ -134,6 +161,11 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
           }
           onClose={onReset}
           onRedirect={onRedirect}
+          onPermission={async () =>
+            await connectExtensionAccounts(selectedExtension?.id as string)
+          }
+          extensionIcon={selectedExtension?.id as string}
+          extensionName={selectedExtension?.title}
         />
       </Interactable.Card>
       <Interactable.Card pageName="UnlockBrowserAccount">
@@ -224,6 +256,7 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
           onCancel={() => setPage("ConnectTradingAccount")}
           enabledExtensionAccount
           loading={removeGoogleDriveLoading}
+          fundWallet={choosenfundingWallet}
         />
       </Interactable.Card>
     </Fragment>

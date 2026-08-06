@@ -44,6 +44,7 @@ const TriggerComponent = ({ onClose, onNext }: InteractableProps) => {
             : "InsufficientBalance"
         )
       }
+      walletBalance={walletBalance || 0}
       onReadMore={() =>
         window.open(
           "https://docs.polkadex.trade/orderbookPolkadexFAQHowToTradeStep3",

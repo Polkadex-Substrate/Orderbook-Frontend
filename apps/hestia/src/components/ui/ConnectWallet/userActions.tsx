@@ -1,21 +1,24 @@
 import { Interaction } from "@polkadex/ux";
+import { ExtensionAccount } from "@polkadex/react-providers";
 
 import { GenericHorizontalCard } from "../ReadyToUse";
 
 export const UserActions = ({
   onClose,
-  onNewTradingAccount,
+  onCreateTradingAccount,
   onImportTradingAccount,
   onTradingAccountList,
   fundWalletIsPresent,
   registeredProxies,
+  fundWallet,
 }: {
   onClose: () => void;
-  onNewTradingAccount: () => void;
+  onCreateTradingAccount: (isExtensionProxy: boolean) => void;
   onImportTradingAccount: () => void;
   onTradingAccountList: () => void;
   fundWalletIsPresent: boolean;
   registeredProxies: string[];
+  fundWallet?: ExtensionAccount;
 }) => {
   return (
     <Interaction className="w-full">
@@ -23,11 +26,20 @@ export const UserActions = ({
         Options
       </Interaction.Title>
       <Interaction.Content className="flex flex-col gap-2 flex-1">
+        {registeredProxies.length > 0 &&
+          !registeredProxies.includes(fundWallet?.address as string) && (
+            <GenericHorizontalCard
+              title="Register funding account"
+              icon="Wallet"
+              label="NEW"
+              onClick={() => onCreateTradingAccount(true)}
+            />
+          )}
         {fundWalletIsPresent && (
           <GenericHorizontalCard
             title="Create new trading account"
             icon="Plus"
-            onClick={onNewTradingAccount}
+            onClick={() => onCreateTradingAccount(false)}
           />
         )}
         <GenericHorizontalCard

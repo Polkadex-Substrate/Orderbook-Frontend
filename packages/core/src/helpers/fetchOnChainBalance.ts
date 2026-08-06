@@ -1,7 +1,6 @@
 import { ApiPromise } from "@polkadot/api";
 import BigNumber from "bignumber.js";
 import { UNIT_BN } from "@orderbook/core/constants";
-import { Codec } from "@polkadot/types/types";
 
 import { isAssetPDEX } from "./isAssetPDEX";
 
@@ -16,14 +15,17 @@ export const fetchOnChainBalance = async (
   if (isAssetPDEX(assetId)) {
     const res = await api.query.system.account(address);
     const balanceJson: BalanceJson = res.toJSON() as BalanceJson;
-    return new BigNumber(balanceJson?.data?.free || 0)
+    return new BigNumber(
+      balanceJson?.data?.free - balanceJson?.data?.frozen || 0
+    )
       .dividedBy(UNIT_BN)
       .toNumber();
   } else {
     const res = await api.query.assets.account(assetId, address);
+    const asset = await api.query.assets.metadata(assetId);
     const balanceJson: any = res.toJSON();
     return new BigNumber(balanceJson?.balance || "0")
-      .dividedBy(UNIT_BN)
+      .dividedBy(new BigNumber(Math.pow(10, asset.toJSON().decimals as number)))
       .toNumber();
   }
 };
@@ -33,31 +35,15 @@ export const fetchOnChainBalances = async (
   assetIds: string[],
   address: string
 ): Promise<Map<string, number>> => {
-  const queries = assetIds.map((id) => getBalanceQuery(api, id, address));
-  const rawRes = await Promise.all(queries);
+  const rawRes = assetIds.map((id) => fetchOnChainBalance(api, id, address));
+  const res = await Promise.all(rawRes);
+
   const balances = new Map<string, number>();
-  // order is preserved in Promise.all
-  rawRes.forEach((item, index) => {
-    balances.set(assetIds[index], formatBalanceResult(item));
+  res.forEach((item, index) => {
+    balances.set(assetIds[index], item);
   });
+
   return balances;
-};
-
-const getBalanceQuery = (api: ApiPromise, assetId: string, address: string) => {
-  if (isAssetPDEX(assetId)) {
-    return api.query.system.account(address);
-  } else {
-    return api.query.assets.account(assetId, address);
-  }
-};
-
-const formatBalanceResult = (res: Codec): number => {
-  const balanceJson = res.toJSON();
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  return new BigNumber(balanceJson?.balance || balanceJson?.data?.free || "0")
-    .dividedBy(UNIT_BN)
-    .toNumber();
 };
 
 export type BalanceJson = {

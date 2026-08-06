@@ -25,9 +25,7 @@ export const GenericSelectCard = ({
       )}
     >
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5">
-          <Icon name={icon} />
-        </div>
+        <Icon name={icon} className="w-6 h-6" />
         <Typography.Text appearance="primary">{title}</Typography.Text>
       </div>
       <Checkbox.Solid

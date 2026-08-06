@@ -43,7 +43,7 @@ const actionKeys = ["date", "price", "amount"];
 export const OpenOrders = forwardRef<HTMLDivElement, Props>(
   ({ maxHeight, searchTerm }, ref) => {
     const { width } = useWindowSize();
-    const { selectedAccount } = useConnectWalletProvider();
+    const { selectedTradingAccount } = useConnectWalletProvider();
     const { mutateAsync: cancelOrder } = useCancelOrder();
     const { mutateAsync: onCancelAllOrders } = useCancelAllOrders();
 
@@ -66,7 +66,7 @@ export const OpenOrders = forwardRef<HTMLDivElement, Props>(
 
     const onCancelOrder = async (payload: CancelOrderArgs | null) => {
       if (!payload) return;
-      if (selectedAccount?.isLocked) {
+      if (selectedTradingAccount?.account?.isLocked) {
         setShowPassword(true);
         setOrderPayload(payload);
       } else {
@@ -149,8 +149,9 @@ export const OpenOrders = forwardRef<HTMLDivElement, Props>(
     };
 
     useEffect(() => {
-      if (selectedAccount) tryUnlockTradeAccount(selectedAccount);
-    }, [selectedAccount]);
+      if (selectedTradingAccount?.account)
+        tryUnlockTradeAccount(selectedTradingAccount.account);
+    }, [selectedTradingAccount?.account]);
 
     useEffect(() => {
       if (!responsiveView && !!responsiveState) {
@@ -180,7 +181,7 @@ export const OpenOrders = forwardRef<HTMLDivElement, Props>(
             <UnlockAccount
               onClose={() => setShowPassword(false)}
               onAction={async () => await onCancelOrder(orderPayload)}
-              tempBrowserAccount={selectedAccount}
+              tempBrowserAccount={selectedTradingAccount?.account}
             />
           </Modal.Content>
         </Modal>

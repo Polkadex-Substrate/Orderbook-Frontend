@@ -45,6 +45,8 @@ type ToastActions = {
 };
 
 export type SettingContextProps = SettingState & {
+  fundWallet: boolean;
+  onToogleFundWallet: (value?: boolean) => void;
   onToggleChartRebuild: () => void;
   onToggleMarketSelector: () => void;
   onToggleOpenOrdersPairsSwitcher: (value: boolean) => void;

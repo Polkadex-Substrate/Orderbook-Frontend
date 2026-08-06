@@ -1,6 +1,7 @@
 "use client";
 
 import { Table, GenericMessage } from "@polkadex/ux";
+import BigNumber from "bignumber.js";
 import { useWindowSize } from "usehooks-ts";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
@@ -19,6 +20,7 @@ import { useAssets, useTransactions } from "@orderbook/core/hooks";
 import { TransferHistory, getChainFromTicker } from "@orderbook/core/helpers";
 import { useExtensionAccounts } from "@polkadex/react-providers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
+import { UNIT_BN } from "@orderbook/core/constants";
 
 import { DepositData, columns } from "./columns";
 import { Filters } from "./Filters";
@@ -76,7 +78,7 @@ export const History = ({
           stid: e.hash,
           amount: Number(e.amount),
           status: e.success ? "CONFIRMED" : "PENDING",
-          fee: Number(e.fee) / 100000000000,
+          fee: new BigNumber(Number(e.fee)).dividedBy(UNIT_BN).toNumber(),
           isReverted: false,
           timestamp: new Date(e.block_timestamp * 1000),
           token: {

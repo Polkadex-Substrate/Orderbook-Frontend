@@ -57,19 +57,27 @@ export type ExportTradeAccountProps = {
   password?: string;
 };
 
+export enum TradeAccountType {
+  Extension,
+  Keyring,
+}
+export type SelectedTradingAccount = {
+  account?: KeyringPair;
+  type: TradeAccountType;
+};
+
 type ConnectWalletState = {
   // active extension account
   // TODO: rename to selectedExtensionAccount
   selectedWallet?: ExtensionAccount;
   // active trading account
-  // TODO: rename to selectedTradingAccount
-  selectedAccount?: KeyringPair; // TODO: Remove
+  selectedTradingAccount?: SelectedTradingAccount;
   // selected extension
   selectedExtension?: (typeof ExtensionsArray)[0];
   // list of all trading accounts in browser
   localTradingAccounts: KeyringPair[];
   // TODO: rename to onSelectExtensionAccount
-  onSelectWallet: (payload: ExtensionAccount) => void;
+  onSelectWallet: (payload: ExtensionAccount) => Promise<void>;
   onSelectTradingAccount: (value: KeyringPair) => void;
   // TODO: redefine type in polkadex-ts
   onSelectExtension: (
@@ -119,8 +127,10 @@ type ConnectWalletState = {
   mainProxiesLoading: boolean;
   mainProxiesSuccess: boolean;
   importFromMnemonicError: unknown;
+  // TODO: Rename to tradingAccountPresent
   browserAccountPresent: boolean;
   extensionAccountPresent: boolean;
+  // TODO: Rename to hasProxyAccounts
   hasAccount: boolean;
 
   onBackupGoogleDrive: (value: ExportTradeAccountProps) => Promise<void>;
@@ -241,9 +251,9 @@ export const ConnectWalletProvider = ({
       .map(({ tradeAddress }) => tradeAddress);
   }, [allProxiesAccounts, selectedWallet?.address, tempTrading?.address]);
 
-  const onSelectExtensionAccount = (payload: ExtensionAccount) => {
+  const onSelectExtensionAccount = async (payload: ExtensionAccount) => {
     const mainAddress = payload.address;
-    onUserSelectMainAddress({ mainAddress });
+    await onUserSelectMainAddress({ mainAddress });
   };
 
   const onSelectExtension = (
@@ -383,19 +393,35 @@ export const ConnectWalletProvider = ({
     [localAddresses, wallet, isReady]
   );
 
-  const selectedAccount = useMemo(() => {
+  const selectedTradingAccount = useMemo(() => {
     const selected = selectedAddresses?.tradeAddress;
+
+    if (selected === selectedWallet?.address) {
+      return { type: TradeAccountType.Extension };
+    }
+
     const availableLocalAccount = localTradingAccounts?.find(
       (e) => e?.address === selectedAddresses?.tradeAddress
     );
 
     if (availableLocalAccount && selected && isReady)
-      return availableLocalAccount;
-  }, [localTradingAccounts, isReady, selectedAddresses?.tradeAddress]);
+      return {
+        account: availableLocalAccount,
+        type: TradeAccountType.Keyring,
+      };
+  }, [
+    localTradingAccounts,
+    isReady,
+    selectedAddresses?.tradeAddress,
+    selectedWallet?.address,
+  ]);
 
   const browserAccountPresent = useMemo(
-    () => !!Object.keys(selectedAccount ?? {})?.length,
-    [selectedAccount]
+    () =>
+      selectedTradingAccount?.type === TradeAccountType.Extension
+        ? true
+        : !!Object.keys(selectedTradingAccount?.account ?? {})?.length,
+    [selectedTradingAccount]
   );
 
   const onSelectTradingAccount = useCallback(
@@ -451,7 +477,7 @@ export const ConnectWalletProvider = ({
         browserAccountPresent,
         extensionAccountPresent,
         selectedWallet,
-        selectedAccount,
+        selectedTradingAccount,
         selectedExtension,
         localTradingAccounts,
         onSelectExtension,
@@ -531,7 +557,7 @@ export const ConnectWalletProvider = ({
 
 export const Context = createContext<ConnectWalletState>({
   localTradingAccounts: [],
-  onSelectWallet: () => {},
+  onSelectWallet: async () => {},
   onSelectTradingAccount: () => {},
   onSelectExtension: () => {},
   onResetWallet: () => {},

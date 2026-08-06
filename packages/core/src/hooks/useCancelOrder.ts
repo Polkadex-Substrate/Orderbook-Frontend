@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { useUserAccounts } from "@polkadex/react-providers";
 import {
-  createCancelOrderPayloadSigned,
   isAssetPDEX,
   isValidAddress,
+  signPayload,
 } from "@orderbook/core/helpers";
 
 import { appsyncOrderbookService } from "../utils/orderbookService";
@@ -22,6 +22,7 @@ export const useCancelOrder = () => {
   const { onHandleError, onHandleAlert, onHandleInfo } = useSettingsProvider();
   const {
     selectedAddresses: { mainAddress, tradeAddress },
+    getSigner,
   } = useProfile();
   const { api } = useNativeApi();
 
@@ -30,25 +31,42 @@ export const useCancelOrder = () => {
       if (!api?.isConnected)
         throw new Error("You are not connected to blockchain");
 
-      const keyringPair = wallet.getPair(tradeAddress);
-      if (!isValidAddress(tradeAddress) || !keyringPair)
-        throw new Error("Invalid Trading Account");
-
-      if (keyringPair?.isLocked)
-        throw new Error("Please unlock your account first");
-
       onHandleInfo?.("Cancelling order...");
 
       const baseAsset = isAssetPDEX(base) ? "PDEX" : base;
       const quoteAsset = isAssetPDEX(quote) ? "PDEX" : quote;
+      const pair = `${baseAsset}-${quoteAsset}`;
 
-      const { pair, signature } = createCancelOrderPayloadSigned(
-        api,
-        keyringPair,
-        orderId,
-        baseAsset,
-        quoteAsset
-      );
+      // Check if the order needs to be cancelled by the extension
+      const isSignedByExtension =
+        tradeAddress?.trim().length === 0 || mainAddress === tradeAddress;
+
+      let signature: { Sr25519: string };
+      if (isSignedByExtension) {
+        const signer = getSigner(mainAddress);
+        if (!signer) throw new Error("No signer for main account found");
+        const result = await signer.signRaw({
+          address: mainAddress,
+          data: orderId.slice(2),
+        });
+        signature = { Sr25519: result?.signature.slice(2) };
+      } else {
+        if (!isValidAddress(tradeAddress))
+          throw new Error("Invalid trading account");
+
+        const keyringPair = wallet.getPair(tradeAddress);
+
+        if (!keyringPair) throw new Error("Invalid trading account");
+
+        if (keyringPair?.isLocked)
+          throw new Error("Please unlock your account first");
+
+        signature = signPayload(
+          api,
+          keyringPair,
+          api.createType("order_id", orderId)
+        );
+      }
 
       const payload = JSON.stringify({
         CancelOrder: [orderId, mainAddress, tradeAddress, pair, signature],

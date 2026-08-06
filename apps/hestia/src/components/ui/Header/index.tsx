@@ -15,6 +15,7 @@ import {
 } from "@remixicon/react";
 
 import { ConnectWalletInteraction } from "../ConnectWalletInteraction";
+import { ConnectTradingInteraction } from "../ConnectWalletInteraction/connectTradingInteraction";
 
 import { HeaderLink } from "./headerLink";
 import { Profile } from "./Profile";
@@ -22,17 +23,21 @@ import { ResponsiveMenuModal } from "./responsiveMenuModal";
 import { NotificationsModal } from "./NotificationsModal";
 import { FundWalletModal } from "./fundWalletModal";
 
+const { defaultTheaSourceChain, defaultTheaDestinationChain } = defaultConfig;
+
 export const Header = forwardRef<HTMLDivElement>((_, ref) => {
   const [menu, setMenu] = useState(false);
   const [notifications, setNotifications] = useState(false);
-  const [fundWallet, setFundWallet] = useState(false);
   const {
+    fundWallet,
     connectExtension,
     onToogleConnectExtension,
     notifications: allNotifications,
+    onToogleFundWallet,
   } = useSettingsProvider();
   const lastUsedMarketUrl = getMarketUrl();
   const isRewardDisabled = !defaultConfig.enableLmp;
+  const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
 
   const unreadNotifications = useMemo(() => {
     return allNotifications.filter((e) => e.active).length;
@@ -42,11 +47,15 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
     <Fragment>
       <ResponsiveMenuModal open={menu} onOpenChange={setMenu} />
       <ConnectWalletInteraction />
+      <ConnectTradingInteraction />
       <NotificationsModal
         open={notifications}
         onOpenChange={setNotifications}
       />
-      <FundWalletModal open={fundWallet} onOpenChange={setFundWallet} />
+      <FundWalletModal
+        open={fundWallet}
+        onOpenChange={() => onToogleFundWallet()}
+      />
       <header
         ref={ref}
         className="flex justify-between items-center px-3 flex-wrap border-b border-primary sticky top-0 left-0 bg-backgroundBase z-10"
@@ -61,6 +70,12 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
           <div className="gap-5 hidden items-center lg:!flex">
             <HeaderLink.Single href={lastUsedMarketUrl}>
               Trade
+            </HeaderLink.Single>
+            <HeaderLink.Single
+              href={`/thea?from=${defaultTheaSourceChain}&to=${defaultTheaDestinationChain}`}
+              disabled={isBridgeDisabled}
+            >
+              Bridge
             </HeaderLink.Single>
             <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
               Rewards
@@ -85,6 +100,10 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             </HeaderLink.Dropdown>
             <HeaderLink.Dropdown
               items={[
+                {
+                  href: "https://pdexanalytics.com",
+                  label: "Analytics",
+                },
                 {
                   href: "https://github.com/Polkadex-Substrate/Docs/blob/master/Polkadex_Terms_of_Use.pdf",
                   label: "Terms of use",
@@ -154,7 +173,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
           onClick={() => onToogleConnectExtension(!connectExtension)}
           onOpenMenu={() => setMenu(true)}
           onOpenNotifications={() => setNotifications(true)}
-          onOpenFundWallet={() => setFundWallet(true)}
+          onOpenFundWallet={() => onToogleFundWallet(true)}
         />
       </header>
     </Fragment>

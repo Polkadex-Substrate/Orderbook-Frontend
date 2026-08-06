@@ -1,8 +1,9 @@
 import { Button, Drawer } from "@polkadex/ux";
 import { Fragment, useEffect, useState, forwardRef } from "react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
+
+import ConnectAccount from "./connectAccount";
 
 import { PlaceOrder } from ".";
 
@@ -17,7 +18,6 @@ export const ResponsiveInteraction = forwardRef<
 
   const { browserAccountPresent, extensionAccountPresent } =
     useConnectWalletProvider();
-  const { onToogleConnectTrading } = useSettingsProvider();
 
   useEffect(() => {
     if (!isResponsive && (buy || sell)) {
@@ -35,7 +35,7 @@ export const ResponsiveInteraction = forwardRef<
       </Drawer>
       <div
         ref={ref}
-        className="flex flex-col gap-4 bg-level-1 border-t border-primary py-3 px-2 fixed bottom-0 left-0 w-full z-[2]"
+        className="flex flex-col gap-1 bg-level-1 pt-2 pb-3 border-t border-primary px-2 fixed bottom-0 left-0 w-full z-[2]"
       >
         <ResponsiveProfile
           browserAccountPresent={browserAccountPresent}
@@ -59,13 +59,7 @@ export const ResponsiveInteraction = forwardRef<
             </Button.Solid>
           </div>
         ) : (
-          <Button.Solid
-            type="button"
-            appearance="secondary"
-            onClick={() => onToogleConnectTrading(true)}
-          >
-            Connect Trading Account
-          </Button.Solid>
+          <ConnectAccount />
         )}
       </div>
     </Fragment>

@@ -36,14 +36,14 @@ export const ResponsiveTable = ({
       </Drawer.Content>
       <Drawer.Footer className="flex flex-col gap-2 p-4">
         <Button.Solid asChild>
-          <Link href={`/transfer/${ticker}`}>Transfer</Link>
+          <Link href={`/transfer/${ticker}?type=transfer`}>Transfer</Link>
         </Button.Solid>
         <Button.Solid appearance="secondary" asChild>
           <Link
             href={{
-              pathname: "https://thea.polkadex.trade/withdraw",
-              query: chainName && {
-                chain: encodeURIComponent(chainName),
+              pathname: "/send-and-receive",
+              query: {
+                type: "withdraw",
               },
             }}
           >
@@ -53,10 +53,7 @@ export const ResponsiveTable = ({
         <Button.Solid appearance="secondary" asChild>
           <Link
             href={{
-              pathname: "https://thea.polkadex.trade/",
-              query: chainName && {
-                chain: encodeURIComponent(chainName),
-              },
+              pathname: "/send-and-receive",
             }}
           >
             Deposit

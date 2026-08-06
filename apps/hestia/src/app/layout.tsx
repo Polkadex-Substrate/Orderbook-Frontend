@@ -1,6 +1,7 @@
 import "@/styles/globals.scss";
 import "@polkadex/ux/dist/index.css";
 import { ReactNode } from "react";
+import { Metadata } from "next";
 import classNames from "classnames";
 import { Roboto } from "next/font/google";
 
@@ -9,6 +10,19 @@ const font = Roboto({
   weight: ["100", "300", "400", "500", "700", "900"],
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: "Polkadex Orderbook || A fully decentralized exchange platform",
+  description: "A fully decentralized exchange platform",
+  keywords: [
+    "trading",
+    "crypto",
+    "orderbook",
+    "polkadex",
+    "decentralized",
+    "exchange",
+  ],
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

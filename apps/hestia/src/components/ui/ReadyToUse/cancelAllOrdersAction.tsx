@@ -26,10 +26,10 @@ export const CancelAllOrdersAction = ({
   const [state, setState] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [orderPayload, setOrderPayload] = useState<string>("");
-  const { selectedAccount } = useConnectWalletProvider();
+  const { selectedTradingAccount } = useConnectWalletProvider();
 
   const onCancelAllOrders = async (payload: string) => {
-    if (selectedAccount?.isLocked) {
+    if (selectedTradingAccount?.account?.isLocked) {
       setShowPassword(true);
       setOrderPayload(payload);
     } else {
@@ -48,7 +48,7 @@ export const CancelAllOrdersAction = ({
           <UnlockAccount
             onClose={() => setShowPassword(false)}
             onAction={async () => await onCancel(orderPayload)}
-            tempBrowserAccount={selectedAccount}
+            tempBrowserAccount={selectedTradingAccount?.account}
           />
         </Modal.Content>
       </Modal>

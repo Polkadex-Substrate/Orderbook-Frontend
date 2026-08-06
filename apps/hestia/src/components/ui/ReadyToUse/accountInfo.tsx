@@ -9,11 +9,13 @@ export const AccountInfo = ({
   address,
   ticker,
   balance,
+  isBalanceFetching,
   children,
 }: PropsWithChildren<{
   name?: string;
   address?: string;
   ticker: string;
+  isBalanceFetching: boolean;
   balance: string | number;
 }>) => {
   const shortAddress = address && truncateString(address);
@@ -24,7 +26,7 @@ export const AccountInfo = ({
           <strong>{name}</strong> {shortAddress}
         </InlineAccountCard>
       )}
-      <Skeleton loading={!ticker} className="h-auto max-w-20">
+      <Skeleton loading={isBalanceFetching} className="h-auto max-w-20">
         <Typography.Text
           appearance="primary"
           size="xs"

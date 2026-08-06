@@ -43,7 +43,9 @@ export const fetchAllFromAppSync = async (
   let fullResponse: any[] = [];
   let nextToken = null;
   do {
-    const res = await sendQueryToAppSync({
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const res: any = await sendQueryToAppSync({
       query,
       variables: nextToken ? { ...variables, nextToken } : variables,
     });

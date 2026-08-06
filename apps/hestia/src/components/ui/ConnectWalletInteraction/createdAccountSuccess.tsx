@@ -25,7 +25,7 @@ const TriggerComponent = ({ onClose }: { onClose: () => void }) => {
   const {
     onResetTempMnemonic,
     onExportTradeAccount,
-    selectedAccount,
+    selectedTradingAccount,
     onSetTempTrading,
   } = useConnectWalletProvider();
 
@@ -37,7 +37,7 @@ const TriggerComponent = ({ onClose }: { onClose: () => void }) => {
   const { setPage } = useInteractableProvider();
   return (
     <TradingAccountSuccessfull
-      tradingAccount={selectedAccount}
+      tradingAccount={selectedTradingAccount?.account}
       onClose={handleClose}
       onTempBrowserAccount={(e) => onSetTempTrading?.(e)}
       onOpenMnemonic={() => setPage("TradingAccountMnemonic")}

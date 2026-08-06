@@ -216,7 +216,7 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
       // assetId,
     });
 
-    return signedExt;
+    return signedExt as SubmittableExtrinsic;
   }
 
   async claimReward({
@@ -254,8 +254,8 @@ class AppsyncV1Operations implements OrderbookOperationStrategy {
       tokenFeeId && tokenFeeId !== "PDEX" ? { assetId: tokenFeeId } : {};
 
     const ext = asset?.asset
-      ? api.tx.assets.transfer(asset?.asset, dest, amount)
-      : api.tx.balances.transfer(dest, amount);
+      ? api.tx.assets.transferKeepAlive(asset?.asset, dest, amount)
+      : api.tx.balances.transferKeepAlive(dest, amount);
 
     const signedExt = await ext.signAsync(account.address, {
       signer: account.signer,

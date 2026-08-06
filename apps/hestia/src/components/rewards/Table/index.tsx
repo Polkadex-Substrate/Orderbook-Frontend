@@ -95,7 +95,7 @@ export const Table = forwardRef<HTMLDivElement, Props>(
                       return (
                         <PolkadexTable.Head
                           className={classNames(
-                            " text-xs",
+                            "text-xs",
                             !isActionTab && "cursor-pointer"
                           )}
                           key={header.id}

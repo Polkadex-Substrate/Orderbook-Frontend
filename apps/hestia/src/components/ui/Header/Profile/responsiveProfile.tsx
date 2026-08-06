@@ -1,7 +1,10 @@
 "use client";
 
 import { Popover } from "@polkadex/ux";
-import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
+import {
+  TradeAccountType,
+  useConnectWalletProvider,
+} from "@orderbook/core/providers/user/connectWalletProvider";
 
 import { Content } from "./content";
 import { Trigger } from "./trigger";
@@ -13,17 +16,22 @@ export const ResponsiveProfile = ({
   browserAccountPresent: boolean;
   extensionAccountPresent: boolean;
 }) => {
-  const { selectedWallet, selectedAccount } = useConnectWalletProvider();
+  const { selectedWallet, selectedTradingAccount } = useConnectWalletProvider();
 
   return browserAccountPresent || extensionAccountPresent ? (
     <Popover>
       <Popover.Trigger>
         <Trigger
           responsive
-          browserAccountPresent={browserAccountPresent}
           extensionAccountPresent={extensionAccountPresent}
           extensionAccountName={selectedWallet?.name ?? ""}
-          browserAccountName={selectedAccount?.meta?.name ?? ""}
+          browserAccountName={selectedTradingAccount?.account?.meta.name || ""}
+          browserAccountPresent={
+            !!(
+              selectedTradingAccount &&
+              selectedTradingAccount?.type === TradeAccountType.Keyring
+            )
+          }
         />
       </Popover.Trigger>
       <Popover.Content sideOffset={10}>

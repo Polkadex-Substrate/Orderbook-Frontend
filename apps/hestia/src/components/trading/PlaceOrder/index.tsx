@@ -17,7 +17,7 @@ type Props = { market?: Market; isBuy?: boolean; isResponsive?: boolean };
 export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
   const toHuman = BalanceFormatter.toHuman;
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const { selectedAccount } = useConnectWalletProvider();
+  const { selectedTradingAccount } = useConnectWalletProvider();
   const { getFreeProxyBalance } = useFunds();
   const { currentTicker } = useTickers(market?.id);
 
@@ -39,9 +39,9 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
   ]);
 
   useEffect(() => {
-    tryUnlockTradeAccount(selectedAccount);
-    setIsPasswordProtected(Boolean(selectedAccount?.isLocked));
-  }, [selectedAccount]);
+    tryUnlockTradeAccount(selectedTradingAccount?.account);
+    setIsPasswordProtected(Boolean(selectedTradingAccount?.account?.isLocked));
+  }, [selectedTradingAccount]);
 
   return (
     <Tabs defaultValue="limit" className="flex-1 flex h-full">
@@ -58,7 +58,7 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
         {isPasswordProtected ? (
           <Unlock
             onAction={() => setIsPasswordProtected(false)}
-            tempBrowserAccount={selectedAccount}
+            tempBrowserAccount={selectedTradingAccount?.account}
           />
         ) : (
           <Fragment>

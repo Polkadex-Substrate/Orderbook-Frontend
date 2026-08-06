@@ -26,7 +26,7 @@ export type ProfileContextInterface = ProfileContextState & {
     tradeAddress: string;
     isNew?: boolean;
   }) => Promise<void>;
-  onUserSelectMainAddress: (value: { mainAddress: string }) => void;
+  onUserSelectMainAddress: (value: { mainAddress: string }) => Promise<void>;
   onUserLogout: () => void;
   onUserResetMainAddress: () => void;
   onUserResetTradingAddress: () => void;

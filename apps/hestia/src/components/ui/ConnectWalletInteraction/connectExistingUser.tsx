@@ -8,6 +8,7 @@ import { TradeAccount } from "@orderbook/core/providers/types";
 
 import { ExistingUser } from "../ConnectWallet/existingUser";
 import { NewTradingAccount } from "../ConnectWallet/newTradingAccount";
+import { RegisterFundingAccount } from "../ConnectWallet/registerFundingAccount";
 import { ConnectTradingAccount } from "../ConnectWallet/connectTradingAccount";
 import { RemoveTradingAccount } from "../ConnectWallet/removeTradingAccount";
 import { TradingAccountList } from "../ConnectWallet/tradingAccountList";
@@ -34,6 +35,7 @@ export const ConnectExistingUser = ({ onClose, onNext }: InteractableProps) => {
 
 const TriggerComponent = ({ onClose, onNext }: InteractableProps) => {
   const {
+    selectedWallet,
     localTradingAccounts,
     onSelectTradingAccount,
     onResetWallet,
@@ -58,15 +60,23 @@ const TriggerComponent = ({ onClose, onNext }: InteractableProps) => {
     onNext("Connect");
   };
 
-  const redirectMaximumAccounts =
-    (mainProxiesAccounts?.length ?? 0) >= 3
-      ? "MaximumTradingAccount"
+  const getRedirectPage = (isExtensionProxy: boolean) => {
+    const registerProxyAccount = isExtensionProxy
+      ? "RegisterFundingAccount"
       : "NewTradingAccount";
 
-  const redirectEnoughBalance =
-    (walletBalance ?? 0) >= MINIMUM_PDEX_REQUIRED
-      ? redirectMaximumAccounts
-      : "InsufficientBalance";
+    const redirectMaximumAccounts =
+      (mainProxiesAccounts?.length ?? 0) >= 3
+        ? "MaximumTradingAccount"
+        : registerProxyAccount;
+
+    const redirectEnoughBalance =
+      (walletBalance ?? 0) >= MINIMUM_PDEX_REQUIRED
+        ? redirectMaximumAccounts
+        : "InsufficientBalance";
+
+    return redirectEnoughBalance;
+  };
 
   const { setPage } = useInteractableProvider();
 
@@ -81,9 +91,13 @@ const TriggerComponent = ({ onClose, onNext }: InteractableProps) => {
         )
       }
       onBack={handleCloseInteraction}
-      onCreate={() => setPage(redirectEnoughBalance)}
+      onCreateTradingAccount={(isExtensionProxy: boolean) => {
+        const page = getRedirectPage(isExtensionProxy);
+        setPage(page);
+      }}
       onRecover={() => setPage("ConnectTradingAccount")}
       onTradingAccountList={() => setPage("TradingAccountList")}
+      fundWallet={selectedWallet}
       accounts={filteredAccounts}
       registeredProxies={mainProxiesAccounts}
       onSelect={(e) => onSelectTradingAccount?.(e)}
@@ -100,8 +114,6 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
   const {
     localTradingAccounts,
     onSelectTradingAccount,
-    onResetWallet,
-    onResetExtension,
     selectedWallet,
     onRegisterTradeAccount,
     registerStatus,
@@ -140,17 +152,6 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
     [localTradingAccounts, mainProxiesAccounts]
   );
 
-  const hasAccounts = useMemo(
-    () => !!filteredAccounts?.length,
-    [filteredAccounts?.length]
-  );
-
-  const handleCloseInteraction = () => {
-    onResetWallet?.();
-    onResetExtension?.();
-    setPage("Connect");
-  };
-
   const availableOnDevice = useMemo(
     () =>
       filteredAccounts?.some((value) => value.address === tempTrading?.address),
@@ -173,7 +174,7 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
           accounts={filteredAccounts}
           onSelect={(e) => onSelectTradingAccount(e)}
           onTempBrowserAccount={(e) => onSetTempTrading?.(e)}
-          onClose={hasAccounts ? onReset : handleCloseInteraction}
+          onClose={onReset}
           onImport={() => setPage("ImportTradingAccount")}
           onSelectCallback={onClose}
           onRemoveCallback={() => setPage("RemoveTradingAccount")}
@@ -209,6 +210,17 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
             onExportTradeAccount({ account, password })
           }
           onResetTempBrowserAccount={onResetTempTrading}
+        />
+      </Interactable.Card>
+      <Interactable.Card pageName="RegisterFundingAccount">
+        <RegisterFundingAccount
+          onCreateAccount={async (e) => {
+            await onRegisterTradeAccount(e);
+            onClose();
+          }}
+          fundWallet={selectedWallet}
+          loading={registerStatus === "loading"}
+          onClose={onReset}
         />
       </Interactable.Card>
       <Interactable.Card pageName="NewTradingAccount">

@@ -40,10 +40,10 @@ export const MaximumTradingAccount = ({
             </Typography.Text>
           </div>
         </div>
-        <Accordion type="multiple">
+        <Accordion type="multiple" defaultValue={["accordion1"]}>
           <Accordion.Item value="accordion1">
             <Accordion.Trigger>
-              <Typography.Text appearance="secondary">
+              <Typography.Text appearance="secondary" className="mb-3">
                 Trading accounts
               </Typography.Text>
             </Accordion.Trigger>

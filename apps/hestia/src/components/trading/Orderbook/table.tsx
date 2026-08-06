@@ -111,11 +111,7 @@ export const Table = ({
                 onChangePrice(i);
               }}
             >
-              <Decimal
-                fixed={pricePrecision}
-                thousSep=","
-                // prevValue={orders[i + 1] ? orders[i + 1][0] : 0}
-              >
+              <Decimal fixed={pricePrecision} thousSep=",">
                 {price}
               </Decimal>
             </Typography.Text>

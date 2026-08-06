@@ -1,26 +1,34 @@
 import { ApiPromise } from "@polkadot/api";
 import { Codec } from "@polkadot/types/types";
-import { KeyringPair } from "@polkadot/keyring/types";
 import { getNonce } from "@orderbook/core/helpers/getNonce";
+import { encodeAddress } from "@polkadot/util-crypto";
+import { getNewClientId } from "@orderbook/core/helpers/getNewClientId";
+import { SS58_DEFAULT_FORMAT } from "@orderbook/core/constants";
 
 import { OrderSide, OrderType, OrderTypeEnum } from "../utils/orderbookService";
 
 import { isAssetPDEX } from "./isAssetPDEX";
-import { signPayload } from "./enclavePayloadSigner";
 
-export const createOrderPayload = (
-  api: ApiPromise,
-  proxyAddress: string,
-  type: OrderType,
-  side: OrderSide,
-  baseAsset: string | null,
-  quoteAsset: string | null,
-  quantity: number | string,
-  price: number | string,
-  timestamp = 0,
-  clientOrderId: Uint8Array,
-  mainAddress: string
-): Codec => {
+type OrderPayload = {
+  tradeAddress: string;
+  type: OrderType;
+  side: OrderSide;
+  baseAsset: string | null;
+  quoteAsset: string | null;
+  quantity: number | string;
+  price: number | string;
+  mainAddress: string;
+};
+export const createOrderPayload = ({
+  tradeAddress,
+  type,
+  side,
+  baseAsset,
+  quoteAsset,
+  quantity,
+  price,
+  mainAddress,
+}: OrderPayload) => {
   const baseAssetId = !isAssetPDEX(baseAsset) ? baseAsset : "PDEX";
   const quoteAssetId = !isAssetPDEX(quoteAsset) ? quoteAsset : "PDEX";
   const orderType = { [type.toUpperCase()]: null };
@@ -29,8 +37,9 @@ export const createOrderPayload = (
   };
   const isMarketBid = type === OrderTypeEnum.MARKET && side === "Bid";
   const ZERO = "0"; // for signature verification you have to specify like this.
-  const jsonPayload = {
-    user: proxyAddress,
+  return {
+    user: tradeAddress,
+    /// convert to default ss58 format
     main_account: mainAddress,
     pair: baseAssetId + "-" + quoteAssetId,
     side: orderSide,
@@ -38,43 +47,51 @@ export const createOrderPayload = (
     qty: isMarketBid ? ZERO : quantity.toString(),
     quote_order_quantity: isMarketBid ? quantity.toString() : ZERO,
     price: type === OrderTypeEnum.LIMIT ? price.toString() : ZERO,
-    timestamp: timestamp,
-    client_order_id: clientOrderId,
+    timestamp: getNonce(),
+    client_order_id: getNewClientId(),
   };
-  return api.createType("OrderPayload", jsonPayload);
 };
 
-export const createCancelOrderPayloadSigned = (
+export const createOrderSigningPayload = (
+  order: object,
   api: ApiPromise,
-  userKeyring: KeyringPair,
-  orderId: string,
-  base: string,
-  quote: string
-) => {
-  const orderIdCodec = api.createType("order_id", orderId);
-  const tradingPair = `${base}-${quote}`;
-  const signature = signPayload(api, userKeyring, orderIdCodec);
-  return {
-    orderId: orderIdCodec,
-    account: userKeyring.address,
-    pair: tradingPair,
-    signature: signature,
-  };
+  isSignedByExtension = false
+): Codec | object => {
+  const codec = api.createType("OrderPayload", order);
+  if (isSignedByExtension) {
+    const payload = codec.toJSON() as unknown as ReturnType<
+      typeof createOrderPayload
+    >;
+    payload.main_account = encodeAddress(
+      payload.main_account,
+      SS58_DEFAULT_FORMAT
+    );
+    payload.user = encodeAddress(payload.user, SS58_DEFAULT_FORMAT);
+    return payload as object;
+  }
+  return codec as Codec;
 };
 
 export const createCancelAllPayload = (
   api: ApiPromise,
-  userKeyring: KeyringPair,
   market: string,
   mainAddress: string,
-  tradeAddress: string
+  tradeAddress: string,
+  isSignedByExtension: boolean
 ) => {
+  if (isSignedByExtension) {
+    return {
+      main: mainAddress,
+      proxy: tradeAddress,
+      market: market,
+      timestamp: getNonce(),
+    };
+  }
   const signingPayload = api.createType("CancelAllPayload", {
     main: mainAddress,
     proxy: tradeAddress,
     market: market,
     timestamp: getNonce(),
   });
-  const signature = signPayload(api, userKeyring, signingPayload);
-  return { payload: signingPayload, signature };
+  return signingPayload;
 };

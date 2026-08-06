@@ -14,41 +14,41 @@ const messages = {
 
 export const Progress = () => {
   const { txStatus } = useTransactionManager();
+  const lastTransaction = txStatus.at(-1);
+  if (!lastTransaction) return <></>;
   return (
     <Fragment>
-      {txStatus?.map((e) => (
-        <ProgressBar
-          key={e.hash}
-          data={e}
-          closeDelay={5000}
-          completedStatus="finalized"
-          statuses={["ongoing", "broadcasted", "inblock", "finalized"]}
-        >
-          <Fragment>
-            <ProgressBar.Maximized>
-              <ProgressBar.Title messages={messages} />
-              <ProgressBar.Status>
-                <ProgressBar.Card vertical status="broadcasted">
-                  Broadcasted
-                </ProgressBar.Card>
-                <ProgressBar.Card vertical status="inblock">
-                  In block
-                </ProgressBar.Card>
-                <ProgressBar.Card vertical status="finalized">
-                  Finalized
-                </ProgressBar.Card>
-              </ProgressBar.Status>
-            </ProgressBar.Maximized>
-            <ProgressBar.Minimized>
-              <ProgressBar.Card status="broadcasted">
+      <ProgressBar
+        key={lastTransaction.hash}
+        data={lastTransaction}
+        closeDelay={5000}
+        completedStatus="finalized"
+        statuses={["ongoing", "broadcasted", "inblock", "finalized"]}
+      >
+        <Fragment>
+          <ProgressBar.Maximized>
+            <ProgressBar.Title messages={messages} />
+            <ProgressBar.Status>
+              <ProgressBar.Card vertical status="broadcasted">
                 Broadcasted
               </ProgressBar.Card>
-              <ProgressBar.Card status="inblock">In block</ProgressBar.Card>
-              <ProgressBar.Card status="finalized">Finalized</ProgressBar.Card>
-            </ProgressBar.Minimized>
-          </Fragment>
-        </ProgressBar>
-      ))}
+              <ProgressBar.Card vertical status="inblock">
+                In block
+              </ProgressBar.Card>
+              <ProgressBar.Card vertical status="finalized">
+                Finalized
+              </ProgressBar.Card>
+            </ProgressBar.Status>
+          </ProgressBar.Maximized>
+          <ProgressBar.Minimized>
+            <ProgressBar.Card status="broadcasted">
+              Broadcasted
+            </ProgressBar.Card>
+            <ProgressBar.Card status="inblock">In block</ProgressBar.Card>
+            <ProgressBar.Card status="finalized">Finalized</ProgressBar.Card>
+          </ProgressBar.Minimized>
+        </Fragment>
+      </ProgressBar>
     </Fragment>
   );
 };

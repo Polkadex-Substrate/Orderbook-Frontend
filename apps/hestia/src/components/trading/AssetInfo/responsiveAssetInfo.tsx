@@ -74,7 +74,11 @@ export const ResponsiveAssetInfo = ({
 
   return (
     <Fragment>
-      <ResponsiveMarket open={open} onOpenChange={setOpen} />
+      <ResponsiveMarket
+        market={currentMarket?.id || ""}
+        open={open}
+        onOpenChange={setOpen}
+      />
       <div className="flex gap-2 border-b border-primary p-1">
         <div className="flex flex-1 flex-col gap-3">
           <div
@@ -99,7 +103,7 @@ export const ResponsiveAssetInfo = ({
               >
                 <Skeleton
                   loading={!currentMarket}
-                  className="flex-none h-4 w-16"
+                  className="flex-none h-5 w-16"
                 >
                   <Typography.Text size="lg" bold>
                     {baseTicker}

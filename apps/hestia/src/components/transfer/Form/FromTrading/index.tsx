@@ -1,6 +1,11 @@
 "use client";
 
-import { Skeleton, Typography, truncateString } from "@polkadex/ux";
+import {
+  Skeleton,
+  Typography,
+  truncateString,
+  AccountCombobox,
+} from "@polkadex/ux";
 import { Dispatch, Fragment, PropsWithChildren, SetStateAction } from "react";
 import { ExtensionAccount } from "@polkadex/react-providers";
 
@@ -8,12 +13,10 @@ import { InlineAccountCard } from "../../../ui/ReadyToUse";
 import { Card } from "../card";
 import { AvailableMessage } from "../availableMessage";
 
-import { SelectFundingDropdown } from "./selectFundingDropdown";
-
 import { SwitchType } from "@/hooks";
 
 export const FromTrading = ({
-  isLocalAccountPresent,
+  isBalanceFetching,
   isExtensionAccountPresent,
   fromFunding,
   extensionAccountName,
@@ -28,13 +31,13 @@ export const FromTrading = ({
   type,
 }: {
   fromFunding?: boolean;
+  isBalanceFetching: boolean;
   extensionAccountName?: string;
   extensionAccountAddress?: string;
   extensionAccountBalance?: string;
   localAccountBalance?: string;
   selectedAssetTicker?: string;
   isExtensionAccountPresent?: boolean;
-  isLocalAccountPresent?: boolean;
   isFundingToFunding?: boolean;
   onChangeDirection: (e: SwitchType) => void;
   selectedExtensionAccount: ExtensionAccount | null;
@@ -43,9 +46,7 @@ export const FromTrading = ({
   >;
   type: SwitchType;
 }) => {
-  const accountNotPresent =
-    (fromFunding && !isLocalAccountPresent) ||
-    (!fromFunding && !isExtensionAccountPresent);
+  const accountNotPresent = !fromFunding && !isExtensionAccountPresent;
 
   const balance = fromFunding ? localAccountBalance : extensionAccountBalance;
   const shortAddress = truncateString(extensionAccountAddress ?? "");
@@ -56,12 +57,10 @@ export const FromTrading = ({
     transfer: "Another Funding Account",
   };
 
-  const withDropown = type === "deposit" || type === "transfer";
   return (
     <Card
       label="To"
       title={typeTitle[type]}
-      dropdown={withDropown}
       onChangeDirection={onChangeDirection}
     >
       <RenderConditional
@@ -81,7 +80,7 @@ export const FromTrading = ({
             </InlineAccountCard>
           )}
 
-          <Skeleton loading={!selectedAssetTicker} className="h-auto max-w-20">
+          <Skeleton loading={isBalanceFetching} className="h-auto max-w-20">
             <Typography.Text
               appearance="primary"
               size="xs"
@@ -112,10 +111,12 @@ const RenderConditional = ({
 }>) => {
   if (isFundingToFunding)
     return (
-      <SelectFundingDropdown
-        selectedExtensionAccount={selectedExtensionAccount}
-        setSelectedExtensionAccount={setSelectedExtensionAccount}
-      />
+      <div className="px-5 py-3 border-t border-primary">
+        <AccountCombobox
+          account={selectedExtensionAccount}
+          setAccount={(e) => e && setSelectedExtensionAccount(e)}
+        />
+      </div>
     );
   else if (accountNotPresent)
     return (

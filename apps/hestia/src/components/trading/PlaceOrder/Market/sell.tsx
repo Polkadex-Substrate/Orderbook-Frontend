@@ -5,10 +5,10 @@ import { useFormik } from "formik";
 import { Button, Input, Spinner, Tooltip } from "@polkadex/ux";
 import { Market, Ticker } from "@orderbook/core/utils/orderbookService/types";
 import { useMarketOrder } from "@orderbook/core/hooks";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { marketOrderValidations } from "@orderbook/core/validations";
 
 import { Balance } from "../balance";
+import ConnectAccount from "../connectAccount";
 
 import { Range } from "@/components/ui/Temp/range";
 import { TradingFee } from "@/components/ui/ReadyToUse";
@@ -30,7 +30,6 @@ export const SellOrder = ({
   availableBaseAmount: number;
   isResponsive?: boolean;
 }) => {
-  const { onToogleConnectTrading } = useSettingsProvider();
   const {
     handleSubmit,
     errors,
@@ -170,13 +169,7 @@ export const SellOrder = ({
           )}
         </Button.Solid>
       ) : (
-        <Button.Solid
-          type="button"
-          appearance="secondary"
-          onClick={() => onToogleConnectTrading(true)}
-        >
-          Connect Trading Account
-        </Button.Solid>
+        <ConnectAccount />
       )}
     </form>
   );

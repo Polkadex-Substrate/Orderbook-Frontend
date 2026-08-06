@@ -1,3 +1,4 @@
+import { parseScientific } from "@polkadex/numericals";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
 import { HoverCard, Tooltip, Typography } from "@polkadex/ux";
@@ -104,11 +105,16 @@ export const columns = [
   }),
   orderHistoryColumnHelper.accessor((row) => row, {
     id: "amount",
-    cell: (e) => (
-      <Typography.Text size="xs">
-        {e.getValue().quantity} {e.getValue().market.baseAsset.ticker}
-      </Typography.Text>
-    ),
+    cell: (e) => {
+      const { side, type, quantity, market } = e.getValue();
+      const isMarketBuy = type === "MARKET" && side === "Bid";
+      return (
+        <Typography.Text size="xs">
+          {parseScientific((+quantity).toString())}{" "}
+          {isMarketBuy ? market.quoteAsset.ticker : market.baseAsset.ticker}
+        </Typography.Text>
+      );
+    },
     header: () => (
       <Typography.Text size="xs" appearance="primary">
         Amount
@@ -134,7 +140,7 @@ export const columns = [
         <HoverCard closeDelay={10}>
           <HoverCard.Trigger>
             <FilledCard width={width}>
-              {e.getValue().filledQuantity}{" "}
+              {parseScientific((+e.getValue().filledQuantity).toString())}{" "}
               {e.getValue().market.baseAsset.ticker}
             </FilledCard>
           </HoverCard.Trigger>
@@ -168,7 +174,7 @@ export const columns = [
           : e.getValue().market.quoteAsset.ticker;
       return (
         <Typography.Text size="xs" className="whitespace-nowrap">
-          {e.getValue().fee} {ticker}
+          {parseScientific(e.getValue().fee.toString())} {ticker}
         </Typography.Text>
       );
     },

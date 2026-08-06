@@ -18,7 +18,7 @@ export const ErrorMessage = ({
       className={twMerge(classNames("flex items-center gap-1"), className)}
       {...props}
     >
-      {withIcon && <RiErrorWarningLine className="text-danger-base w-3 h-3" />}
+      {withIcon && <RiErrorWarningLine className="text-danger-base w-4 h-4" />}
       <Typography.Paragraph className="text-danger-base" size="sm">
         {children}
       </Typography.Paragraph>

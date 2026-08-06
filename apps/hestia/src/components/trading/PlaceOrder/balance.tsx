@@ -1,6 +1,5 @@
 "use client";
 
-import { getChainFromTicker } from "@orderbook/core/helpers";
 import { Button, Dropdown, Icons, Typography } from "@polkadex/ux";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
@@ -9,7 +8,6 @@ export const Balance = ({
   baseTicker,
   children,
 }: PropsWithChildren<{ baseTicker: string }>) => {
-  const chainName = getChainFromTicker(baseTicker);
   return (
     <div className=" self-end flex items-center gap-1">
       <Typography.Text size="xs">
@@ -29,12 +27,11 @@ export const Balance = ({
             <Typography.Text asChild size="sm">
               <Link
                 href={{
-                  pathname: "https://thea.polkadex.trade/withdraw",
-                  query: chainName && {
-                    chain: encodeURIComponent(chainName),
+                  pathname: "/send-and-receive",
+                  query: {
+                    type: "withdraw",
                   },
                 }}
-                target="_blank"
               >
                 Withdraw
               </Link>
@@ -44,12 +41,8 @@ export const Balance = ({
             <Typography.Text asChild size="sm">
               <Link
                 href={{
-                  pathname: "https://thea.polkadex.trade/",
-                  query: chainName && {
-                    chain: encodeURIComponent(chainName),
-                  },
+                  pathname: "/send-and-receive",
                 }}
-                target="_blank"
               >
                 Deposit
               </Link>
@@ -57,7 +50,9 @@ export const Balance = ({
           </Dropdown.Item>
           <Dropdown.Item>
             <Typography.Text asChild size="sm">
-              <Link href={`/transfer/${baseTicker}`}>Transfer</Link>
+              <Link href={`/transfer/${baseTicker}?type=transfer`}>
+                Transfer
+              </Link>
             </Typography.Text>
           </Dropdown.Item>
         </Dropdown.Content>

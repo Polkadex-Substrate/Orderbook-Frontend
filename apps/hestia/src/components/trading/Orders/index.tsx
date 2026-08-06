@@ -47,6 +47,8 @@ export const Orders = () => {
   } = useProfile();
   const connected = tradeAddress?.length > 0;
 
+  const isFundingType = useMemo(() => !mainAddress, [mainAddress]);
+
   const [show, setShow] = useState(true);
   const [filters, setFilters] = useState<Ifilters>(initialFilters);
 
@@ -191,7 +193,7 @@ export const Orders = () => {
           {connected ? (
             <OpenOrdersTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper />
+            <ConnectAccountWrapper funding={isFundingType} />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -201,7 +203,7 @@ export const Orders = () => {
           {connected ? (
             <OrderHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper />
+            <ConnectAccountWrapper funding={isFundingType} />
           )}
         </Tabs.Content>
         <Tabs.Content
@@ -211,7 +213,7 @@ export const Orders = () => {
           {connected ? (
             <TradeHistoryTable filters={filters} height={height} />
           ) : (
-            <ConnectAccountWrapper />
+            <ConnectAccountWrapper funding={isFundingType} />
           )}
         </Tabs.Content>
         <Tabs.Content

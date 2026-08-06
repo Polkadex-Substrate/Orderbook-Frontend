@@ -1,3 +1,4 @@
+// TODO: Move this to packages/core/hooks
 import { useNativeApi } from "@orderbook/core/providers/public/nativeApi";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS, useAssets } from "@orderbook/core/index";
@@ -13,11 +14,12 @@ export const useQueryPools = () => {
     error: poolsError,
   } = useQuery({
     queryKey: QUERY_KEYS.queryPools(),
-    enabled: !!swap && !!assets,
+    enabled: !!swap && assets.length > 0,
     queryFn: async () => {
       if (!swap || !assets) return;
       const data = await swap.queryPools();
-      return await Promise.all(
+      // filter out pools with 0 liquidity
+      const value = await Promise.all(
         data.map(async (e) => {
           const quote = assets.find(
             (val) => val.id.toLowerCase() === e.quote.toLowerCase()
@@ -29,6 +31,7 @@ export const useQueryPools = () => {
           };
         })
       );
+      return value.sort((a, b) => b.reserve - a.reserve);
     },
   });
 

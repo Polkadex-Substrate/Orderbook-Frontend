@@ -405,7 +405,8 @@ class AppsyncV1Subscriptions implements OrderbookSubscriptionStrategy {
           data?.value?.data?.websocket_streams?.data as unknown as string
         ) as AccountUpdateEvent;
         return {
-          address: item.address,
+          main: item.main,
+          proxy: item.proxy,
           type: item.type,
         };
       });

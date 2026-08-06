@@ -101,12 +101,12 @@ export const useLimitOrder = ({ isSell, market, values, setValues }: Props) => {
         setValues({
           amount,
           price: convertedValue,
-          total,
+          total: total && formatNumber(Decimal.format(total, totalPrecision)),
         });
       }
     },
 
-    [pricePrecision, calculateTotal, setValues, values.amount]
+    [pricePrecision, calculateTotal, setValues, values.amount, totalPrecision]
   );
 
   const onChangeAmount = useCallback(
@@ -172,10 +172,14 @@ export const useLimitOrder = ({ isSell, market, values, setValues }: Props) => {
       });
       return;
     }
-    const amount = `${(availableBalance * percent * 0.01) / Number(price)}`;
+
     const total = getAbsoluteNumber(
-      getEstimatedTotal(calculateTotal(price, amount))
+      getEstimatedTotal(availableBalance * percent * 0.01)
     );
+    const amount = trimFloat({
+      value: total / +price,
+      digitsAfterDecimal: qtyPrecision,
+    });
 
     setValues({
       ...values,

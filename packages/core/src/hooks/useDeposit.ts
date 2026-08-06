@@ -3,6 +3,7 @@ import {
   ExtensionAccount,
   useTransactionManager,
 } from "@polkadex/react-providers";
+import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 
 import { useSettingsProvider } from "../providers/public/settings";
 import { useNativeApi } from "../providers/public/nativeApi";
@@ -35,13 +36,13 @@ export const useDeposit = () => {
 
       onHandleInfo?.("Processing Deposit...");
 
-      const signedExtrinsic = await appsyncOrderbookService.operation.deposit({
+      const signedExtrinsic = (await appsyncOrderbookService.operation.deposit({
         api,
         account,
         asset,
         amount,
         tokenFeeId,
-      });
+      })) as SubmittableExtrinsic;
       addToTxQueue(signedExtrinsic);
       await handleTransaction(signedExtrinsic);
     },

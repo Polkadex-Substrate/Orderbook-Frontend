@@ -90,7 +90,7 @@ export const QuickStart = ({
                 asChild
               >
                 <Link
-                  href="https://thea.polkadex.trade/"
+                  href="/send-and-receive"
                   target="_blank"
                   rel="noreferrer noopener"
                 >

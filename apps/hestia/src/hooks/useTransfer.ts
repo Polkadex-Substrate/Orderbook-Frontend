@@ -14,12 +14,7 @@ import {
   useState,
 } from "react";
 import { filterBlockedAssets } from "@orderbook/core/helpers";
-import {
-  useAssets,
-  useDeposit,
-  useFunds,
-  useWithdraw,
-} from "@orderbook/core/hooks";
+import { useAssets, useFunds } from "@orderbook/core/hooks";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { BalanceFormatter } from "@orderbook/format";
 import { Asset } from "@orderbook/core/utils/orderbookService";
@@ -39,9 +34,7 @@ const onChangeState = (onCallback: Dispatch<SetStateAction<boolean>>) => {
 export function useTransfer() {
   const toHuman = BalanceFormatter.toHuman;
   const { assets: list } = useAssets();
-  const { balances } = useFunds();
-  const { loading: depositLoading } = useDeposit();
-  const { loading: withdrawLoading } = useWithdraw();
+  const { balances, loading } = useFunds();
   const { push } = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -109,7 +102,7 @@ export function useTransfer() {
   );
 
   return {
-    loading: depositLoading || withdrawLoading,
+    loading,
     assetsInteraction,
     onAssetsInteraction,
     onChangeAsset,

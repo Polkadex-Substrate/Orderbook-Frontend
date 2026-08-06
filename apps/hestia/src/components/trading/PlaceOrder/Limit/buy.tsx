@@ -5,11 +5,11 @@ import { Button, Input, Tooltip, Spinner } from "@polkadex/ux";
 import classNames from "classnames";
 import { useFormik } from "formik";
 import { useLimitOrder } from "@orderbook/core/hooks";
-import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { limitOrderValidations } from "@orderbook/core/validations";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
 
 import { Balance } from "../balance";
+import ConnectAccount from "../connectAccount";
 
 import { Range } from "@/components/ui/Temp/range";
 import { TradingFee } from "@/components/ui/ReadyToUse";
@@ -34,7 +34,6 @@ export const BuyOrder = ({
   isResponsive?: boolean;
 }) => {
   const [validateSubmit, setValidateSubmit] = useState(false);
-  const { onToogleConnectTrading } = useSettingsProvider();
 
   const {
     handleSubmit,
@@ -282,13 +281,7 @@ export const BuyOrder = ({
           )}
         </Button.Solid>
       ) : (
-        <Button.Solid
-          type="button"
-          appearance="secondary"
-          onClick={() => onToogleConnectTrading(true)}
-        >
-          Connect Trading Account
-        </Button.Solid>
+        <ConnectAccount />
       )}
     </form>
   );

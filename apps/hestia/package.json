@@ -20,11 +20,13 @@
     "@orderbook/tsconfig": "*",
     "@polkadex/blockchain-api": "^1.1.61",
     "@polkadex/local-wallets": "^2.3.0",
-    "@polkadex/numericals": "^0.3.0",
-    "@polkadex/polkadex-api": "^3.2.0",
-    "@polkadex/react-providers": "^2.1.0",
+    "@polkadex/numericals": "^0.4.0",
+    "@polkadex/polkadex-api": "^3.6.2",
+    "@polkadex/subscan": "^1.1.61",
+    "@polkadex/thea": "^6.1.1",
+    "@polkadex/ux": "^6.26.0",
+    "@polkadex/react-providers": "^2.2.1",
     "@polkadex/types": "^1.2.2",
-    "@polkadex/ux": "^6.18.0",
     "@polkadot-cloud/assets": "^0.3.4",
     "@remixicon/react": "^4.2.0",
     "@sentry/nextjs": "^7.99.0",
@@ -61,6 +63,7 @@
     "@types/react": "^18.2.48",
     "@types/react-date-range": "^1.4.9",
     "@types/react-dom": "^18.2.18",
+    "@types/react-query": "^1.2.9",
     "typescript": "^5.0.4"
   }
 }

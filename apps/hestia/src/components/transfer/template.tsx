@@ -9,7 +9,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 import { sleep } from "@orderbook/core/helpers";
 
-import { ConnectTradingInteraction } from "../ui/ConnectWalletInteraction/connectTradingInteraction";
 import { ResponsiveProfile } from "../ui/Header/Profile/responsiveProfile";
 
 import { Help } from "./Help";
@@ -19,7 +18,7 @@ import { History } from "./History";
 import { ReadyToClaim } from "./ReadyToClaim";
 
 import { Footer, Header } from "@/components/ui";
-import { useTransfer } from "@/hooks";
+import { useSizeObserver, useTransfer } from "@/hooks";
 import { defaultConfig } from "@/config";
 
 export function Template() {
@@ -32,7 +31,7 @@ export function Template() {
   const tableTitleRef = useRef<HTMLDivElement | null>(null);
   const formwRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
-  const interactionRef = useRef<HTMLDivElement | null>(null);
+  const [interactionRef, interactionHeight] = useSizeObserver();
 
   const { height: helpHeight = 0 } = useResizeObserver({
     ref: helpRef,
@@ -59,11 +58,6 @@ export function Template() {
     box: "border-box",
   });
 
-  const { height: interactionHeight = 0 } = useResizeObserver({
-    ref: interactionRef,
-    box: "border-box",
-  });
-
   const tableMaxHeight = useMemo(
     () =>
       `calc(100vh - ${
@@ -80,6 +74,7 @@ export function Template() {
     type,
     onChangeType,
     createQueryString,
+    loading: isBalanceFetching,
   } = useTransfer();
 
   const { readyWithdrawals } = useTransactions();
@@ -102,7 +97,6 @@ export function Template() {
 
   return (
     <Fragment>
-      <ConnectTradingInteraction />
       <SelectAsset
         open={assetsInteraction}
         onOpenChange={() => onAssetsInteraction()}
@@ -131,6 +125,7 @@ export function Template() {
                 <RiInformation2Line className="w-6 h-6 text-primary" />
               </div>
               <Form
+                isBalanceFetching={isBalanceFetching}
                 assetsInteraction={assetsInteraction}
                 selectedAsset={selectedAsset}
                 onAssetsInteraction={onAssetsInteraction}
@@ -190,7 +185,7 @@ export function Template() {
         {mobileView && (browserAccountPresent || extensionAccountPresent) && (
           <div
             ref={interactionRef}
-            className="flex flex-col gap-4 bg-level-1 border-t border-primary py-3 px-2 fixed bottom-0 left-0 w-full"
+            className="flex flex-col gap-4 py-2 bg-level-1 border-t border-primary px-2 fixed bottom-0 left-0 w-full"
           >
             <ResponsiveProfile
               extensionAccountPresent={extensionAccountPresent}

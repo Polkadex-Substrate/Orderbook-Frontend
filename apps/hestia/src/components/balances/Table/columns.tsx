@@ -1,6 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { AssetsProps } from "@orderbook/core/hooks";
-import { getChainFromTicker } from "@orderbook/core/helpers";
 import { Tokens, Typography } from "@polkadex/ux";
 import { Fragment } from "react";
 
@@ -82,25 +81,21 @@ export const columns = [
   columnHelper.accessor((row) => row, {
     id: "actions",
     cell: (e) => {
-      const chainName =
-        getChainFromTicker(e.getValue().ticker) ?? e.getValue().name;
       return (
         <ActionsCard
           withdrawLink={{
-            pathname: "https://thea.polkadex.trade/withdraw",
-            query: chainName && {
-              chain: encodeURIComponent(chainName),
+            pathname: "/send-and-receive",
+            query: {
+              type: "withdraw",
             },
           }}
           depositLink={{
-            pathname: "https://thea.polkadex.trade/",
-            query: chainName && {
-              chain: encodeURIComponent(chainName),
-            },
+            pathname: "/send-and-receive",
           }}
           tradeLink={`/trading/${e.getValue().ticker}`}
           transferLink={{
             pathname: `/transfer/${e.getValue().ticker}`,
+            query: { type: "transfer" },
           }}
         />
       );

@@ -14,14 +14,19 @@ export type DefaultConfig = {
   msPricesUpdates: number;
   maintenanceMode: boolean;
   enableLmp: boolean;
+  isBridgeEnabled: boolean;
   availableRoutes: string[];
   underMaintenance: string[];
   mainUrl: string;
   blockedAssets: string[];
   subscanApi: string;
+  disabledTheaChains: string[];
+  subqueryUrl: string;
   googleApiKey: string;
   googleClientId: string;
   disabledFeatures: Array<Features>;
+  defaultTheaSourceChain: string;
+  defaultTheaDestinationChain: string;
 };
 
 export type Features = (typeof features)[number];

@@ -1,7 +1,6 @@
 {
   "extends": "../../packages/tsconfig/nextjs.json",
   "compilerOptions": {
-    "strict": true,
     "plugins": [{ "name": "next" }],
     "paths": {
       "@orderbook/core/*": ["../../packages/core/src/*"],

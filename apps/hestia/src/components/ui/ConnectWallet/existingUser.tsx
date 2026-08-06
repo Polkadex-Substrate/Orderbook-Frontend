@@ -10,6 +10,7 @@ import { KeyringPair } from "@polkadot/keyring/types";
 import { RiArrowRightSLine } from "@remixicon/react";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { TradeAccount } from "@orderbook/core/providers/types";
+import { ExtensionAccount } from "@polkadex/react-providers";
 
 import { GenericHorizontalCard, TradingAccountCard } from "../ReadyToUse";
 
@@ -17,11 +18,12 @@ export const ExistingUser = ({
   onClose,
   onReadMore,
   onBack,
-  onCreate,
+  onCreateTradingAccount,
   onRecover,
   onTradingAccountList,
   accounts,
   registeredProxies,
+  fundWallet,
   onSelect,
   onSelectCallback,
   onTempBrowserAccount,
@@ -31,10 +33,11 @@ export const ExistingUser = ({
 }: {
   onClose: () => void;
   onReadMore: () => void;
-  onCreate: () => void;
+  onCreateTradingAccount: (isExtensionProxy: boolean) => void;
   onTradingAccountList: () => void;
   onRecover: () => void;
   onBack: () => void;
+  fundWallet?: ExtensionAccount;
   accounts?: TradeAccount[];
   registeredProxies: string[];
   onSelect: (e: TradeAccount) => void;
@@ -119,15 +122,16 @@ export const ExistingUser = ({
                     No trading account found in browser
                   </Typography.Text>
                   <Typography.Paragraph size="sm" appearance="primary">
-                    You must have a trading account in browser to access
-                    Orderbook. Import your current account or set up a new one.
+                    You can either register your funding account or can have a
+                    trading account in browser to start trading. Import your
+                    trading account or set up a new one.
                   </Typography.Paragraph>
                 </div>
                 <button
                   onClick={onReadMore}
                   className="flex items-center gap-2 text-primary-base"
                 >
-                  <Icon name="Wallet" className="w-4 h-4" />
+                  <Icon name="Wallet" className="w-6 h-6" />
                   <Typography.Text className="text-primary-base">
                     Read More
                   </Typography.Text>
@@ -151,10 +155,19 @@ export const ExistingUser = ({
             )}
 
             <div className="flex flex-col gap-2">
+              {registeredProxies.length > 0 &&
+                !registeredProxies.includes(fundWallet?.address as string) && (
+                  <GenericHorizontalCard
+                    title="Register funding account"
+                    icon="Wallet"
+                    label="NEW"
+                    onClick={() => onCreateTradingAccount(true)}
+                  />
+                )}
               <GenericHorizontalCard
                 title="Create new trading account"
                 icon="Plus"
-                onClick={onCreate}
+                onClick={() => onCreateTradingAccount(false)}
               />
               <GenericHorizontalCard
                 title="Import trading account"

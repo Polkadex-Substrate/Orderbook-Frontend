@@ -108,7 +108,7 @@ const data = [
       },
       {
         title: "THEA Crosschain",
-        href: "https://thea.polkadex.trade",
+        href: "https://orderbook.polkadex.trade/thea",
         target: "_blank",
       },
     ],

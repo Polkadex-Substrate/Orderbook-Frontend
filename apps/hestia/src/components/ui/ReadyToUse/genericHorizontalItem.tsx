@@ -1,16 +1,18 @@
 import { ComponentProps } from "react";
-import { Tooltip, Typography, typeofChildren } from "@polkadex/ux";
+import { HoverCard, Typography, typeofChildren } from "@polkadex/ux";
 import classNames from "classnames";
 import { twMerge } from "tailwind-merge";
-import { RiInformationLine } from "@remixicon/react";
+import { RiInformationFill } from "@remixicon/react";
 
 interface Props extends ComponentProps<"div"> {
   label: string;
   tooltip?: string;
+  defaultOpen?: boolean;
 }
 export const GenericHorizontalItem = ({
   label,
   tooltip,
+  defaultOpen,
   children,
   className,
   ...props
@@ -19,21 +21,31 @@ export const GenericHorizontalItem = ({
   return (
     <div
       className={twMerge(
-        classNames("flex items-cneter justify-between gap-2 px-3 py-3"),
+        classNames(
+          "flex items-cneter justify-between gap-2 px-3 py-3 whitespace-nowrap"
+        ),
         className
       )}
       {...props}
     >
       {tooltip ? (
-        <Tooltip>
-          <Tooltip.Trigger>
+        <HoverCard defaultOpen={defaultOpen}>
+          <HoverCard.Trigger>
             <div className="flex items-center gap-1">
-              <RiInformationLine className="w-3.5 h-3.5 text-primary" />
+              <RiInformationFill className="w-3 h-3 text-actionInput" />
               <Typography.Text appearance="primary">{label}</Typography.Text>
             </div>
-          </Tooltip.Trigger>
-          <Tooltip.Content side="left">{tooltip}</Tooltip.Content>
-        </Tooltip>
+          </HoverCard.Trigger>
+          <HoverCard.Content className="max-w-[300px] p-4" side="left">
+            <Typography.Paragraph
+              size="sm"
+              appearance="primary"
+              className="leading-5"
+            >
+              {tooltip}
+            </Typography.Paragraph>
+          </HoverCard.Content>
+        </HoverCard>
       ) : (
         <Typography.Text appearance="primary">{label}</Typography.Text>
       )}

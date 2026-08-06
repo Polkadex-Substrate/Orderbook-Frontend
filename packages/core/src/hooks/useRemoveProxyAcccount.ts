@@ -6,13 +6,14 @@ import {
   useUserAccounts,
 } from "@polkadex/react-providers";
 import { useProfile } from "@orderbook/core/providers/user/profile";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { handleTransaction, removeFromStorage } from "@orderbook/core/helpers";
 import { ACTIVE_ACCOUNT_KEY } from "@orderbook/core/providers/user/profile/constants";
 import { KeyringPair } from "@polkadot/keyring/types";
+import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 
 import { appsyncOrderbookService } from "../utils/orderbookService";
-import { NOTIFICATIONS, QUERY_KEYS } from "../constants";
+import { NOTIFICATIONS } from "../constants";
 import { useSettingsProvider } from "../providers/public/settings";
 
 export type RemoveProxyAccountArgs = {
@@ -31,7 +32,6 @@ export function useRemoveProxyAccount({
   onError,
   onSuccess,
 }: RemoveProxyAccount) {
-  const queryClient = useQueryClient();
   const { api } = useNativeApi();
   const { wallet, localAddresses } = useUserAccounts();
   const { selectedAddresses, onUserLogout } = useProfile();
@@ -49,25 +49,13 @@ export function useRemoveProxyAccount({
 
       if (!selectedWallet) throw new Error("seletedWallet is not defined");
 
-      appsyncOrderbookService.subscriber.subscribeAccountUpdate(
-        selectedWallet.address,
-        () => {
-          queryClient.setQueryData(
-            QUERY_KEYS.singleProxyAccounts(selectedAddresses.mainAddress),
-            (proxies?: string[]) => {
-              return proxies?.filter((value) => value !== proxy);
-            }
-          );
-        }
-      );
-
       const signedExtrinsic =
-        await appsyncOrderbookService.operation.removeAccount({
+        (await appsyncOrderbookService.operation.removeAccount({
           api,
           account: selectedWallet,
           proxyAddress: proxy,
           tokenFeeId,
-        });
+        })) as SubmittableExtrinsic;
       addToTxQueue(signedExtrinsic);
       await handleTransaction(signedExtrinsic);
 

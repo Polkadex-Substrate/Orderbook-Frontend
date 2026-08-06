@@ -5,6 +5,8 @@ import { SettingContextProps, SettingProviderProps } from "./types";
 
 export const Context = createContext<SettingContextProps>({
   ...initialState,
+  fundWallet: false,
+  onToogleFundWallet: () => {},
   onToggleChartRebuild: () => {},
   onToggleMarketSelector: () => {},
   onToggleOpenOrdersPairsSwitcher: () => {},

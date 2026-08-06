@@ -20,7 +20,10 @@ import {
 } from "react";
 import { RiArrowDownSLine, RiArrowRightLine } from "@remixicon/react";
 import classNames from "classnames";
-import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
+import {
+  TradeAccountType,
+  useConnectWalletProvider,
+} from "@orderbook/core/providers/user/connectWalletProvider";
 import {
   getChainFromTicker,
   isAssetPDEX,
@@ -28,7 +31,10 @@ import {
   trimFloat,
   tryUnlockTradeAccount,
 } from "@orderbook/core/helpers";
-import { OTHER_ASSET_EXISTENTIAL } from "@orderbook/core/constants";
+import {
+  ESTIMATED_FEE,
+  OTHER_ASSET_EXISTENTIAL,
+} from "@orderbook/core/constants";
 import { useFormik } from "formik";
 import {
   depositValidations,
@@ -53,6 +59,7 @@ import { UnlockAccount } from "@/components/ui/ReadyToUse/unlockAccount";
 import { ConfirmTransaction } from "@/components/ui/ConnectWallet/confirmTransaction";
 const initialValues = { amount: 0.0 };
 export const Form = ({
+  isBalanceFetching,
   refetch,
   selectedAsset,
   onAssetsInteraction,
@@ -65,6 +72,7 @@ export const Form = ({
   type: SwitchType;
   onChangeType: (e: SwitchType) => void;
   assetsInteraction?: boolean;
+  isBalanceFetching: boolean;
   refetch: () => Promise<void>;
 }) => {
   const [cardFocus, setCardFocus] = useState(false);
@@ -91,7 +99,7 @@ export const Form = ({
     [isPolkadexToken, selectedAsset?.id]
   );
 
-  const { selectedAccount, selectedWallet } = useConnectWalletProvider();
+  const { selectedTradingAccount, selectedWallet } = useConnectWalletProvider();
   const { loading: depositLoading, mutateAsync: onFetchDeposit } = useDeposit();
   const { mutateAsync: onFetchWithdraws, loading: withdrawLoading } =
     useWithdraw();
@@ -115,7 +123,8 @@ export const Form = ({
   const onChangeFundingMax = () => {
     const onChainBalance = Number(selectedAsset?.onChainBalance);
     if (onChainBalance > existentialBalance) {
-      const balance = onChainBalance - existentialBalance;
+      let balance = onChainBalance - existentialBalance;
+      if (isPolkadexToken) balance = Math.max(balance - ESTIMATED_FEE, 0);
       const trimmedBalance = +trimFloat({ value: balance });
       const formattedBalance = parseScientific(trimmedBalance.toString());
       setFieldValue("amount", formattedBalance);
@@ -132,14 +141,9 @@ export const Form = ({
   const handleMax = (e: MouseEvent<HTMLElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    isTransferFromFunding ? onChangeFundingMax() : onChangeTradingMax();
-  };
-
-  const handleChanteType = (e: MouseEvent<HTMLElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    resetForm();
-    onChangeType(isFromFunding ? "withdraw" : "deposit");
+    isTransferFromFunding || isFundingToFunding
+      ? onChangeFundingMax()
+      : onChangeTradingMax();
   };
 
   const validationSchema = useMemo(
@@ -161,7 +165,7 @@ export const Form = ({
   );
 
   const onSubmitWithdraw = async ({ amount }: { amount: number }) => {
-    if (selectedAccount?.isLocked) setShowPassword(true);
+    if (selectedTradingAccount?.account?.isLocked) setShowPassword(true);
     else {
       const asset = isAssetPDEX(selectedAsset?.id) ? "PDEX" : selectedAsset?.id;
       if (!asset) return;
@@ -234,7 +238,8 @@ export const Form = ({
     validateOnBlur: true,
     onSubmit: isFundingToFunding ? onSubmitTransfer : onHandleSubmit,
   });
-  const isLocalAccountPresent = !!Object.keys(selectedAccount ?? {}).length;
+  const isLocalAccountPresent = !!Object.keys(selectedTradingAccount ?? {})
+    .length;
   const isExtensionAccountPresent = !!Object.keys(selectedWallet ?? {}).length;
 
   const hasAccount = isFromFunding
@@ -249,8 +254,9 @@ export const Form = ({
   const disabled = !hasAccount || loading || !(isValid && dirty);
 
   useEffect(() => {
-    if (!isTransferFromFunding) tryUnlockTradeAccount(selectedAccount);
-  }, [selectedAccount, isTransferFromFunding]);
+    if (!isTransferFromFunding)
+      tryUnlockTradeAccount(selectedTradingAccount?.account);
+  }, [selectedTradingAccount, isTransferFromFunding]);
 
   const { onDepositOcex } = useCall();
   const {
@@ -288,7 +294,7 @@ export const Form = ({
                 new Event("submit", { cancelable: true, bubbles: true })
               );
             }}
-            tempBrowserAccount={selectedAccount}
+            tempBrowserAccount={selectedTradingAccount?.account}
           />
         </Modal.Content>
       </Modal>
@@ -302,21 +308,27 @@ export const Form = ({
             <FromFunding
               isLocalAccountPresent={isLocalAccountPresent}
               isExtensionAccountPresent={isExtensionAccountPresent}
+              isBalanceFetching={isBalanceFetching}
               focused={cardFocus}
               fromFunding={isFromFunding}
               extensionAccountName={selectedWallet?.name}
               extensionAccountAddress={selectedWallet?.address}
               extensionAccountBalance={selectedAsset?.onChainBalance}
-              localAccountName={selectedAccount?.meta?.name}
-              localAccountAddress={selectedAccount?.address}
+              localAccountName={
+                selectedTradingAccount?.type === TradeAccountType.Keyring
+                  ? selectedTradingAccount?.account?.meta?.name
+                  : selectedWallet?.name
+              }
+              localAccountAddress={
+                selectedTradingAccount?.type === TradeAccountType.Keyring
+                  ? selectedTradingAccount?.account?.address
+                  : selectedWallet?.address
+              }
               localAccountBalance={selectedAsset?.free_balance}
               selectedAssetTicker={selectedAsset?.ticker}
             />
 
-            <button
-              onClick={handleChanteType}
-              className="h-full flex items-center justify-center p-2 max-lg:w-full max-lg:border-y border-primary hover:bg-level-1 duration-300 transition-colors"
-            >
+            <button className="h-full flex items-center justify-center p-2 max-lg:w-full max-lg:border-y border-primary hover:bg-level-1 duration-300 transition-colors">
               <RiArrowRightLine
                 className={classNames(
                   "w-6 h-6 transition-all duration-300",
@@ -327,8 +339,8 @@ export const Form = ({
               />
             </button>
             <FromTrading
-              isLocalAccountPresent={isLocalAccountPresent}
               isExtensionAccountPresent={isExtensionAccountPresent}
+              isBalanceFetching={isBalanceFetching}
               fromFunding={isTransferFromFunding}
               extensionAccountName={selectedWallet?.name}
               extensionAccountAddress={selectedWallet?.address}

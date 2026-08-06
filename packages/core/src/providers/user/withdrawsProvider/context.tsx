@@ -5,7 +5,6 @@ import { WithdrawsContextProps, WithdrawsProviderProps } from "./types";
 
 export const Context = createContext<WithdrawsContextProps>({
   ...initialState,
-  onFetchWithdraws: async () => {},
   onFetchClaimWithdraw: async () => {},
 });
 

@@ -3,12 +3,19 @@ import classNames from "classnames";
 import { Decimal, InitialMarkets, isNegative } from "@orderbook/core/index";
 import { Typography, Token, tokenAppearance } from "@polkadex/ux";
 import { RiStarLine } from "@remixicon/react";
+import { trimFloat } from "@polkadex/numericals";
+import { Dispatch, SetStateAction } from "react";
+
+export type ColumnSelector = "price" | "volume";
 
 const columnHelper = createColumnHelper<InitialMarkets>();
-
 export const columns = ({
+  isPrice,
+  setState,
   onChangeFavourite,
 }: {
+  isPrice: boolean;
+  setState: Dispatch<SetStateAction<ColumnSelector>>;
   onChangeFavourite: (e: string) => void;
 }) => [
   columnHelper.accessor((row) => row, {
@@ -57,14 +64,33 @@ export const columns = ({
     footer: (e) => e.column.id,
   }),
   columnHelper.accessor((row) => row, {
-    id: "price",
+    id: "priceAndVolume",
     cell: (e) => {
-      return <Typography.Text size="xs">{e.getValue().last}</Typography.Text>;
+      const value = isPrice
+        ? e.getValue().last
+        : trimFloat({ value: e.getValue().volume, digitsAfterDecimal: 2 });
+      return <Typography.Text size="xs">{value}</Typography.Text>;
     },
     header: () => (
-      <Typography.Text size="xs" appearance="primary">
-        Price
-      </Typography.Text>
+      <div className="flex gap-0.5 items-center justify-end cursor-pointer">
+        <Typography.Text
+          size="xs"
+          onClick={() => setState("volume")}
+          appearance={!isPrice ? "primary" : "secondary"}
+        >
+          Volume
+        </Typography.Text>
+        <Typography.Text size="xs" appearance="primary">
+          /
+        </Typography.Text>
+        <Typography.Text
+          size="xs"
+          onClick={() => setState("price")}
+          appearance={isPrice ? "primary" : "secondary"}
+        >
+          Price
+        </Typography.Text>
+      </div>
     ),
     footer: (e) => e.column.id,
   }),

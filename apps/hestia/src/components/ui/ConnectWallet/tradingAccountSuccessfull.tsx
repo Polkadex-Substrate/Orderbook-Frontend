@@ -119,7 +119,7 @@ export const TradingAccountSuccessfull = ({
         <Interaction.Action
           onClick={() => {
             onClose();
-            router.push("/transfer");
+            router.push("/send-and-receive");
           }}
         >
           Transfer funds

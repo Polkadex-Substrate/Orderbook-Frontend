@@ -45,7 +45,7 @@ export const GenericVerticalCard = ({
               checked ? "bg-primary-base" : "bg-level-4"
             )}
           >
-            {checked && <Icon name="Check" className="h-[10px] w-[10px]" />}
+            {checked && <Icon name="Check" className="h-8 w-8" />}
           </div>
         </div>
       </Loading.Spinner>

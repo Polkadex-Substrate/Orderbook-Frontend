@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Transaction } from "@orderbook/core/utils/orderbookService";
 import { Tokens, Typography, truncateString } from "@polkadex/ux";
@@ -105,14 +106,28 @@ export const columns = [
     ),
     footer: (e) => e.column.id,
   }),
-  columnHelper.accessor((row) => row.fee, {
+  columnHelper.accessor((row) => row, {
     id: "fees",
-    cell: (e) => <Typography.Text size="sm">{e.getValue()}</Typography.Text>,
-    header: () => (
-      <Typography.Text size="xs" appearance="primary">
-        Fees (PDEX)
-      </Typography.Text>
-    ),
+    cell: (e) => {
+      const isTransfer = e.cell.getValue().txType === "TRANSFER";
+      return isTransfer ? (
+        <Typography.Text size="sm">{e.getValue().fee}</Typography.Text>
+      ) : (
+        <Fragment />
+      );
+    },
+    header: (e) => {
+      const isTransfer = e.table
+        .getRowModel()
+        .flatRows.some((e) => e.original.txType === "TRANSFER");
+      return isTransfer ? (
+        <Typography.Text size="xs" appearance="primary">
+          Fees (PDEX)
+        </Typography.Text>
+      ) : (
+        <Fragment />
+      );
+    },
     footer: (e) => e.column.id,
   }),
   columnHelper.accessor((row) => row.wallets, {
@@ -169,14 +184,21 @@ export const columns = [
           </Typography.Text>
         </div>
       ) : (
-        <Typography.Text size="sm">-</Typography.Text>
+        <Fragment />
       );
     },
-    header: () => (
-      <Typography.Text size="xs" appearance="primary">
-        Hash
-      </Typography.Text>
-    ),
+    header: (e) => {
+      const isTransfer = e.table
+        .getRowModel()
+        .flatRows.some((e) => e.original.txType === "TRANSFER");
+      return isTransfer ? (
+        <Typography.Text size="xs" appearance="primary">
+          Hash
+        </Typography.Text>
+      ) : (
+        <Fragment />
+      );
+    },
     footer: (e) => e.column.id,
   }),
   columnHelper.accessor((row) => row.timestamp, {

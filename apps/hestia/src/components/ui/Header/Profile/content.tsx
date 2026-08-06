@@ -9,31 +9,35 @@ import {
   useExtensionAccounts,
   useExtensions,
 } from "@polkadex/react-providers";
-import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { MINIMUM_PDEX_REQUIRED } from "@orderbook/core/constants";
 import { TradeAccount } from "@orderbook/core/providers/types";
+import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 
 import { Profile } from "../../ConnectWallet/profile";
-import { NewTradingAccount } from "../../ConnectWallet/newTradingAccount";
-import { ConnectTradingAccount } from "../../ConnectWallet/connectTradingAccount";
-import { UserActions } from "../../ConnectWallet/userActions";
-import { RemoveTradingAccount } from "../../ConnectWallet/removeTradingAccount";
-import { ImportTradingAccount } from "../../ConnectWallet/importTradingAccount";
-import { TradingAccountSuccessfull } from "../../ConnectWallet/tradingAccountSuccessfull";
-import { TradingAccountMnemonic } from "../../ConnectWallet/tradingAccountMnemonic";
-import { TradingAccountList } from "../../ConnectWallet/tradingAccountList";
-import { ImportTradingAccountMnemonic } from "../../ConnectWallet/importTradingAccountMnemonic";
 import { ConnectExtensionAccount } from "../../ConnectWallet/connnectExtensionAccount";
 import { FundAccount } from "../../ConnectWallet/fundAccount";
+import { Authorization } from "../../ConnectWallet/authorization";
+import { UserActions } from "../../ConnectWallet/userActions";
 import { MaximumTradingAccount } from "../../ConnectWallet/maximumTradingAccount";
 import { InsufficientBalance } from "../../ConnectWallet/insufficientBalance";
-import { Authorization } from "../../ConnectWallet/authorization";
+import { NewTradingAccount } from "../../ConnectWallet/newTradingAccount";
 import { UnlockAccount } from "../../ReadyToUse/unlockAccount";
+import { ConnectTradingAccount } from "../../ConnectWallet/connectTradingAccount";
+import { TradingAccountList } from "../../ConnectWallet/tradingAccountList";
+import { RemoveTradingAccount } from "../../ConnectWallet/removeTradingAccount";
+import { TradingAccountSuccessfull } from "../../ConnectWallet/tradingAccountSuccessfull";
+import { TradingAccountMnemonic } from "../../ConnectWallet/tradingAccountMnemonic";
+import { ImportTradingAccount } from "../../ConnectWallet/importTradingAccount";
+import { ImportTradingAccountMnemonic } from "../../ConnectWallet/importTradingAccountMnemonic";
 import { GenericHorizontalCard } from "../../ReadyToUse";
+import { RegisterFundingAccount } from "../../ConnectWallet/registerFundingAccount";
 
 export const Content = () => {
   const {
+    onSelectExtension,
+    extensionAccountPresent,
+    mainProxiesAccounts,
     selectedWallet,
     onSelectTradingAccount,
     onLogout,
@@ -53,8 +57,6 @@ export const Content = () => {
     importFromFileStatus,
     tempMnemonic,
     onExportTradeAccount,
-    onSelectExtension,
-    mainProxiesAccounts,
     onResetTempTrading,
     onResetTempMnemonic,
     importFromMnemonicError,
@@ -67,8 +69,7 @@ export const Content = () => {
     gDriveReady,
     onRemoveGoogleDrive,
     removeGoogleDriveLoading,
-    browserAccountPresent,
-    selectedAccount,
+    selectedTradingAccount,
   } = useConnectWalletProvider();
   const sourceId = selectedExtension?.id;
   const { onToogleConnectExtension } = useSettingsProvider();
@@ -79,12 +80,6 @@ export const Content = () => {
     selectedAddresses: { mainAddress },
     allAccounts,
   } = useProfile();
-
-  // Move to useConnectWalletProvider
-  const fundWalletPresent = useMemo(
-    () => !!Object.keys(selectedWallet ?? {})?.length,
-    [selectedWallet]
-  );
 
   const selectedFundingWallet = useMemo(
     () =>
@@ -97,7 +92,10 @@ export const Content = () => {
   );
 
   const walletsFiltered = useMemo(
-    () => extensionAccounts?.filter(({ source }) => source === sourceId),
+    () =>
+      extensionAccounts?.filter(
+        ({ source, type }) => source === sourceId && type === "sr25519"
+      ),
     [extensionAccounts, sourceId]
   );
 
@@ -117,15 +115,23 @@ export const Content = () => {
     [localTradingAccounts, mainProxiesAccounts]
   );
 
-  const redirectMaximumAccounts =
-    (mainProxiesAccounts?.length ?? 0) >= 3
-      ? "MaximumTradingAccount"
+  const getRedirectPage = (isExtensionProxy: boolean) => {
+    const registerProxyAccount = isExtensionProxy
+      ? "RegisterFundingAccount"
       : "NewTradingAccount";
 
-  const redirectEnoughBalance =
-    (walletBalance ?? 0) >= MINIMUM_PDEX_REQUIRED
-      ? redirectMaximumAccounts
-      : "InsufficientBalance";
+    const redirectMaximumAccounts =
+      (mainProxiesAccounts?.length ?? 0) >= 3
+        ? "MaximumTradingAccount"
+        : registerProxyAccount;
+
+    const redirectEnoughBalance =
+      (walletBalance ?? 0) >= MINIMUM_PDEX_REQUIRED
+        ? redirectMaximumAccounts
+        : "InsufficientBalance";
+
+    return redirectEnoughBalance;
+  };
 
   const availableOnDevice = useMemo(
     () =>
@@ -155,41 +161,22 @@ export const Content = () => {
     );
     return currentExtension;
   }, [tempExtensionAccount?.source]);
+
   return (
     <Multistep.Interactive className="h-auto max-h-screen">
       {(props) => (
         <>
           <Multistep.Trigger>
             <Profile
-              onCreateTradingAccount={() =>
-                props?.onPage(redirectEnoughBalance, true)
-              }
-              onImportTradingAccount={() =>
-                props?.onPage("ConnectTradingAccount", true)
-              }
-              onSelectTradingAccount={(e) => onSelectTradingAccount(e)}
+              tradingAccounts={mainProxiesAccounts}
               onSwitch={() => {
                 onToogleConnectExtension();
                 onLogout?.();
               }}
-              onLogout={() => onLogout?.()}
               onActions={() => props?.onPage("UserActions", true)}
-              onRemoveCallback={() =>
-                props?.onPage("RemoveTradingAccount", true)
-              }
-              onTempBrowserAccount={(e) => onSetTempTrading?.(e)}
-              onExportBrowserAccount={(account) =>
-                onExportTradeAccount({ account })
-              }
-              onExportBrowserAccountCallback={() =>
-                props?.onPage("UnlockBrowserAccount", true)
-              }
-              tradingWalletPresent={browserAccountPresent}
-              fundWalletPresent={fundWalletPresent}
+              onLogout={() => onLogout?.()}
+              fundWalletPresent={extensionAccountPresent}
               fundWallet={selectedFundingWallet}
-              tradeAccount={selectedAccount}
-              localTradingAccounts={localTradingAccounts}
-              mainProxiesAccounts={mainProxiesAccounts}
               onConnectWallet={() => props?.onPage("ConnectWallet", true)}
             />
           </Multistep.Trigger>
@@ -205,7 +192,7 @@ export const Content = () => {
               onCreateCallback={() =>
                 props?.onPage("TradingAccountSuccessfull", true)
               }
-              onClose={() => props?.onChangeInteraction(false)}
+              onClose={() => props?.onPage("UserActions", true)}
               onConnectGDrive={onConnectGoogleDrive}
               connectGDriveLoading={connectGoogleDriveLoading}
               gDriveReady={gDriveReady}
@@ -233,7 +220,7 @@ export const Content = () => {
               key="ConnectTradingAccount"
               accounts={filteredAccounts}
               onSelect={(e) => onSelectTradingAccount(e)}
-              onClose={() => props?.onChangeInteraction(false)}
+              onClose={() => props?.onPage("UserActions", true)}
               onImport={() => props?.onPage("ImportTradingAccount")}
               onTempBrowserAccount={(e) => onSetTempTrading?.(e)}
               onSelectCallback={() => props?.onChangeInteraction(false)}
@@ -269,22 +256,31 @@ export const Content = () => {
             <UserActions
               key="UserActions"
               onClose={() => props?.onChangeInteraction(false)}
-              onNewTradingAccount={() =>
-                props?.onPage(redirectEnoughBalance, true)
-              }
+              onCreateTradingAccount={(isExtensionProxy: boolean) => {
+                const page = getRedirectPage(isExtensionProxy);
+                props?.onPage(page, true);
+              }}
               onImportTradingAccount={() =>
                 props?.onPage("ConnectTradingAccount")
               }
+              fundWallet={selectedWallet}
               fundWalletIsPresent={isPresent}
               onTradingAccountList={() => props?.onPage("TradingAccountList")}
               registeredProxies={mainProxiesAccounts}
+            />
+            <RegisterFundingAccount
+              key="RegisterFundingAccount"
+              onCreateAccount={onRegisterTradeAccount}
+              fundWallet={selectedWallet}
+              loading={registerStatus === "loading"}
+              onClose={() => props?.onPage("UserActions", true)}
             />
             <TradingAccountList
               key="TradingAccountList"
               tradingAccounts={mainProxiesAccounts}
               browserAccounts={localTradingAccounts}
               onRemove={(e) => onSetTempTrading?.(e)}
-              onClose={() => props?.onChangeInteraction(false)}
+              onClose={() => props?.onPage("UserActions", true)}
               onRemoveCallback={() => props?.onPage("RemoveTradingAccount")}
             />
             <RemoveTradingAccount
@@ -308,7 +304,7 @@ export const Content = () => {
             />
             <TradingAccountSuccessfull
               key="TradingAccountSuccessfull"
-              tradingAccount={selectedAccount}
+              tradingAccount={selectedTradingAccount?.account}
               onClose={() => {
                 onResetTempMnemonic?.();
                 props?.onChangeInteraction(false);
@@ -354,7 +350,9 @@ export const Content = () => {
               installedExtensions={extensionsStatus}
               onConnectProvider={(e) => onSelectExtension?.(e)}
               onClose={() => props?.onChangeInteraction(false)}
-              onConnectCallback={() => props?.onPage("Authorization", true)}
+              onConnectCallback={() =>
+                props?.onPage("ConnectAuthorization", true)
+              }
             />
             <Authorization
               key="ConnectAuthorization"
@@ -379,7 +377,7 @@ export const Content = () => {
               tradingAccounts={mainProxiesAccounts}
               browserAccounts={localTradingAccounts}
               onRemove={(e) => onSetTempTrading?.(e)}
-              onClose={() => props?.onChangeInteraction(false)}
+              onClose={() => props?.onPage("UserActions", true)}
               onRemoveCallback={() => props?.onPage("RemoveTradingAccount")}
             />
             <InsufficientBalance

@@ -1,6 +1,7 @@
 {
   "extends": "@orderbook/tsconfig/nextjs.json",
   "compilerOptions": {
+    "strict": true,
     "lib": ["DOM"],
     "types": [
       "jest",
