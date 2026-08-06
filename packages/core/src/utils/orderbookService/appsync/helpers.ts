@@ -73,8 +73,28 @@ export const fetchFullListFromAppSync = async <T = any>(
       query,
       variables: nextToken ? { ...variables, nextToken } : variables,
     });
-    fullResponse = [...fullResponse, ...(res.data[key]?.items || [])];
-    nextToken = res.data[key].nextToken;
+
+    // A GraphQL server that fails to resolve a field returns that field as NULL
+    // alongside an `errors` array - it does not omit `data`. The unguarded
+    // `res.data[key].nextToken` here then threw
+    //   TypeError: Cannot read properties of null (reading 'nextToken')
+    // which buried the server's actual error message under a frontend type
+    // error, three frames deep in a paginator. Guard the read, then raise the
+    // real cause.
+    const page = res?.data?.[key];
+    if (page == null) {
+      const gqlErrors = (res as { errors?: { message?: string }[] })?.errors;
+      const detail = gqlErrors?.length
+        ? gqlErrors
+            .map((e) => e?.message)
+            .filter(Boolean)
+            .join("; ")
+        : `the server returned no "${key}" field`;
+      throw new Error(`GraphQL query "${key}" returned no data: ${detail}`);
+    }
+
+    fullResponse = [...fullResponse, ...(page.items || [])];
+    nextToken = page.nextToken;
   } while (nextToken);
   return fullResponse as T[];
 };

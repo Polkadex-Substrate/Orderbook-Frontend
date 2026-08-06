@@ -43,7 +43,7 @@ export const OpenOrdersTable = ({
 }) => {
   const { mutateAsync: cancelOrder } = useCancelOrder();
   const { selectedTradingAccount } = useConnectWalletProvider();
-  const { isLoading, openOrders } = useOpenOrders(filters);
+  const { isLoading, openOrders, isError } = useOpenOrders(filters);
   const { mutateAsync: onCancelAllOrders } = useCancelAllOrders();
   const { width } = useWindowSize();
 
@@ -90,6 +90,11 @@ export const OpenOrdersTable = ({
   }, [responsiveState, responsiveView]);
 
   if (isLoading) return <Loading />;
+
+  // Order matters: a failed read also yields a zero-length list (initialData is
+  // []), so checking emptiness first would always win and the error would never
+  // be shown.
+  if (isError) return <TabEmptyState tab="openOrders" reason="failed" />;
 
   if (!openOrders.length)
     return <TabEmptyState tab="openOrders" reason="empty" />;

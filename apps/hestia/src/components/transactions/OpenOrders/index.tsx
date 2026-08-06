@@ -47,10 +47,11 @@ export const OpenOrders = forwardRef<HTMLDivElement, Props>(
     const { mutateAsync: cancelOrder } = useCancelOrder();
     const { mutateAsync: onCancelAllOrders } = useCancelAllOrders();
 
-    const { isLoading, openOrders: allOpenOrders } = useOpenOrders(
-      undefined,
-      true
-    );
+    const {
+      isLoading,
+      openOrders: allOpenOrders,
+      isError,
+    } = useOpenOrders(undefined, true);
     const [showPassword, setShowPassword] = useState(false);
     const [orderPayload, setOrderPayload] = useState<CancelOrderArgs | null>(
       null
@@ -161,6 +162,19 @@ export const OpenOrders = forwardRef<HTMLDivElement, Props>(
     }, [responsiveState, responsiveView]);
 
     if (isLoading) return <SkeletonLoading />;
+
+    // "No results found" is a lie when the READ failed - and because the hook
+    // uses initialData: [], a failure looks exactly like an empty page. Check the
+    // error first.
+    if (isError)
+      return (
+        <GenericMessage
+          title="Couldn't load your orders"
+          illustration="NoResultFound"
+          className="bg-level-1 border-b border-b-primary"
+          imageProps={{ className: "w-20 self-center" }}
+        />
+      );
 
     if (openOrdersPerPage?.length === 0)
       return (

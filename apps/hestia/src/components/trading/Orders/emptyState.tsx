@@ -69,6 +69,11 @@ const COPY = {
       description:
         "Orders you place will appear here until they fill or you cancel them.",
     },
+    failed: {
+      title: "Couldn't load your orders",
+      description:
+        "Your orders were placed - this is a problem reading them back, not a lost order. Nothing has been cancelled. Try again shortly, and report it if it keeps happening.",
+    },
     disconnected: {
       title: "Open orders will appear here",
       description:
@@ -80,6 +85,11 @@ const COPY = {
     empty: {
       title: "No orders yet",
       description: "Filled and cancelled orders are listed here, newest first.",
+    },
+    failed: {
+      title: "Couldn't load order history",
+      description:
+        "This is a problem reading your past orders, not a problem with the orders themselves. Your balances and open orders are unaffected.",
     },
     disconnected: {
       title: "Order history will appear here",
@@ -94,6 +104,11 @@ const COPY = {
       description:
         "Every fill against one of your orders is recorded here, including partial fills.",
     },
+    failed: {
+      title: "Couldn't load trade history",
+      description:
+        "This is a problem reading your fills, not a problem with the trades. Your balances and open orders are unaffected.",
+    },
     disconnected: {
       title: "Trade history will appear here",
       description: "Connect a trading account to see your fills.",
@@ -105,6 +120,11 @@ const COPY = {
       title: "No assets yet",
       description:
         "Bridge tokens in, or use the Faucet to get testnet tokens, and your balances will show here.",
+    },
+    failed: {
+      title: "Couldn't load balances",
+      description:
+        "This is a display problem, not a missing-funds problem - your assets are held on chain and are unaffected. Try again shortly.",
     },
     disconnected: {
       title: "Balances will appear here",
@@ -121,8 +141,16 @@ export const TabEmptyState = ({
   reason,
 }: {
   tab: OrdersTab;
-  /** "disconnected" = no account yet; "empty" = connected, nothing to show. */
-  reason: "empty" | "disconnected";
+  /**
+   * "disconnected" = no account yet.
+   * "empty"        = connected, genuinely nothing to show.
+   * "failed"       = the READ failed.
+   *
+   * "failed" is not a flavour of "empty". A read error used to render as "No open
+   * orders", so the screen asserted something false, and "my order was placed but
+   * is not in the list" became impossible to diagnose from the UI.
+   */
+  reason: "empty" | "disconnected" | "failed";
 }) => {
   const { icon, [reason]: copy } = COPY[tab];
   return (
