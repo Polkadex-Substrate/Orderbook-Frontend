@@ -53,6 +53,7 @@ import {
   // envelope, declared locally now that Amplify is gone.
   GraphQLResponse as GraphQLResult,
 } from "./helpers";
+import { splitByKnownMarket, describeSkippedMarkets } from "./knownMarkets";
 
 class AppsyncV1Reader implements OrderbookReadStrategy {
   ready = false;
@@ -216,10 +217,30 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       queryKey
     );
 
-    const openOrders = openOrderQueryResult?.map((item): Order => {
-      return this.mapApiOrderToOrder(item, this._marketList);
-    });
-    return openOrders || [];
+    // Drop rows whose market this client cannot resolve, INSTEAD of mapping them.
+    //
+    // mapApiOrderToOrder throws on an unresolvable market id. This used to be a
+    // bare `.map`, so one such row threw out of the map, rejected the whole query
+    // and emptied the order list - while the rows sat in the SpotOrders table.
+    // getOrderHistory and getTrades below already filtered first; open orders was
+    // the one that did not, which is why it was the one that broke.
+    //
+    // A market id can be absent legitimately: a closed (or closed and
+    // re-registered) pair still has orders referencing it, and a pair added since
+    // the market list was cached is unknown until the next refresh.
+    const split = splitByKnownMarket(
+      openOrderQueryResult,
+      this._marketList.map((m) => m.id)
+    );
+
+    // Warn, do not swallow. Silently returning fewer orders than exist is the
+    // same class of bug as this fix - the user must be able to find out why.
+    const skipped = describeSkippedMarkets(split, "getOpenOrders");
+    if (skipped) console.warn(skipped);
+
+    return split.known.map((item) =>
+      this.mapApiOrderToOrder(item, this._marketList)
+    );
   }
 
   async getOrderHistory(
