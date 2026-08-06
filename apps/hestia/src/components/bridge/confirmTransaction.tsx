@@ -358,10 +358,18 @@ export const ConfirmTransaction = ({
                     );
                     onSuccess();
                   } catch (e) {
+                    // RPC provider failures (rate limit, plan paywall,
+                    // unreachable endpoint) get a plain-language message. viem's
+                    // raw text is a dump of the request body, contract address,
+                    // function name, a docs link and a version string - which
+                    // told a user nothing about whether their funds were at
+                    // risk. Unrecognised errors keep their original message
+                    // rather than being flattened into something vague.
                     onHandleError(
-                      e instanceof Error
-                        ? e.message
-                        : "Failed to transfer tokens"
+                      describeRpcError(e) ??
+                        (e instanceof Error
+                          ? e.message
+                          : "Failed to transfer tokens")
                     );
                     console.error("Bridge Error:", e);
                   } finally {

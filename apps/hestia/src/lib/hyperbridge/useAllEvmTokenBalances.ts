@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { createPublicClient, http, formatUnits, isAddress } from "viem";
+import { createPublicClient, formatUnits, isAddress } from "viem";
 import { sepolia } from "viem/chains";
+
+import { rpcTransport } from "./rpcTransport";
 
 import { BRIDGE_CHAINS } from "@/config/bridge";
 import type { EvmChainConfig } from "@/config/bridge";
@@ -36,7 +38,8 @@ export function useAllEvmTokenBalances(
   const tokensKey = tokens?.map((t) => t.ticker).join(",") ?? "";
 
   const publicClient = useMemo(
-    () => createPublicClient({ chain: sepolia, transport: http(rpcUrl) }),
+    () =>
+      createPublicClient({ chain: sepolia, transport: rpcTransport(rpcUrl) }),
     [rpcUrl]
   );
 

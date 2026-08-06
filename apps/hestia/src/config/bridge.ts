@@ -59,9 +59,14 @@ export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
     logo: "Ethereum",
     chainId: 11155111,
     stateMachineId: "EVM-11155111",
+    // Comma-separated list; see lib/hyperbridge/rpcTransport.ts. The old single
+    // hardcoded drpc URL (API key in the path) started returning 400 "chain is
+    // not available on free plan" for every Sepolia call, which stopped bridging
+    // outright - even the isWeth() preflight read. Keyless public endpoints by
+    // default, and more than one on purpose.
     rpcUrl:
       process.env.NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL ??
-      "https://lb.drpc.live/sepolia/AlESv0IOzU1oqwgJvN0i5cK7r27IGSIR8Z1OtuZZzRRv",
+      "https://ethereum-sepolia-rpc.publicnode.com,https://rpc.sepolia.org",
     ismpHost: (process.env.NEXT_PUBLIC_BRIDGE_ISMP_HOST ??
       "0x2EdB74C269948b60ec1000040E104cef0eABaae8") as `0x${string}`,
     consensusStateId: "ETH0",

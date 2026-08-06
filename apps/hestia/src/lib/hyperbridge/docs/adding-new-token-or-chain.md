@@ -59,11 +59,11 @@ config/bridge.ts
 
 The config file defines three collections:
 
-| Collection | Purpose |
-|------------|---------|
-| `BRIDGE_CHAINS` | One entry per chain. EVM chains use `EvmChainConfig`; Substrate chains use `SubstrateChainConfig`. |
+| Collection      | Purpose                                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `BRIDGE_CHAINS` | One entry per chain. EVM chains use `EvmChainConfig`; Substrate chains use `SubstrateChainConfig`.                                |
 | `BRIDGE_TOKENS` | One entry per bridgeable token. Each token carries per-chain details (`address`, `assetId`, and `hftAddress` for each EVM chain). |
-| `BRIDGE_ROUTES` | One entry per directional route (source + destination + list of supported token IDs). |
+| `BRIDGE_ROUTES` | One entry per directional route (source + destination + list of supported token IDs).                                             |
 
 ---
 
@@ -95,12 +95,12 @@ Always set `relayerFee: 0n`. With `isWeth = true`, any non-zero `relayerFee` cau
 ```ts
 let nativeValue = 0n;
 try {
-  nativeValue = await publicClient.readContract({
+  nativeValue = (await publicClient.readContract({
     address: hftAddress,
     abi: WrappedHyperFungibleTokenABI,
     functionName: "quote",
     args: [sendParams],
-  }) as bigint;
+  })) as bigint;
 } catch {
   // destination may not be configured yet in the HFT contract
 }
@@ -112,7 +112,7 @@ When building the Substrate → EVM extrinsic, the `destination` field must be t
 
 ```ts
 // CORRECT
-const destination = { Evm: _evmChain.chainId };   // e.g. { Evm: 11155111 }
+const destination = { Evm: _evmChain.chainId }; // e.g. { Evm: 11155111 }
 
 // WRONG - Polkadot.js will throw "Cannot map Enum JSON, unable to find 'EVM-11155111'"
 const destination = "EVM-11155111";
@@ -128,14 +128,14 @@ const destination = "EVM-11155111";
 
 Before writing code, collect the following from the Hyperbridge team and on-chain sources:
 
-| Item | Where to get it |
-|------|----------------|
-| EVM contract address of USDC on Sepolia | Sepolia block explorer or protocol docs |
-| Decimals of USDC on Sepolia | Contract `decimals()` call (typically `6` for USDC) |
-| **`WrappedHFT` contract address for USDC on Sepolia** | **Hyperbridge team** - they must deploy and configure this contract for USDC ↔ Polkadex before the bridge works |
-| **`isWeth` value for the USDC HFT contract** | Call `isWeth()` on the deployed contract. `false` for USDC (ERC-20 approval required). |
-| Substrate asset ID for USDC on Polkadex | Polkadex team / on-chain `assets.metadata` enumeration |
-| Icon key supported by `@polkadex/ux` `TokenAppearance` | `TokenAppearance` type definition in `@polkadex/ux` |
+| Item                                                   | Where to get it                                                                                                 |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| EVM contract address of USDC on Sepolia                | Sepolia block explorer or protocol docs                                                                         |
+| Decimals of USDC on Sepolia                            | Contract `decimals()` call (typically `6` for USDC)                                                             |
+| **`WrappedHFT` contract address for USDC on Sepolia**  | **Hyperbridge team** - they must deploy and configure this contract for USDC ↔ Polkadex before the bridge works |
+| **`isWeth` value for the USDC HFT contract**           | Call `isWeth()` on the deployed contract. `false` for USDC (ERC-20 approval required).                          |
+| Substrate asset ID for USDC on Polkadex                | Polkadex team / on-chain `assets.metadata` enumeration                                                          |
+| Icon key supported by `@polkadex/ux` `TokenAppearance` | `TokenAppearance` type definition in `@polkadex/ux`                                                             |
 
 ### Step 1 - Add the token to `BRIDGE_TOKENS` in `config/bridge.ts`
 
@@ -143,7 +143,7 @@ Before writing code, collect the following from the Hyperbridge team and on-chai
 // apps/hestia/src/config/bridge.ts
 
 export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
-  weth: { /* existing entry - do not touch */ },
+  weth: {/* existing entry - do not touch */},
 
   // ── ADD THIS ──────────────────────────────────────────────────────────────
   usdc: {
@@ -151,7 +151,7 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
     name: "USD Coin",
     ticker: "USDC",
     decimals: 6,
-    logo: "usdc",                   // must match a TokenAppearance key in @polkadex/ux
+    logo: "usdc", // must match a TokenAppearance key in @polkadex/ux
     chains: {
       sepolia: {
         address: (process.env.NEXT_PUBLIC_BRIDGE_USDC_ADDRESS ??
@@ -161,14 +161,14 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
           "") as `0x${string}`,
       },
       polkadex: {
-        assetId: "5",               // confirm with Polkadex team
+        assetId: "5", // confirm with Polkadex team
       },
     },
   },
 };
 ```
 
-> **Note on `hftAddress`**: The `WrappedHFT` contract must be deployed *and* configured by the Hyperbridge team for your token-destination pair before it can accept transfers. Getting `hftAddress` without this configuration means `send()` will revert. Confirm with the Hyperbridge team that `supportedChain("SUBSTRATE-PDEX")` returns a non-null peer module ID before going live.
+> **Note on `hftAddress`**: The `WrappedHFT` contract must be deployed _and_ configured by the Hyperbridge team for your token-destination pair before it can accept transfers. Getting `hftAddress` without this configuration means `send()` will revert. Confirm with the Hyperbridge team that `supportedChain("SUBSTRATE-PDEX")` returns a non-null peer module ID before going live.
 
 ### Step 2 - Add the token ID to the route's `supportedTokenIds`
 
@@ -180,7 +180,7 @@ export const BRIDGE_ROUTES: BridgeRouteConfig[] = [
     id: "sepolia-polkadex",
     sourceChainId: "sepolia",
     destinationChainId: "polkadex",
-    supportedTokenIds: ["weth", "usdc"],    // <-- add "usdc" here
+    supportedTokenIds: ["weth", "usdc"], // <-- add "usdc" here
     relayerFeeRate: 0.0012,
     timeout: 3600,
     indexerUrl: process.env.NEXT_PUBLIC_BRIDGE_INDEXER_URL ?? "...",
@@ -213,11 +213,11 @@ env: {
 In `ethereumToSubstrate.ts`, the `isWeth` flag is read from the HFT contract at runtime:
 
 ```ts
-const isWeth = await publicClient.readContract({
+const isWeth = (await publicClient.readContract({
   address: hftAddress,
   abi: WrappedHyperFungibleTokenABI,
   functionName: "isWeth",
-}) as boolean;
+})) as boolean;
 ```
 
 - `isWeth = false` (USDC): the code will check allowance and send an ERC-20 approval tx if needed. No additional changes required - the conditional is already in place.
@@ -234,7 +234,7 @@ If the new token behaves like WETH (funds arrive as native ETH on the EVM side),
 
 ```tsx
 // Pattern already in place for WETH → ETH. Extend if needed:
-ticker === "WETH" ? "ETH" : ticker
+ticker === "WETH" ? "ETH" : ticker;
 ```
 
 ### What happens automatically
@@ -256,14 +256,14 @@ ticker === "WETH" ? "ETH" : ticker
 
 ### Prerequisites
 
-| Item | Where to get it |
-|------|----------------|
-| ISMP Host contract address on Mainnet | Hyperbridge documentation / deployment registry |
+| Item                                                        | Where to get it                                          |
+| ----------------------------------------------------------- | -------------------------------------------------------- |
+| ISMP Host contract address on Mainnet                       | Hyperbridge documentation / deployment registry          |
 | `WrappedHFT` contract address(es) for each token on Mainnet | **Hyperbridge team** - one contract per bridgeable token |
-| Mainnet RPC URL | Alchemy / Infura / your own node |
-| Chain ID | `1` for Ethereum Mainnet |
-| State machine ID | `"EVM-1"` (pattern: `EVM-{chainId}`) |
-| Consensus state ID | e.g. `"ETH0"` for Ethereum (check Hyperbridge docs) |
+| Mainnet RPC URL                                             | Alchemy / Infura / your own node                         |
+| Chain ID                                                    | `1` for Ethereum Mainnet                                 |
+| State machine ID                                            | `"EVM-1"` (pattern: `EVM-{chainId}`)                     |
+| Consensus state ID                                          | e.g. `"ETH0"` for Ethereum (check Hyperbridge docs)      |
 
 > There is no longer a `tokenGatewayAddress` field on EVM chains - the gateway logic is per-token via `hftAddress`. Do not add it to `EvmChainConfig`.
 
@@ -273,8 +273,8 @@ ticker === "WETH" ? "ETH" : ticker
 // apps/hestia/src/config/bridge.ts
 
 export const BRIDGE_CHAINS: Record<string, BridgeChainConfig> = {
-  sepolia: { /* existing - do not touch */ },
-  polkadex: { /* existing - do not touch */ },
+  sepolia: {/* existing - do not touch */},
+  polkadex: {/* existing - do not touch */},
 
   // ── ADD THIS ──────────────────────────────────────────────────────────────
   mainnet: {
@@ -305,7 +305,7 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
     id: "weth",
     // ...existing fields...
     chains: {
-      sepolia:  { address: "0x7b79...", hftAddress: "0x4BF5..." },
+      sepolia: { address: "0x7b79...", hftAddress: "0x4BF5..." },
       polkadex: { assetId: "3" },
       // ── ADD THIS ──────────────────────────────────────────────────────────
       mainnet: {
@@ -325,7 +325,7 @@ export const BRIDGE_TOKENS: Record<string, BridgeTokenConfig> = {
 // apps/hestia/src/config/bridge.ts
 
 export const BRIDGE_ROUTES: BridgeRouteConfig[] = [
-  { /* existing sepolia-polkadex route */ },
+  {/* existing sepolia-polkadex route */},
 
   // ── ADD THIS ──────────────────────────────────────────────────────────────
   {
@@ -351,7 +351,7 @@ export const BRIDGE_ROUTES: BridgeRouteConfig[] = [
 import { mainnet, sepolia } from "wagmi/chains";
 
 const WAGMI_CHAIN_MAP: Record<number, Chain> = {
-  1: mainnet,           // <-- add if not already present
+  1: mainnet, // <-- add if not already present
   11155111: sepolia,
 };
 ```
@@ -361,6 +361,7 @@ const WAGMI_CHAIN_MAP: Record<number, Chain> = {
 The `WrappedHyperFungibleTokenABI` comes from `@hyperbridge/sdk` and is chain-agnostic - no new ABI files needed for the HFT transfer logic.
 
 The two local ABI files (`ethSepoliaHostModule.ts`, `ethSepoliaFeeTokenModule.ts`) are only used on the Sepolia side for:
+
 - Parsing `PostRequestEvent` logs from the ISMP Host (for commitment extraction after a send)
 - Checking ERC-20 allowance and approving fee tokens
 
@@ -391,14 +392,14 @@ NEXT_PUBLIC_BRIDGE_MAINNET_WETH_HFT_ADDRESS=0x<WrappedHFT address from Hyperbrid
 
 ### Prerequisites
 
-| Item | Where to get it |
-|------|----------------|
-| WebSocket RPC URL | Chain documentation |
-| State machine ID | Hyperbridge docs (pattern: `SUBSTRATE-{IDENTIFIER}`) |
-| Consensus state ID | Hyperbridge docs |
-| Hasher type | Hyperbridge docs (`"Keccak"` or `"Blake2"`) |
-| Native currency symbol + decimals | Chain documentation |
-| Asset ID for each token on this chain | Chain block explorer or team |
+| Item                                                                                             | Where to get it                                                                         |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| WebSocket RPC URL                                                                                | Chain documentation                                                                     |
+| State machine ID                                                                                 | Hyperbridge docs (pattern: `SUBSTRATE-{IDENTIFIER}`)                                    |
+| Consensus state ID                                                                               | Hyperbridge docs                                                                        |
+| Hasher type                                                                                      | Hyperbridge docs (`"Keccak"` or `"Blake2"`)                                             |
+| Native currency symbol + decimals                                                                | Chain documentation                                                                     |
+| Asset ID for each token on this chain                                                            | Chain block explorer or team                                                            |
 | **Confirmation that `WrappedHFT.supportedChain(stateMachineId)` returns a non-null peer module** | **Hyperbridge team** - they must register the destination on each `WrappedHFT` contract |
 
 ### Step 1 - Add the chain to `BRIDGE_CHAINS`
@@ -499,10 +500,10 @@ apps/hestia/src/lib/hyperbridge/abis/
 
 Currently present:
 
-| File | Purpose |
-|------|---------|
-| `ethSepoliaHostModule.ts` | ISMP Host contract - used to parse `PostRequestEvent` logs after a send, to extract the post-request commitment |
-| `ethSepoliaFeeTokenModule.ts` | ERC-20 ABI - used only for ERC-20 allowance check and approval when `isWeth = false` |
+| File                          | Purpose                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `ethSepoliaHostModule.ts`     | ISMP Host contract - used to parse `PostRequestEvent` logs after a send, to extract the post-request commitment |
+| `ethSepoliaFeeTokenModule.ts` | ERC-20 ABI - used only for ERC-20 allowance check and approval when `isWeth = false`                            |
 
 **Note**: The `WrappedHyperFungibleTokenABI` that drives the actual `send()` call comes from `@hyperbridge/sdk`, not from a local file. There is no local TokenGateway ABI file - that pattern was replaced by the HFT model.
 
@@ -520,16 +521,16 @@ All bridge-related env vars live in `apps/hestia/next.config.js` under the `env:
 
 ### Currently used (Sepolia ↔ Polkadex)
 
-| Variable | Used in | Purpose |
-|----------|---------|---------|
-| `NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL` | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.rpcUrl` | Sepolia HTTP RPC endpoint |
-| `NEXT_PUBLIC_BRIDGE_ISMP_HOST` | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.ismpHost` | ISMP Host contract on Sepolia |
-| `NEXT_PUBLIC_BRIDGE_WETH_ADDRESS` | `config/bridge.ts` → `BRIDGE_TOKENS.weth.chains.sepolia.address` | WETH ERC-20 contract on Sepolia |
-| `NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS` | `config/bridge.ts` → `BRIDGE_TOKENS.weth.chains.sepolia.hftAddress` | **WrappedHFT contract for WETH on Sepolia** - get from Hyperbridge team |
-| `NEXT_PUBLIC_BRIDGE_DESTINATION_RPC_URL` | `config/bridge.ts` → `BRIDGE_CHAINS.polkadex.wsUrl` | Polkadex WebSocket RPC |
-| `NEXT_PUBLIC_POLKADEX_STATE_MACHINE` | `config/bridge.ts` → `BRIDGE_CHAINS.polkadex.stateMachineId` | Polkadex state machine ID (`SUBSTRATE-PDEX`) |
-| `NEXT_PUBLIC_BRIDGE_INDEXER_URL` | `config/bridge.ts` → `BRIDGE_ROUTES[0].indexerUrl` | Hyperbridge indexer URL |
-| `NEXT_PUBLIC_PROJECT_ID` | `config/wagmi.ts` | WalletConnect / Web3Modal project ID |
+| Variable                                 | Used in                                                             | Purpose                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `NEXT_PUBLIC_BRIDGE_SEPOLIA_RPC_URL`     | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.rpcUrl`                 | Sepolia HTTP RPC endpoint                                               |
+| `NEXT_PUBLIC_BRIDGE_ISMP_HOST`           | `config/bridge.ts` → `BRIDGE_CHAINS.sepolia.ismpHost`               | ISMP Host contract on Sepolia                                           |
+| `NEXT_PUBLIC_BRIDGE_WETH_ADDRESS`        | `config/bridge.ts` → `BRIDGE_TOKENS.weth.chains.sepolia.address`    | WETH ERC-20 contract on Sepolia                                         |
+| `NEXT_PUBLIC_BRIDGE_WETH_HFT_ADDRESS`    | `config/bridge.ts` → `BRIDGE_TOKENS.weth.chains.sepolia.hftAddress` | **WrappedHFT contract for WETH on Sepolia** - get from Hyperbridge team |
+| `NEXT_PUBLIC_BRIDGE_DESTINATION_RPC_URL` | `config/bridge.ts` → `BRIDGE_CHAINS.polkadex.wsUrl`                 | Polkadex WebSocket RPC                                                  |
+| `NEXT_PUBLIC_POLKADEX_STATE_MACHINE`     | `config/bridge.ts` → `BRIDGE_CHAINS.polkadex.stateMachineId`        | Polkadex state machine ID (`SUBSTRATE-PDEX`)                            |
+| `NEXT_PUBLIC_BRIDGE_INDEXER_URL`         | `config/bridge.ts` → `BRIDGE_ROUTES[0].indexerUrl`                  | Hyperbridge indexer URL                                                 |
+| `NEXT_PUBLIC_PROJECT_ID`                 | `config/wagmi.ts`                                                   | WalletConnect / Web3Modal project ID                                    |
 
 ### Pattern for new chains
 

@@ -111,7 +111,11 @@ A TanStack Query hook that fetches the bridge config from the API:
 
 ```ts
 import { useQuery } from "@tanstack/react-query";
-import type { BridgeChainConfig, BridgeTokenConfig, BridgeRouteConfig } from "@/config/bridge";
+import type {
+  BridgeChainConfig,
+  BridgeTokenConfig,
+  BridgeRouteConfig,
+} from "@/config/bridge";
 
 interface BridgeConfig {
   chains: BridgeChainConfig[];
@@ -124,13 +128,15 @@ export function useBridgeConfig() {
     queryKey: ["bridge-config"],
     queryFn: async () => {
       const res = await fetch("/api/bridge/config", {
-        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_READ_ONLY_TOKEN}` },
+        headers: {
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_READ_ONLY_TOKEN}`,
+        },
       });
       if (!res.ok) throw new Error(`Bridge config fetch failed: ${res.status}`);
       return res.json() as Promise<BridgeConfig>;
     },
-    staleTime: 5 * 60 * 1000,   // treat config as fresh for 5 min
-    gcTime: 30 * 60 * 1000,     // keep in cache for 30 min after last use
+    staleTime: 5 * 60 * 1000, // treat config as fresh for 5 min
+    gcTime: 30 * 60 * 1000, // keep in cache for 30 min after last use
     retry: 3,
   });
 }
@@ -141,6 +147,7 @@ export function useBridgeConfig() {
 Replace direct imports of `BRIDGE_CHAINS`, `BRIDGE_TOKENS`, `BRIDGE_ROUTES` with the `useBridgeConfig()` hook. The provider already owns the chain/token selection state - it is the right place to hold the async config and expose it to children via context.
 
 Key changes:
+
 - Call `useBridgeConfig()` at the top of `BridgeProvider`
 - Pass `isLoading` / `error` states down through `BridgeContext` so child components can render a skeleton or error banner
 - Replace calls like `getRouteSupportedTokens(src, dest)` with the in-memory version that reads from the fetched arrays (pass them in or expose via context)
@@ -156,6 +163,7 @@ Add a loading skeleton and an error state for when `useBridgeConfig` is in fligh
 ### Step 1 - Agree on the API shape with the backend team
 
 Before writing frontend code, confirm with the backend team that:
+
 - The endpoint URL and auth mechanism match (same `READ_ONLY_TOKEN` pattern, or a new public endpoint)
 - The response fields exactly match the interfaces in `config/bridge.ts`
 - The `hftAddress` field for EVM-side token entries is included (it is a frontend-critical field, not a pure display field)
@@ -172,9 +180,13 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const res = await fetch(`${process.env.GRAPHQL_URL}/bridge/config`, {
     headers: { Authorization: `Bearer ${process.env.READ_ONLY_TOKEN}` },
-    next: { revalidate: 300 },   // Next.js ISR - revalidate every 5 min
+    next: { revalidate: 300 }, // Next.js ISR - revalidate every 5 min
   });
-  if (!res.ok) return NextResponse.json({ error: "upstream error" }, { status: res.status });
+  if (!res.ok)
+    return NextResponse.json(
+      { error: "upstream error" },
+      { status: res.status }
+    );
   return NextResponse.json(await res.json());
 }
 ```
@@ -187,9 +199,9 @@ Add the query hook. At this stage it can still fall back to the hardcoded consta
 
 ```ts
 const { data, isLoading, error } = useBridgeConfig();
-const chains = data?.chains ?? Object.values(BRIDGE_CHAINS);       // temporary fallback
-const tokens = data?.tokens ?? SEPOLIA_PDEX_TOKENS;                // temporary fallback
-const routes = data?.routes ?? BRIDGE_ROUTES;                      // temporary fallback
+const chains = data?.chains ?? Object.values(BRIDGE_CHAINS); // temporary fallback
+const tokens = data?.tokens ?? SEPOLIA_PDEX_TOKENS; // temporary fallback
+const routes = data?.routes ?? BRIDGE_ROUTES; // temporary fallback
 ```
 
 ### Step 4 - Wire `BridgeProvider` to use the hook's data
@@ -202,12 +214,16 @@ Wrap the bridge form in a conditional:
 
 ```tsx
 if (isLoading) return <BridgeConfigSkeleton />;
-if (error) return <BridgeConfigError message="Could not load supported tokens. Please try again." />;
+if (error)
+  return (
+    <BridgeConfigError message="Could not load supported tokens. Please try again." />
+  );
 ```
 
 ### Step 6 - Remove hardcoded constants and fallbacks
 
 Once the API is proven stable in staging:
+
 1. Delete `SEPOLIA_PDEX_TOKENS`, `BRIDGE_TOKENS`, and `BRIDGE_ROUTES` from `config/bridge.ts`
 2. Remove the `BRIDGE_CHAINS` constant - only keep the TypeScript interfaces
 3. Remove the temporary fallbacks from Step 3
@@ -233,11 +249,11 @@ Keep only the URL/auth vars needed to reach the API itself.
 
 ## Caching Strategy
 
-| Layer | Mechanism | TTL |
-|-------|-----------|-----|
-| Next.js API route (`/api/bridge/config`) | `next: { revalidate: 300 }` | 5 min |
-| TanStack Query client cache | `staleTime: 5 * 60 * 1000` | 5 min |
-| Browser session | Query result survives navigation within a session | Until page refresh |
+| Layer                                    | Mechanism                                         | TTL                |
+| ---------------------------------------- | ------------------------------------------------- | ------------------ |
+| Next.js API route (`/api/bridge/config`) | `next: { revalidate: 300 }`                       | 5 min              |
+| TanStack Query client cache              | `staleTime: 5 * 60 * 1000`                        | 5 min              |
+| Browser session                          | Query result survives navigation within a session | Until page refresh |
 
 The bridge config changes rarely (only when new tokens or chains are added by the protocol team). A 5-minute TTL is conservative; it could safely be extended to 30 minutes or more.
 

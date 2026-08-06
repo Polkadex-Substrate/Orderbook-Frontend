@@ -21,6 +21,7 @@ import {
   type Address,
   type WalletClient,
 } from "viem";
+import { rpcTransport } from "./rpcTransport";
 
 import HOST_MODULE from "./abis/ethSepoliaHostModule";
 import FEE_TOKEN_MODULE from "./abis/ethSepoliaFeeTokenModule";
@@ -121,7 +122,7 @@ async function createHelpers(
 ) {
   const publicClient = createPublicClient({
     chain: sepolia,
-    transport: http(sepoliaRpcURL),
+    transport: rpcTransport(sepoliaRpcURL),
   });
 
   const wrappedHft = getContract({

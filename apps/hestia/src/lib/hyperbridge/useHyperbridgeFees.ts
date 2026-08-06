@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { createPublicClient, http, parseEther, formatEther, toHex } from "viem";
+import { createPublicClient, parseEther, formatEther, toHex } from "viem";
 import { sepolia } from "viem/chains";
+
+import { rpcTransport } from "./rpcTransport";
 
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig, SubstrateChainConfig } from "@/config/bridge";
@@ -71,7 +73,7 @@ export function useHyperbridgeFees({
 
         const publicClient = createPublicClient({
           chain: sepolia,
-          transport: http(srcChain.rpcUrl),
+          transport: rpcTransport(srcChain.rpcUrl),
         });
 
         const amountWei = parseEther(amount.toString());

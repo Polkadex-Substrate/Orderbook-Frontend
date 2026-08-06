@@ -9,8 +9,10 @@
  *     both a Polkadot and an EVM account via different interfaces.
  */
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { createPublicClient, http, formatUnits, isAddress } from "viem";
+import { createPublicClient, formatUnits, isAddress } from "viem";
 import { sepolia } from "viem/chains";
+
+import { rpcTransport } from "./rpcTransport";
 
 import { BRIDGE_CHAINS, BRIDGE_TOKENS } from "@/config/bridge";
 import type { EvmChainConfig } from "@/config/bridge";
@@ -54,7 +56,7 @@ export function useEvmTokenBalance(
     () =>
       createPublicClient({
         chain: sepolia,
-        transport: http(rpcUrl),
+        transport: rpcTransport(rpcUrl),
       }),
     [rpcUrl]
   );
