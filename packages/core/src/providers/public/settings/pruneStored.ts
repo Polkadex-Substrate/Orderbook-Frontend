@@ -22,10 +22,28 @@
  * Import-free so it is directly unit-testable; getNotifications() applies it.
  */
 
+/**
+ * The minimum an entry must have for the rule to apply to it.
+ *
+ * NOTE THE ABSENCE OF AN INDEX SIGNATURE. This started as
+ * `{ id: string; category?: string; [k: string]: unknown }`, meaning "id and
+ * category, plus whatever else". That reads as more permissive but is strictly
+ * LESS so: an interface without an index signature is not assignable to a type
+ * with one (TypeScript only makes that leap for fresh object literals). So
+ * `T.Notification` - an interface - failed the constraint, inference gave up and
+ * fell back to `StoredNotificationLike` itself, and the caller got back
+ * `StoredNotificationLike[]` where it wanted `Notification[]`, with `date`
+ * degraded to `unknown`. Four type errors, all downstream of one over-clever
+ * signature.
+ *
+ * A structural constraint should name only what the function actually reads:
+ * `id` and `category`. Extra properties travel automatically through the
+ * generic, which is the whole point of `<T extends ...>` - the caller's exact
+ * type comes back out.
+ */
 export type StoredNotificationLike = {
   id: string;
   category?: string;
-  [k: string]: unknown;
 };
 
 export const pruneStoredNotifications = <T extends StoredNotificationLike>(

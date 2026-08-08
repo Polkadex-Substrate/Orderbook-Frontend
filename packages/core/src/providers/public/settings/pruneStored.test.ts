@@ -20,6 +20,48 @@ const current = {
   message: "Maintenance window",
 };
 
+/*
+ * COMPILE-TIME GUARD (this block asserts nothing at runtime and everything at
+ * build time).
+ *
+ * The first version of the constraint carried an index signature, which quietly
+ * excluded interfaces - `T.Notification` is one - so generic inference collapsed
+ * to the constraint and the real caller got `StoredNotificationLike[]` back with
+ * `date` degraded to `unknown`. Jest was perfectly green while `tsc` had four
+ * errors, because a broken generic signature is invisible to runtime tests.
+ *
+ * `NotificationShape` deliberately mirrors T.Notification as an INTERFACE (no
+ * index signature) rather than importing it: pruneStored.ts is import-free by
+ * design so it stays trivially unit-testable. If the constraint regresses, the
+ * `date - date` arithmetic below stops compiling.
+ */
+interface NotificationShape {
+  id: string;
+  category: "General" | "Announcements";
+  message: string;
+  date: number;
+  active: boolean;
+}
+
+const typedEntry: NotificationShape = {
+  id: "evt-2",
+  category: "General",
+  message: "Withdraw complete",
+  date: 1_754_000_000_000,
+  active: true,
+};
+
+describe("pruneStoredNotifications - type surface", () => {
+  it("returns the caller's own element type, not the constraint", () => {
+    const out = pruneStoredNotifications([typedEntry], [], []);
+    // Only compiles if out is NotificationShape[]: `date` must still be number
+    // and `active` must still exist.
+    const sorted = [...out].sort((a, b) => b.date - a.date);
+    expect(sorted[0]?.active).toBe(true);
+    expect(sorted[0]?.message).toBe("Withdraw complete");
+  });
+});
+
 describe("pruneStoredNotifications", () => {
   it("drops a stored announcement that is no longer published - THE Hestia case", () => {
     const out = pruneStoredNotifications([hestia, fill], [], []);
