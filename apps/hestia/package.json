@@ -20,7 +20,7 @@
     "@aksumite/numericals": "^1.0.0",
     "@aksumite/react-providers": "^1.0.0",
     "@aksumite/subscan": "^1.0.0",
-    "@aksumite/ui": "^1.0.0",
+    "@aksumite/ui": "^1.0.3",
     "@cedelabs/widgets-universal": "^1.2.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@hyperbridge/sdk": "^2.2.0",

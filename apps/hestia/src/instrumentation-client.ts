@@ -25,6 +25,12 @@
  * never requested unless a DSN is configured.
  */
 
+// A STATIC import here is deliberate, despite this file's rule about dynamic
+// imports: sentryNoise.ts has zero imports of its own (a few hundred bytes of
+// patterns), so it does not drag in the SDK. The rule exists to keep
+// @sentry/nextjs out of the eager graph, not to ban all imports.
+import { SENTRY_IGNORED_ERRORS } from "./sentryNoise";
+
 // Gate on the DSN too, not just NODE_ENV: with no DSN the SDK cannot report
 // anything, so loading it is pure cost.
 const SENTRY_DSN = process.env.SENTRY_DSN;
@@ -88,6 +94,12 @@ if (enabled) {
         environment: ENVIRONMENT,
         // Replay may only be enabled on the client.
         integrations: [Sentry.replayIntegration()],
+        // Normal user behaviour is not a defect. Chief among these is a bare
+        // "Rejected" - a declined wallet signature - which sat in the issue list
+        // with the same weight as a real crash, training everyone to skim it.
+        // sentryNoise.ts holds the admission rule and the over-match guards
+        // (an ENGINE rejection must still be reported; a user's must not).
+        ignoreErrors: SENTRY_IGNORED_ERRORS,
         tracesSampleRate: TRACES_SAMPLE_RATE,
         // 0 by default: record no routine sessions, but keep 100% of sessions
         // that hit an error. That is where replay earns its quota - a replay of
