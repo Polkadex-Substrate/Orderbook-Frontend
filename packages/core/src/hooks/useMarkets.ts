@@ -125,12 +125,17 @@ export function useMarkets(market?: string) {
         // null into this list's display-only consumers.
         last: (ticker || defaultTicker).close ?? 0,
         volume: (ticker || defaultTicker).quoteVolume ?? 0,
-        price_change_percent: (
-          ticker || defaultTicker
-        ).priceChangePercent24Hr?.toString(),
-        price_change_percent_num: Number.parseFloat(
-          String((ticker || defaultTicker).priceChangePercent24Hr)
-        ),
+        // A null change now means "unknown" rather than "no movement" - either
+        // the market has not traded in the window, or the ticker response was
+        // unreadable. Render it as a dash; a confident "0.00%" beside a market
+        // the datafeed is quoting is what made the whole strip look broken.
+        // The numeric field stays 0 so sorting does not produce NaN holes.
+        price_change_percent:
+          (ticker || defaultTicker).priceChangePercent24Hr === null
+            ? "-"
+            : `${(ticker || defaultTicker).priceChangePercent24Hr}`,
+        price_change_percent_num:
+          (ticker || defaultTicker).priceChangePercent24Hr ?? 0,
         isFavourite: favoriteMarkets.includes(item.id),
       };
     });

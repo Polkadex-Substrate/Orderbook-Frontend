@@ -6,6 +6,7 @@ import { QUERY_KEYS, defaultTicker } from "../constants";
 import { useOrderbookService } from "../providers/public/orderbookServiceProvider/useOrderbookService";
 import { appsyncOrderbookService } from "../utils/orderbookService";
 import { decimalPlaces, getCurrentMarket } from "../helpers";
+import { percentChange } from "../utils/orderbookService/appsync/tickerEnvelope";
 
 import { useRecentTrades } from "./useRecentTrades";
 
@@ -26,18 +27,27 @@ export function useTickers(defaultMarket?: string) {
       const tickersData = await Promise.all(tickersPromises);
 
       return tickersData.map((item) => {
-        const priceChange = Number(item.close) - Number(item.open);
-        const priceChangePercent = (priceChange / Number(item.open)) * 100;
-
         const market = markets?.find((market) => market.id === item.market);
-
         const pricePrecision = decimalPlaces(market?.price_tick_size || 0);
 
-        const priceChange24Hr = _.round(priceChange, pricePrecision);
-        const priceChangePercent24Hr = _.round(
-          isNaN(priceChangePercent) ? 0 : priceChangePercent,
-          pricePrecision
-        );
+        // percentChange returns null when the change is genuinely unknowable -
+        // either side missing, or a window that opened at zero. The old
+        // expression guarded with isNaN only, which misses Infinity: `5 / 0` is
+        // not NaN, so a market opening at 0 rendered "Infinity%".
+        //
+        // Number(null) is 0, so the old subtraction also turned a missing close
+        // into a confident "no change" instead of "no data".
+        const pct = percentChange(item.open, item.close);
+        const absolute =
+          item.open === null || item.close === null
+            ? null
+            : item.close - item.open;
+
+        const priceChange24Hr =
+          absolute === null ? null : _.round(absolute, pricePrecision);
+        // Rounded as a PERCENTAGE (2dp), not by the market's price tick. A tick
+        // of 0.00000001 was rendering percentages to 8 decimal places.
+        const priceChangePercent24Hr = pct === null ? null : _.round(pct, 2);
 
         return {
           ...item,

@@ -54,6 +54,7 @@ import {
   GraphQLResponse as GraphQLResult,
 } from "./helpers";
 import { splitByKnownMarket, describeSkippedMarkets } from "./knownMarkets";
+import { readTickerStats } from "./tickerEnvelope";
 
 class AppsyncV1Reader implements OrderbookReadStrategy {
   ready = false;
@@ -327,16 +328,39 @@ class AppsyncV1Reader implements OrderbookReadStrategy {
       query: QUERIES.getMarketTickers,
       variables: { market, from: from.toISOString(), to: to.toISOString() },
     });
-    const tickerItem = tickersQueryResult?.data?.getMarketTickers?.items;
+    // `items` used to be read as a plain object, because that is what the
+    // generated API.ts promises. Those types were generated against the RETIRED
+    // AppSync schema, and every other connection in it (markets, balances,
+    // orders) is an Array - tickers being the lone scalar is the shape of a
+    // drift, not a design. Reading the wrong shape produced `undefined` for
+    // every field, which became null, which the UI rendered as 0 across the
+    // whole ticker strip with no error anywhere.
+    //
+    // readTickerStats accepts both forms and, crucially, distinguishes "no
+    // trades in this window" from "this response is not something I can read".
+    const parsed = readTickerStats(
+      tickersQueryResult?.data?.getMarketTickers?.items
+    );
+
+    if (parsed.status === "unreadable") {
+      // Loud, once per market per fetch. Silence here is what let an entire
+      // app-wide zeroing go unnoticed; throwing would take out every market
+      // because getTicker is called in a Promise.all over all of them.
+      console.error(
+        `[ticker] ${market}: ${parsed.reason}. Reporting no data rather than zeros.`
+      );
+    }
+
+    const item = parsed.stats;
     return {
       market,
-      open: toNullableNumber(tickerItem?.o),
-      close: toNullableNumber(tickerItem?.c),
-      high: toNullableNumber(tickerItem?.h),
-      low: toNullableNumber(tickerItem?.l),
-      baseVolume: toNullableNumber(tickerItem?.vb),
-      quoteVolume: toNullableNumber(tickerItem?.vq),
-      currentPrice: toNullableNumber(tickerItem?.c),
+      open: toNullableNumber(item?.o),
+      close: toNullableNumber(item?.c),
+      high: toNullableNumber(item?.h),
+      low: toNullableNumber(item?.l),
+      baseVolume: toNullableNumber(item?.vb),
+      quoteVolume: toNullableNumber(item?.vq),
+      currentPrice: toNullableNumber(item?.c),
     };
   }
 

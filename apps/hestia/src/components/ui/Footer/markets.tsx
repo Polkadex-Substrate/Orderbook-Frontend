@@ -12,8 +12,10 @@ import { MarketCard } from "./marketCard";
 type Props = {
   pair: string;
   market: string;
-  change: number;
-  price: number;
+  /** null when the 24h change is unknown - render a dash, never a fake 0%. */
+  change: number | null;
+  /** null when there is no traded price - render a dash, never a fake 0. */
+  price: number | null;
   positive: boolean;
 };
 
@@ -33,16 +35,26 @@ export const Markets = ({ favorite }: { favorite: boolean }) => {
     return tickers
       .map((ticker) => {
         const market = selectedMarkets.find((m) => m.id === ticker.market);
-        const positive = !isNegative(ticker.priceChangePercent24Hr.toString());
+        // An unknown change is not an up move. Treat null as neutral rather
+        // than letting `!isNegative("null")` colour it green.
+        const positive =
+          ticker.priceChangePercent24Hr === null
+            ? true
+            : !isNegative(ticker.priceChangePercent24Hr.toString());
         if (market) {
           return {
             pair: market?.baseAsset?.ticker,
             market: market?.quoteAsset?.ticker,
-            change: Math.abs(ticker.priceChangePercent24Hr),
-            // Display-only: a market with no recent trades has a genuinely
-            // null price - show 0 in this scrolling ticker rather than
-            // propagate null into this purely cosmetic display.
-            price: ticker.currentPrice ?? 0,
+            // Nulls travel to the card, which renders a dash. This strip used
+            // to coerce both fields to 0, so a market that had simply not
+            // traded in 24h was indistinguishable from a broken feed - and when
+            // EVERY market showed "+0% 0", the strip read as having no data at
+            // all. Which is exactly how it was reported.
+            change:
+              ticker.priceChangePercent24Hr === null
+                ? null
+                : Math.abs(ticker.priceChangePercent24Hr),
+            price: ticker.currentPrice,
             positive,
           };
         }

@@ -27,8 +27,15 @@ export const ResponsiveAssetInfo = ({
 
   const changeFormatted = useMemo(
     () =>
-      Decimal.format(Number(currentTicker.priceChangePercent24Hr), 2, ",") +
-      "%",
+      // null now means "unknown" rather than "flat". Number(null) is 0, which
+      // would print a confident 0.00% over a market nobody has priced.
+      (currentTicker.priceChangePercent24Hr === null
+        ? "-"
+        : Decimal.format(
+            Number(currentTicker.priceChangePercent24Hr),
+            2,
+            ","
+          )) + "%",
     [currentTicker.priceChangePercent24Hr]
   );
 
