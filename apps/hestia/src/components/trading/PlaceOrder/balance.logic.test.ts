@@ -1,4 +1,5 @@
 import {
+  balanceBreakdown,
   findFundingAmount,
   isStrandedInFunding,
   numericChild,
@@ -152,5 +153,97 @@ describe("isStrandedInFunding", () => {
 
     // And the WBTC side, where funding is also empty, must stay quiet.
     expect(isStrandedInFunding(0, findFundingAmount(rows, "WBTC"))).toBe(false);
+  });
+});
+
+describe("balanceBreakdown", () => {
+  /*
+   * Ground truth: the WETH/PDEX form showed "0.00000001 PDEX Available" while
+   * the account held real PDEX - 7 resting orders had it reserved, and more sat
+   * in funding. Neither subtraction was named anywhere on screen, so the only
+   * available reading was that the balance was broken.
+   */
+  const rows = [
+    {
+      asset: { ticker: "PDEX" },
+      free: 0.00000001,
+      reserved: 200,
+      onChainBalance: "50",
+    },
+    { asset: { ticker: "WETH" }, free: 2, reserved: 0, onChainBalance: "0" },
+  ];
+
+  it("headlines everything the user owns, across both accounts", () => {
+    const p = balanceBreakdown(rows, "PDEX");
+    expect(p.total).toBeCloseTo(250.00000001, 8);
+    expect(p.tradable).toBeCloseTo(0.00000001, 8);
+    expect(p.reserved).toBe(200);
+    expect(p.funding).toBe(50);
+    expect(p.allTradable).toBe(false);
+  });
+
+  it("says nothing extra when the whole holding is already spendable", () => {
+    // The common case must stay one clean line - no encumbrance text, no hint.
+    const p = balanceBreakdown(rows, "WETH");
+    expect(p.total).toBe(2);
+    expect(p.allTradable).toBe(true);
+  });
+
+  it("prefers the form's own tradable figure over the raw row", () => {
+    // The form validates against the value it passes in (post-toHuman). If the
+    // headline disagreed with that, the user could be told they hold enough and
+    // then be rejected on submit.
+    const p = balanceBreakdown(rows, "PDEX", 0.5);
+    expect(p.tradable).toBe(0.5);
+    expect(p.total).toBeCloseTo(250.5, 8);
+  });
+
+  it("treats an explicit null override as 'not supplied', not as zero", () => {
+    // numericChild returns null for a non-numeric child (a loading skeleton).
+    // That must fall back to the row, not wipe the tradable figure.
+    const p = balanceBreakdown(rows, "PDEX", null);
+    expect(p.tradable).toBeCloseTo(0.00000001, 8);
+  });
+
+  it("never produces NaN from junk, and never a negative slice", () => {
+    const junk = [
+      {
+        asset: { ticker: "X" },
+        free: Number.NaN,
+        reserved: -5,
+        onChainBalance: "not-a-number",
+      },
+    ];
+    const p = balanceBreakdown(junk, "X");
+    expect(p.total).toBe(0);
+    expect(p.tradable).toBe(0);
+    expect(p.reserved).toBe(0);
+    expect(p.funding).toBe(0);
+    expect(p.allTradable).toBe(true);
+  });
+
+  it("returns zeros rather than another asset's balance for an unknown ticker", () => {
+    const p = balanceBreakdown(rows, "NOPE");
+    expect(p.total).toBe(0);
+    expect(balanceBreakdown(rows, "").total).toBe(0);
+    expect(balanceBreakdown(null, "PDEX").total).toBe(0);
+    expect(balanceBreakdown(undefined, "PDEX").total).toBe(0);
+  });
+
+  it("counts reserved even when nothing is tradable - the reported screen", () => {
+    // All funds locked in resting orders, nothing in funding. Total must still
+    // show the holding rather than a near-zero that reads as lost money.
+    const allLocked = [
+      {
+        asset: { ticker: "PDEX" },
+        free: 0,
+        reserved: 100,
+        onChainBalance: "0",
+      },
+    ];
+    const p = balanceBreakdown(allLocked, "PDEX");
+    expect(p.total).toBe(100);
+    expect(p.tradable).toBe(0);
+    expect(p.allTradable).toBe(false);
   });
 });

@@ -6,11 +6,7 @@ import { PropsWithChildren } from "react";
 import { useFunds } from "@orderbook/core/hooks";
 import { formatDisplay } from "@orderbook/format";
 
-import {
-  findFundingAmount,
-  isStrandedInFunding,
-  numericChild,
-} from "./balance.logic";
+import { balanceBreakdown, numericChild } from "./balance.logic";
 
 import { getChainFromTicker } from "@/config/assetChain";
 
@@ -25,11 +21,18 @@ export const Balance = ({
 }: PropsWithChildren<{ baseTicker: string }>) => {
   const chainName = getChainFromTicker(baseTicker);
 
-  // "Available" is the TRADING balance, because that is what an order spends.
-  // A zero there is correct even when the wallet holds plenty - the funds are
-  // simply in the funding account. But "0 USDT Available" beside a wallet showing
-  // 100 USDT reads as a stale number, and was reported as exactly that. Nothing
-  // was stale; the form just never said which of the two accounts was empty.
+  // The headline is the TOTAL holding, not the trading free balance.
+  //
+  // It used to be the trading balance, on the reasoning that an order spends
+  // that account. Correct, and useless: a user with hundreds of PDEX saw
+  // "0.00000001 PDEX Available" and concluded the exchange had lost their
+  // money. TWO subtractions were invisible - funds reserved by their own resting
+  // orders, and funds in the funding account - and the form named neither.
+  //
+  // A CEX headlines the total and explains the encumbrances underneath, because
+  // "how much do I have?" is the question being asked. The funding slice is not
+  // a warning either: this form can move funds, so it is just where the money is
+  // standing. `tradable` is still what validation and the percentage buttons use.
   //
   // Read here rather than passed in as a prop on purpose. There are four call
   // sites (Limit/Market x buy/sell) and the value would have to be threaded
@@ -41,12 +44,8 @@ export const Balance = ({
   // The two decisions live in balance.logic.ts, where they are unit tested. The
   // NaN and both-empty cases are easy to get wrong and both render badly.
   const { balances } = useFunds();
-  const fundingAmount = findFundingAmount(balances, baseTicker);
   const tradingAmount = numericChild(children);
-  const strandedInFunding = isStrandedInFunding(
-    tradingAmount ?? 0,
-    fundingAmount
-  );
+  const parts = balanceBreakdown(balances, baseTicker, tradingAmount);
 
   // NEVER render a raw number here. React stringifies it, and String(1e-8) is
   // "1e-8" - the form showed "1e-8 PDEX Available", which reads as a broken
@@ -59,7 +58,20 @@ export const Balance = ({
   const displayAmount =
     tradingAmount === null
       ? children
-      : formatDisplay(tradingAmount, BALANCE_DISPLAY);
+      : formatDisplay(parts.total, BALANCE_DISPLAY);
+
+  // Only the non-zero encumbrances, in the order a trader cares about: what is
+  // locked by their own orders (cancel to recover), then what is one transfer
+  // away. Suppressed entirely when everything is already spendable, so the
+  // common case stays a single clean line.
+  const encumbrances = [
+    parts.reserved > 0
+      ? `${formatDisplay(parts.reserved, BALANCE_DISPLAY)} in open orders`
+      : null,
+    parts.funding > 0
+      ? `${formatDisplay(parts.funding, BALANCE_DISPLAY)} in funding`
+      : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="self-end flex flex-col items-end gap-0.5">
@@ -76,7 +88,7 @@ export const Balance = ({
             {displayAmount} {baseTicker}
           </Typography.Text>
           <Typography.Text size="xs" appearance="primary">
-            Available
+            Total
           </Typography.Text>
         </Link>
         <Dropdown>
@@ -127,15 +139,21 @@ export const Balance = ({
         </Dropdown>
       </div>
 
-      {strandedInFunding && (
-        <Typography.Text asChild size="xs" appearance="attention">
+      {/* Informational, not a warning. `appearance="attention"` on the old
+          funding hint made a perfectly normal state - money sitting in the
+          funding account - look like something had gone wrong. Reserved and
+          funding balances are both ordinary; the user only needs to know where
+          their money is, and that the tradable slice is smaller than the total. */}
+      {encumbrances.length > 0 && (
+        <Typography.Text asChild size="xs" appearance="secondary">
           <Link
             href={`/transfer/${baseTicker}`}
             className="hover:underline"
-            title={`Move ${baseTicker} from your Funding account to your Trading account`}
+            title={`Move ${baseTicker} between your Funding and Trading accounts`}
           >
-            {formatDisplay(fundingAmount, BALANCE_DISPLAY)} {baseTicker} in
-            Funding - transfer to trade
+            {formatDisplay(parts.tradable, BALANCE_DISPLAY)} tradable
+            {" - "}
+            {encumbrances.join(", ")}
           </Link>
         </Typography.Text>
       )}

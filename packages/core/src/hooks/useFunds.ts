@@ -9,6 +9,7 @@ import { fetchOnChainBalance } from "../helpers";
 import { useOrderbookService } from "../providers/public/orderbookServiceProvider/useOrderbookService";
 
 import { useOnChainBalances } from "./useOnChainBalances";
+import { matchTradingBalance } from "./matchTradingBalance";
 
 export function useFunds() {
   const queryClient = useQueryClient();
@@ -56,10 +57,23 @@ export function useFunds() {
       };
 
       // Get trading balance object for current assetId
-      const tradingBalance = tradingBalances?.find((balance) => {
-        if (!balance?.asset) return {};
-        return balance.asset.id === currentAssetId;
-      });
+      //
+      // The miss here was `return {}` for a balance with no asset. `find` tests
+      // the RETURN VALUE for truthiness, and `{}` is truthy - so a single
+      // malformed entry anywhere in the list matched EVERY lookup, and `find`
+      // returned that one entry for every asset id queried. Since the result is
+      // spread over the defaults below, every asset in the app would then report
+      // the same free/reserved pair: identical balances across unrelated tokens,
+      // which reads as "the balances are wrong" because they are.
+      //
+      // It only fires when the engine returns a balance whose asset did not
+      // resolve against assetsList - the same unresolvable-asset condition
+      // knownMarkets.ts handles for markets - so it is data-dependent and
+      // invisible until it isn't.
+      const tradingBalance = matchTradingBalance(
+        tradingBalances,
+        currentAssetId
+      );
 
       // Get onChain balances for current assetId
       const onChainBalance =
