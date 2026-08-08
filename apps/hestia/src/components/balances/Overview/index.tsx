@@ -2,16 +2,38 @@
 import { HoverCard, Typography } from "@mitrabook/ux";
 import { useState } from "react";
 import { RiEyeOffLine, RiEyeLine } from "@remixicon/react";
+import { useFunds } from "@orderbook/core/hooks";
 
 import { OverviewCard } from "./overviewCard";
+import { portfolioValue } from "./portfolioValue";
 
 export const Overview = () => {
   const [view, setView] = useState(true);
 
   const IconComponent: typeof RiEyeLine = view ? RiEyeLine : RiEyeOffLine;
 
-  const fiatAmount = view ? `$0.00` : "*******";
-  const amount = view ? (0.0).toFixed(8) : "*******";
+  const { balances } = useFunds();
+
+  // This was two literals - `$0.00` and `(0.0).toFixed(8)` - not a calculation.
+  // An account holding 177.99 USDT, 109.73 PDEX, 99 LINK, 50 UNI and more was
+  // told its portfolio was worth $0.00, beneath an eye-toggle implying the
+  // number was real and worth hiding. A placeholder that renders as a plausible
+  // value is worse than a blank, because it cannot be told apart from a working
+  // feature delivering bad news.
+  //
+  // There is no BTC price source wired up yet, so `priceOf` returns null for
+  // everything and the honest answer today is "unavailable". The valuation is
+  // real work (a price index across bridged assets); this commit stops the
+  // lying and gives that work a tested seam to land in.
+  const value = portfolioValue(balances, () => null);
+  const unavailable = value.status === "unavailable";
+
+  const amount = !view ? "*******" : unavailable ? "-" : value.total.toFixed(8);
+  const fiatAmount = !view
+    ? "*******"
+    : unavailable
+      ? "-"
+      : `$${value.total.toFixed(2)}`;
 
   return (
     <div className="flex justify-between items-center gap-4 border-b border-secondary-base p-4 flex-wrap">
@@ -39,7 +61,9 @@ export const Overview = () => {
             </div>
           </HoverCard.Trigger>
           <HoverCard.Content side="right" withArrow>
-            Trading account
+            {unavailable
+              ? "Portfolio valuation is unavailable - no price source is configured for these assets."
+              : "Funding and trading accounts, including funds reserved by open orders."}
           </HoverCard.Content>
         </HoverCard>
       </div>
