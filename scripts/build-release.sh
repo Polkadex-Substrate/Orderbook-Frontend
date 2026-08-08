@@ -236,17 +236,44 @@ if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; th
   # credentials and were not ignored, so they sat in the tree one `git add -A`
   # away from being committed. A file the guard can see before it is staged is a
   # file the guard should refuse to build over.
-  if hits=$( { git ls-files -z; git ls-files -z --others --exclude-standard; } \
-              | xargs -0 grep -lEI "$secret_pat" 2>/dev/null); then
-    if [ -n "$hits" ]; then
-      echo "CREDENTIAL-SHAPED STRING IN GIT-TRACKED FILES:" >&2
-      printf '%s\n' "$hits" | sed 's/^/  /' >&2
-      die "Refusing to build. These files are committed - the value would be public.
-  Move it to the deploy host's env file (untracked) and keep the tracked
-  default keyless. If it was ever pushed, treat it as leaked and rotate it."
-    fi
+  #
+  # The two cases must be reported SEPARATELY, because the remedy differs and one
+  # of them ends in "rotate the key". The first version lumped them together
+  # under "These files are committed - the value would be public", which fired on
+  # a merely-untracked file (a stray copy of the env reference sitting in
+  # apps/hestia/) and told the operator to treat a never-committed key as leaked.
+  # A guard that cries "rotate" when nothing escaped trains people to ignore it,
+  # which is precisely how the real case gets waved through.
+  #
+  # TRACKED     -> in history, may be pushed: rotate.
+  # UNTRACKED   -> one `git add -A` from disaster, but nothing has escaped:
+  #                move or ignore it, no rotation.
+  tracked_hits=$(git ls-files -z \
+    | xargs -0 grep -lEI "$secret_pat" 2>/dev/null || true)
+  untracked_hits=$(git ls-files -z --others --exclude-standard \
+    | xargs -0 grep -lEI "$secret_pat" 2>/dev/null || true)
+
+  if [ -n "$tracked_hits" ]; then
+    echo "CREDENTIAL-SHAPED STRING IN GIT-TRACKED FILES:" >&2
+    printf '%s\n' "$tracked_hits" | sed 's/^/  /' >&2
+    die "Refusing to build. These files are IN GIT - the value is public to anyone
+  with repo access, and if the commit was pushed it is leaked for good.
+  1. ROTATE the credential at the provider. Removing the line is not enough.
+  2. Keep the tracked default keyless; keyed URLs live only in the deploy
+     host's untracked env file."
   fi
-  log "Pre-flight: no committed credentials"
+
+  if [ -n "$untracked_hits" ]; then
+    echo "CREDENTIAL-SHAPED STRING IN UNTRACKED FILES:" >&2
+    printf '%s\n' "$untracked_hits" | sed 's/^/  /' >&2
+    die "Refusing to build. Nothing has leaked - these files are NOT in git and
+  NOT ignored, so no rotation is needed. But they are one \`git add -A\` from
+  being committed, which is the point at which rotation would be needed.
+  Delete the stray copy, move it outside the repo, or add it to .gitignore.
+  (apps/hestia/.env itself is already ignored - copies under other names are not.)"
+  fi
+
+  log "Pre-flight: no credentials in tracked or untracked files"
 fi
 
 # `set -a` exports everything sourced, which is what makes the values visible
