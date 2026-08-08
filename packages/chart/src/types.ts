@@ -93,7 +93,14 @@ export type DepthLevel = [number, number];
 export type IndicatorConfig = {
   /** EMA periods to overlay, e.g. [20, 50]. Empty/undefined = off. */
   ema?: number[];
-  /** Session VWAP overlay. */
+  /**
+   * Session VWAP overlay, anchored to the UTC day.
+   *
+   * This comment used to say "Session VWAP" while indicators.ts accumulated
+   * across the whole loaded window with no reset. The doc was the correct
+   * intent and the code was the bug; they now agree. See `vwap()` for why an
+   * unanchored VWAP moves whenever the user pans the chart.
+   */
   vwap?: boolean;
   /** RSI pane (period 14) below the price chart. */
   rsi?: boolean;

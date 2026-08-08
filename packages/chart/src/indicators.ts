@@ -79,7 +79,10 @@ export const DAY_MS = 86_400_000;
  * available", not as "nothing happened"; `hasVwapData` below exists so the UI
  * can say so instead of lighting up a toggle that draws nothing.
  */
-export function vwap(candles: Candle[], sessionMs: number = DAY_MS): LinePoint[] {
+export function vwap(
+  candles: Candle[],
+  sessionMs: number = DAY_MS
+): LinePoint[] {
   if (sessionMs <= 0) return [];
 
   const out: LinePoint[] = [];

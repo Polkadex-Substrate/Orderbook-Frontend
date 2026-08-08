@@ -250,6 +250,11 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
     [trades, marketName]
   );
 
+  // VWAP has no value without traded volume, and most testnet pairs have none.
+  // CandleChart owns the candles, so it reports; the toolbar labels the button
+  // accordingly instead of lighting up over an empty overlay.
+  const [vwapAvailable, setVwapAvailable] = useState(true);
+
   if (!marketId) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[300px]">
@@ -274,10 +279,12 @@ export const GraphV2 = ({ currentMarket }: { currentMarket?: Market }) => {
         onIndicators={setIndicators}
         showDepth={showDepth}
         onToggleDepth={() => setShowDepth((v) => !v)}
+        vwapAvailable={vwapAvailable}
       />
       <div className="flex-1 min-h-[260px] flex min-w-0">
         <div className="flex-1 min-w-0">
           <CandleChart
+            onVwapAvailable={setVwapAvailable}
             feed={feed}
             // TICKER pair, not the asset-id pair. Market.id is
             // "{baseAssetId}-{quoteAssetId}" (e.g. "8-6") while Market.name is

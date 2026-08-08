@@ -26,6 +26,18 @@ export type ToolbarProps = {
   onIndicators: (i: IndicatorConfig) => void;
   showDepth?: boolean;
   onToggleDepth?: () => void;
+  /**
+   * Does the loaded data actually support a VWAP right now?
+   *
+   * VWAP is undefined without volume, so on a market with no trades the overlay
+   * draws nothing. The button used to light up regardless, which reads as a
+   * broken toggle rather than as an absent measurement. Pass
+   * `hasVwapData(candles)` and the button explains itself instead.
+   *
+   * Defaults to true so an integrator who does not pass it keeps the old
+   * behaviour rather than getting a permanently disabled button.
+   */
+  vwapAvailable?: boolean;
 };
 
 const CHART_TYPES: { id: ChartType; label: string }[] = [
@@ -52,8 +64,14 @@ export function Toolbar({
   onIndicators,
   showDepth,
   onToggleDepth,
+  vwapAvailable = true,
 }: ToolbarProps) {
   const emaOn = (indicators.ema?.length ?? 0) > 0;
+  const vwapOn = !!indicators.vwap;
+  // A daily or weekly bar is one bar per session, so a session-anchored VWAP
+  // would just retrace the typical price of each bar - a line that says
+  // nothing. Every exchange hides the option here rather than drawing it.
+  const vwapMeaningless = resolution === "1D" || resolution === "1W";
   return (
     <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-gray-800">
       {resolutions.map((r) => (
@@ -86,13 +104,27 @@ export function Toolbar({
         EMA
       </button>
       <button
-        className={btn(!!indicators.vwap)}
-        onClick={() => onIndicators({ ...indicators, vwap: !indicators.vwap })}
+        className={`${btn(vwapOn && vwapAvailable && !vwapMeaningless)} ${
+          vwapMeaningless ? "opacity-40 cursor-not-allowed" : ""
+        }`}
+        disabled={vwapMeaningless}
+        title={
+          vwapMeaningless
+            ? `VWAP is anchored to the session, so it carries no information on ${RESOLUTION_LABELS[resolution]} bars`
+            : vwapOn && !vwapAvailable
+              ? "VWAP unavailable - this market has no traded volume in the current session"
+              : "Session VWAP (volume-weighted average price, anchored to the UTC day)"
+        }
+        onClick={() => onIndicators({ ...indicators, vwap: !vwapOn })}
       >
         VWAP
+        {vwapOn && !vwapAvailable && !vwapMeaningless ? (
+          <span className="ml-1 text-[10px] align-top">n/a</span>
+        ) : null}
       </button>
       <button
         className={btn(!!indicators.rsi)}
+        title="RSI 14 (Wilder), shown in a separate pane"
         onClick={() => onIndicators({ ...indicators, rsi: !indicators.rsi })}
       >
         RSI

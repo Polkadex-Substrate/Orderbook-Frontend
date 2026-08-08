@@ -23,7 +23,7 @@ import {
   Resolution,
   resolutionToMs,
 } from "./types";
-import { ema, rsi, vwap } from "./indicators";
+import { ema, hasVwapData, rsi, vwap } from "./indicators";
 
 const HISTORY_BARS = 300;
 const LOAD_MORE_THRESHOLD = 60;
@@ -31,6 +31,16 @@ const LOAD_MORE_THRESHOLD = 60;
 const sec = (ms: number) => (ms / 1000) as UTCTimestamp;
 
 export type CandleChartProps = {
+  /**
+   * Reports whether a VWAP overlay can actually be drawn for the loaded data.
+   *
+   * VWAP is undefined without traded volume, so on a quiet market the overlay
+   * renders nothing while the toolbar button reads active - which looks like a
+   * broken toggle. Only this component knows the candles, so it has to be the
+   * one to say. Computed regardless of whether the overlay is switched on, so
+   * the toolbar can label the button before the user presses it.
+   */
+  onVwapAvailable?: (available: boolean) => void;
   feed: CandleFeed;
   market: string;
   /** Display name for the watermark, e.g. "PDEX/USDT". */
@@ -77,6 +87,7 @@ export function CandleChart({
   indicators,
   openOrders,
   fills,
+  onVwapAvailable,
   theme = DARK_THEME,
   rsiHeight = 110,
   onReady,
@@ -339,6 +350,10 @@ export function CandleChart({
       );
     });
 
+    // Availability is reported whether or not the overlay is on: the toolbar
+    // needs it to label the button, not just to draw.
+    onVwapAvailable?.(hasVwapData(candles));
+
     // VWAP
     if (indicators?.vwap) {
       if (!vwapSeriesRef.current) {
@@ -366,7 +381,7 @@ export function CandleChart({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emaPeriods, indicators?.vwap, theme]);
+  }, [emaPeriods, indicators?.vwap, theme, onVwapAvailable]);
 
   /* ------------------------------------------------ orders & fills ----- */
   useEffect(() => {
