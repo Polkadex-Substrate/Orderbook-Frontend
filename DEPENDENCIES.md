@@ -44,8 +44,21 @@ yarn installed BOTH - 0.33.5 hoisted from our declaration and 0.34.5 nested
 under next. Nothing in our code imports sharp; it exists only for `next/image`.
 Aligned to `^0.34.3` to dedupe to the copy next actually uses. Clearing the
 advisory needs 0.35.0, which is outside next's declared range - forcing it via a
-resolution overrides next and **requires a build verification**, because the app
+resolution overrides next and **requires a runtime verification**, because the app
 uses `next/image` in 7 places and does not set `images.unoptimized`.
+
+`next build` cannot be that verification. Image optimisation runs at REQUEST
+time in `next/dist/server/image-optimizer.js`, behind `/_next/image`, so a green
+build would prove nothing and the app would ship broken images. Use
+`scripts/verify-sharp-bump.sh`, which forces the version, installs, builds,
+starts the server and fetches a real optimised image in both webp and avif.
+
+Encouraging signs, gathered 2026-08-07: next calls only `sharp.concurrency`,
+`.resize`, `.timeout`, `.avif`, `.webp`, `.png`, `.jpeg` and `.toBuffer` - all
+long-stable - and sharp 0.35.0 requires node >=20.9.0 against this repo's floor
+of 22. Run the script on the machine that builds the app: sharp ships prebuilt
+per-platform binaries, so a macOS `node_modules` read from a Linux container
+fails with a platform error that says nothing about the version.
 
 **@metamask/sdk** (moderate, patched >= 0.33.1). The advisory is about a
 malicious `debug@4.4.2` in the SDK's supply chain. This lockfile resolves `debug`
