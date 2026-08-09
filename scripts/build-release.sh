@@ -317,6 +317,27 @@ if [ -f scripts/check-lockfile.js ] && command -v node >/dev/null 2>&1; then
   log "Pre-flight: lockfile in sync"
 fi
 
+# ── Informational: open Dependabot advisories ───────────────────────────────
+# REPORT ONLY. This must never fail a build, for a reason worth stating: `gh`
+# needs a GitHub token, the deploy host deliberately has none, and a build step
+# that requires a credential the build host must not hold is a step that either
+# breaks the deploy or pressures someone into putting a token on it. So the
+# script skips itself - cleanly, with a reason - whenever gh is absent,
+# unauthenticated, or offline, which is every build on the deploy host.
+#
+# It is here rather than in deploy.sh because deploy.sh only ever runs on that
+# host, where this would print "skipped" and nothing else, forever.
+#
+# Run it with --strict by hand (or in CI) to get a non-zero exit for a
+# high/critical advisory that has a published fix.
+# `-f` and an explicit `bash`, NOT `-x` and a direct call: if the exec bit does
+# not survive a checkout (git records mode 100644 unless it was staged 100755),
+# an `-x` test would skip this step forever and silently. A check that quietly
+# stops running is worse than no check.
+if [ "$PREFLIGHT" -eq 1 ] && [ -f scripts/check-advisories.sh ]; then
+  bash scripts/check-advisories.sh || true
+fi
+
 # `set -a` exports everything sourced, which is what makes the values visible
 # to `docker build --build-arg` below and to `next build` in tarball mode.
 set -a

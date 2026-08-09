@@ -72,7 +72,62 @@ const workspaceNames = new Set(
     .filter(Boolean)
 );
 
+/**
+ * The package a `resolutions` key actually names.
+ *
+ * Yarn v1 accepts nested paths, so the key is not always the package:
+ *
+ *   "axios"                            -> axios
+ *   "@polkadot/api"                    -> @polkadot/api
+ *   "@next/eslint-plugin-next/glob"    -> glob        (glob UNDER that plugin)
+ *   "foo/@scope/bar"                   -> @scope/bar
+ *   "** / glob"                        -> glob        (without the spaces)
+ *
+ * Getting this wrong in the obvious direction - treating the whole key as the
+ * name - makes every nested resolution look absent from the lockfile and the
+ * guard fires on a correct tree, which is the fastest way to get a guard
+ * disabled.
+ */
+const resolutionPackageName = (spec) => {
+  const parts = spec.replace(/^\*\*\//, "").split("/");
+  if (parts.length === 1) return parts[0];
+  const last = parts[parts.length - 1];
+  const prev = parts[parts.length - 2];
+  return prev.startsWith("@") ? `${prev}/${last}` : last;
+};
+
 const missing = [];
+
+// `resolutions` is checked too, and it was NOT before.
+//
+// The original guard read only dependencies and devDependencies, so adding a
+// resolution without regenerating the lockfile sailed straight past it and into
+// the docker build - the exact failure this file was written to prevent, just
+// through the one door it left open. A resolution creates a new pattern yarn
+// must satisfy, so `--frozen-lockfile` rejects it the same way it rejects an
+// unmatched dependency range.
+{
+  const rootPkg = JSON.parse(
+    fs.readFileSync(path.join(root, "package.json"), "utf8")
+  );
+  for (const [spec, range] of Object.entries(rootPkg.resolutions ?? {})) {
+    const name = resolutionPackageName(spec);
+    if (workspaceNames.has(name)) continue;
+    if (/^(workspace|file|link|portal):/.test(range)) continue;
+    if (!lockKeys.has(`${name}@${range}`)) {
+      missing.push({
+        where: "package.json",
+        name: spec,
+        range,
+        field: "resolutions",
+        // A nested key does not name the package yarn looks up, so say which
+        // lockfile entry was actually searched for.
+        note: spec === name ? "" : `looked for \`${name}@${range}\` in yarn.lock`,
+      });
+    }
+  }
+}
+
 for (const manifest of manifests) {
   let pkg;
   try {
@@ -107,6 +162,7 @@ if (missing.length === 0) {
 console.error("LOCKFILE OUT OF SYNC WITH package.json:");
 for (const m of missing) {
   console.error(`  ${m.name}@${m.range}   declared in ${m.where} (${m.field})`);
+  if (m.note) console.error(`      ${m.note}`);
 }
 console.error(`
 The image installs with --frozen-lockfile, so these ranges would NOT resolve -

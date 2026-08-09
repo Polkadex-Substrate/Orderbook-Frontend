@@ -3,7 +3,8 @@
 Why the audit output and the install warnings look the way they do. Read this
 before re-litigating a red badge.
 
-Last triaged: 2026-08-07, against `yarn audit` on `release`.
+Last triaged: 2026-08-09, against GitHub Dependabot alerts on `release`
+(the default branch). Previous pass: 2026-08-07, against `yarn audit`.
 
 ## The advisory count is paths, not problems
 
@@ -17,6 +18,36 @@ Count distinct advisories, not rows:
 ```
 yarn audit --json | python3 -c "import sys,json;print(len({(json.loads(l)['data']['advisory']['module_name'], json.loads(l)['data']['advisory']['title']) for l in sys.stdin if l.strip() and json.loads(l).get('type')=='auditAdvisory'}))"
 ```
+
+**Dependabot inflates differently: one alert per MANIFEST, not per path.** On
+2026-08-09 it showed 8 open alerts for 6 distinct problems. `sharp` appeared
+twice under the *same* advisory id, GHSA-f88m-g3jw-g9cj, once for `yarn.lock`
+and once for `apps/hestia/package.json`.
+
+The rule that falls out of it: a package gets two alerts exactly when we
+**declare it ourselves**, because it then appears in both a manifest and the
+lockfile. Every other alert in the list is transitive and appears once. So
+`sharp` is doubled and `glob`, `elliptic`, `@stablelib/ed25519`,
+`@opentelemetry/core` and the MetaMask pair are not. It also means clearing
+`sharp` needs BOTH files changed, and both alerts then close together.
+
+Read the list without a browser (the Security tab needs a repo-admin session):
+
+```
+scripts/check-advisories.sh
+```
+
+That wraps the `gh` calls, prints alerts sorted by severity with their manifest
+paths, and reports the distinct-advisory count next to the raw one. It is wired
+into `build-release.sh` as a **report-only** step and can never fail a build:
+`gh` needs a token, the deploy host deliberately has none, and a build step that
+requires a credential the build host must not hold either breaks the deploy or
+pressures someone into putting a token on it. Absent gh, unauthenticated gh, no
+network and a 403 all skip with a reason and exit 0.
+
+`--strict` exits 1 when a high/critical advisory has a published fix. Nothing
+calls it that way automatically; it is for a human or a CI job that is allowed
+to hold a token. `--json` gives the raw response.
 
 ## Fixed 2026-08-07
 
@@ -35,6 +66,27 @@ back down:
 
 All caret-ranged. **Never use unbounded `>=` or `latest` in `resolutions`** -
 that is what produced this repo's version drift previously.
+
+## Added 2026-08-09
+
+| resolution                          | why                                                     |
+| ----------------------------------- | ------------------------------------------------------- |
+| `debug: ^4.4.3`                     | floor under the MetaMask advisory's actual vector        |
+| `@next/eslint-plugin-next/glob: ^10.5.0` | clears the glob CLI advisory without touching v7 users |
+
+`debug` is a **floor, not a fix**. The MetaMask alerts are dismissible on the
+grounds that the vulnerable code is not used, because the advisory names
+`debug@4.4.2` and this tree resolves 4.4.3. But nothing was stopping a future
+install from drifting onto 4.4.2 and making that dismissal quietly false, with
+the alert already silenced. The floor makes the claim something the repo
+enforces rather than something that happened to be true on the day.
+
+**`scripts/check-lockfile.js` now checks `resolutions` too.** It did not before:
+it read only `dependencies` and `devDependencies`, so a resolution added without
+regenerating the lockfile went straight past it and into the docker build - the
+exact failure that file exists to prevent, through the one door it left open.
+Note that a nested key does not name the package yarn looks up
+(`@next/eslint-plugin-next/glob` resolves `glob`), and the check reports both.
 
 ## Open, with reasons
 
@@ -60,12 +112,44 @@ of 22. Run the script on the machine that builds the app: sharp ships prebuilt
 per-platform binaries, so a macOS `node_modules` read from a Linux container
 fails with a platform error that says nothing about the version.
 
-**@metamask/sdk** (moderate, patched >= 0.33.1). The advisory is about a
-malicious `debug@4.4.2` in the SDK's supply chain. This lockfile resolves `debug`
-to **4.4.3**, so the vector is absent. Bumping means moving
-`wagmi`/`@wagmi/connectors` - wallet connection on an exchange, the riskiest
-change available for the least benefit. Verify `debug` before acting:
+**@metamask/sdk** and **@metamask/sdk-communication-layer** (moderate, patched
+>= 0.33.1, two alerts, one problem). The advisory is about a malicious
+`debug@4.4.2` in the SDK's supply chain. Both packages are at 0.27.0 and both
+ask for `debug@^4.3.4`; this lockfile resolves that range to **4.4.3**, so the
+vector is absent. Bumping means moving `wagmi`/`@wagmi/connectors` - wallet
+connection on an exchange, the riskiest change available for the least benefit.
+Verify `debug` before acting:
 `node -p "require('./node_modules/debug/package.json').version"`.
+
+**glob** (high, patched >= 10.5.0). New on 2026-08-09. CLI command injection:
+`glob -c/--cmd` runs its matches with `shell:true`, so a crafted filename
+executes. **Not reachable here**, on three counts: it arrives only from
+`@next/eslint-plugin-next@14.2.35`, which pins `glob` at exactly `10.3.10`;
+that plugin is a devDependency of `packages/core`, so it runs at lint time and
+never enters a bundle or the server; and the plugin uses glob as a library,
+while nothing in this repo invokes the glob CLI in any script.
+
+Applied 2026-08-09 as a scoped resolution (see below). **Pending `yarn install`**
+- the lockfile does not yet carry it, and `scripts/check-lockfile.js` fails
+until it does.
+
+**Do not add a blanket `glob` resolution.** It would be worse than the alert.
+Three other consumers need v7, whose callback API is nothing like v10's
+promise/class API:
+
+| consumer                                                | range    |
+| ------------------------------------------------------- | -------- |
+| `@jest/reporters`, `jest-config`, `jest-runtime`, `test-exclude` | `^7.1.3` / `^7.1.4` |
+| `rimraf@3.0.2`                                          | `^7.1.3` |
+| `workbox-build@7.1.0` and `7.1.1`                       | `^7.1.6` |
+
+Forcing those to 10.x breaks the test suite and the PWA service worker build.
+The scoped form is the only safe one, and it overrides an exact pin, so it must
+be proved by an install plus a lint run - not by reading the lockfile:
+
+```
+"resolutions": { "@next/eslint-plugin-next/glob": "^10.5.0" }
+```
 
 **@opentelemetry/core** (moderate, patched >= 2.8.0). Needs a 1.x -> 2.x jump
 that `@sentry/nextjs` pins. Cannot be forced without breaking Sentry, which is
