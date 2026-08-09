@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/* eslint-env node */
+// A plain CommonJS script, run by `node` directly before any build step and
+// without a bundler. The repo's eslint config targets the TS app code, and the
+// build's own preflight only lints the app and package source trees, so this
+// file is not in its path - the disable below is for anyone running eslint by
+// hand. (Line comments on purpose: the previous block comment contained a glob
+// with a star-slash in it, which closed the comment early and broke the parse.)
+/* eslint-disable @typescript-eslint/no-var-requires */
 /**
  * Does yarn.lock satisfy every range the manifests declare?
  *
