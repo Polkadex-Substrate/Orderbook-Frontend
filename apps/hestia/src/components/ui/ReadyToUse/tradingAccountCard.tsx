@@ -23,9 +23,20 @@ export const TradingAccountCard = ({
   onExport,
   onBackupGDrive,
   enabledExtensionAccount = false,
+  unavailable = false,
+  unavailableReason,
 }: {
   account: TradeAccount;
   external?: boolean;
+  /**
+   * Registered on chain, but this browser holds no key for it - so it cannot
+   * sign and must not be selectable.
+   *
+   * Shown greyed rather than hidden. Hiding it would read as "my account was
+   * deleted"; the account is real, its key simply lives in another browser.
+   */
+  unavailable?: boolean;
+  unavailableReason?: string;
   onSelect?: (e: MouseEvent<HTMLElement>) => void;
   onRemove?: (e: MouseEvent<HTMLDivElement>) => void;
   onExport?: (e: MouseEvent<HTMLDivElement>) => void;
@@ -39,7 +50,11 @@ export const TradingAccountCard = ({
   const [open, setOpen] = useState(false);
   const shortAddress = truncateString(address);
   const hasRemove = typeof onRemove === "function";
-  const hasSelect = typeof onSelect === "function";
+  // An unavailable account is not selectable: no role, no onClick, no hover
+  // affordance. Leaving the handler attached and only dimming the row would
+  // still let a click through, which is how the raw keyring error reached the
+  // user in the first place.
+  const hasSelect = typeof onSelect === "function" && !unavailable;
 
   const customProps = hasSelect && {
     role: "button",
@@ -62,9 +77,12 @@ export const TradingAccountCard = ({
   return (
     <div
       {...customProps}
+      aria-disabled={unavailable || undefined}
+      title={unavailable ? unavailableReason : undefined}
       className={classNames(
         "w-full flex flex-col rounded-md border border-primary duration-300 transition-colors",
-        hasSelect && "hover:bg-level-1"
+        hasSelect && "hover:bg-level-1",
+        unavailable && "opacity-50 cursor-not-allowed"
       )}
     >
       <div className="flex flex-1 justify-between items-start gap-2 pt-4 pb-3 pl-4 pr-3">

@@ -11,6 +11,7 @@ import { PropsWithChildren, useMemo } from "react";
 import classNames from "classnames";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { TradeAccount } from "@orderbook/core/providers/types";
+import { unavailableReason } from "@orderbook/core/helpers/signableAccounts";
 import { enabledFeatures } from "@orderbook/core/helpers";
 
 import {
@@ -58,8 +59,11 @@ export const ConnectTradingAccount = ({
   connectGDriveLoading?: boolean;
   gDriveReady?: boolean;
 }>) => {
-  const { isStoreInGoogleDrive, attentionAccounts } =
-    useConnectWalletProvider();
+  const {
+    isStoreInGoogleDrive,
+    attentionAccounts,
+    unavailableTradingAccounts,
+  } = useConnectWalletProvider();
 
   const tradingAccounts = useMemo(
     () => accounts?.length + attentionAccounts.length,
@@ -100,6 +104,24 @@ export const ConnectTradingAccount = ({
                         onTempBrowserAccount(e);
                         onRemoveCallback();
                       }}
+                    />
+                  ))}
+                  {/* On-chain proxies with no key in this browser. Listed, but
+                      greyed and unclickable - hiding them would read as "my
+                      account was deleted" when the account is real and its key
+                      simply lives elsewhere. */}
+                  {unavailableTradingAccounts?.map((address) => (
+                    <TradingAccountCard
+                      key={`unavailable-${address}`}
+                      account={
+                        {
+                          address,
+                          meta: { name: "Not on this browser" },
+                        } as TradeAccount
+                      }
+                      enabledExtensionAccount={false}
+                      unavailable
+                      unavailableReason={unavailableReason()}
                     />
                   ))}
                   {accounts?.map((value, i) => {

@@ -24,6 +24,10 @@ import {
 import { defaultConfig } from "@orderbook/core/config";
 import { localStorageOrDefault } from "@aksumite/utils";
 import { enabledFeatures } from "@orderbook/core/helpers";
+import {
+  splitSignableAccounts,
+  unavailableProxies,
+} from "@orderbook/core/helpers/signableAccounts";
 
 import { POLKADEX_ASSET } from "../../../constants";
 import { transformAddress, useProfile } from "../../user/profile";
@@ -81,6 +85,11 @@ type ConnectWalletState = {
   // TODO: rename to onSelectExtensionAccount
   onSelectWallet: (payload: ExtensionAccount) => Promise<void>;
   onSelectTradingAccount: (value: KeyringPair) => void;
+  /**
+   * On-chain proxies with no keypair in this browser. Show them greyed out
+   * rather than hiding them: a hidden account reads as a deleted one.
+   */
+  unavailableTradingAccounts: string[];
   // TODO: redefine type in polkadex-ts
   onSelectExtension: (
     payload: (typeof ExtensionsArray)[0],
@@ -387,12 +396,34 @@ export const ConnectWalletProvider = ({
     onRefetchGoogleDriveAccounts,
   });
 
-  const localTradingAccounts = useMemo(
+  // ONLY the accounts this browser can actually sign with.
+  //
+  // `wallet.getPair` THROWS on a missing pair, so the previous
+  // `localAddresses.map(getPair)` did not merely include an unusable account -
+  // one stale address took the whole memo down. Worse, any account that DID
+  // survive into the list could be selected and then fail at submit with
+  // polkadot's raw "Unable to retrieve keypair '<address>'".
+  //
+  // A trading account is two things: a proxy registered on chain (public,
+  // returned to every browser) and a keypair in THIS browser's keyring. Only
+  // the second can sign. `unavailableTradingAccounts` carries the difference so
+  // the UI can show those accounts greyed out rather than hiding them - hiding
+  // would read as "my account was deleted", when it is only absent here.
+  const { signable: localTradingAccounts } = useMemo(
     () =>
       isReady
-        ? localAddresses?.map((value) => wallet.getPair(value) as KeyringPair)
-        : [],
+        ? splitSignableAccounts<KeyringPair>(localAddresses, wallet)
+        : { signable: [], unavailable: [] },
     [localAddresses, wallet, isReady]
+  );
+
+  const unavailableTradingAccounts = useMemo(
+    () =>
+      unavailableProxies(
+        mainProxiesAccounts,
+        localTradingAccounts.map((pair) => pair.address)
+      ),
+    [mainProxiesAccounts, localTradingAccounts]
   );
 
   const selectedTradingAccount = useMemo(() => {
@@ -480,6 +511,7 @@ export const ConnectWalletProvider = ({
         extensionAccountPresent,
         selectedWallet,
         selectedTradingAccount,
+        unavailableTradingAccounts,
         selectedExtension,
         localTradingAccounts,
         onSelectExtension,
@@ -561,6 +593,7 @@ export const Context = createContext<ConnectWalletState>({
   localTradingAccounts: [],
   onSelectWallet: async () => {},
   onSelectTradingAccount: () => {},
+  unavailableTradingAccounts: [],
   onSelectExtension: () => {},
   onResetWallet: () => {},
   onResetExtension: () => {},
