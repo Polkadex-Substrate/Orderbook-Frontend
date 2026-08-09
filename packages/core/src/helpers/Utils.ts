@@ -32,8 +32,24 @@ export const hasOnlyZeros = (floatString: string): boolean => {
   return floatValue === integerValue;
 };
 
-export const formatNumber = (value: string): string => {
-  return value
+/**
+ * Trim trailing zeros from a numeric string.
+ *
+ * Declared `value: string` but reached at runtime with undefined - a MARKET
+ * order carries no price, and the caller passes it straight through. The
+ * unguarded `.replace` then threw inside an async submit handler with nothing
+ * to catch it, which is the shape of POLKADEX-ORDERBOOK-FE-TEST-9: an
+ * unhandled rejection out of `onSubmit`, 29 times in three minutes while the
+ * user retried a button that gave no reason for failing.
+ *
+ * Total on purpose: an absent value becomes "", which the payload builder
+ * rejects with a named error, instead of a TypeError from library depths.
+ */
+export const formatNumber = (
+  value: string | number | null | undefined
+): string => {
+  if (value === null || value === undefined) return "";
+  return String(value)
     .replace(/(\.\d*?)0+$/, "$1") // Remove trailing zeros after the decimal
     .replace(/\.$/, ""); // Remove the deciaml point if there are no decimal places)
 };

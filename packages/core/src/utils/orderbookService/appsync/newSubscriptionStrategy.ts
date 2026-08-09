@@ -12,6 +12,7 @@ import gql from "graphql-tag";
 
 import { getApolloClient } from "../../../helpers/graphql";
 import * as SUBS from "../../../graphql/subscriptions";
+import { parseTimestampOrEpoch } from "../../../helpers/parseTimestamp";
 
 import { KlineIntervals } from "./constants";
 import {
@@ -211,7 +212,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           qty: Number(eventData.q),
           isReverted: false,
           fee: 0,
-          timestamp: new Date(eventData.t),
+          timestamp: parseTimestampOrEpoch(eventData.t),
           side: eventData.s,
         };
       })
@@ -248,7 +249,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           close: Number(item.c),
           baseVolume: Number(item.vb),
           quoteVolume: Number(item.vq),
-          timestamp: new Date(item.t),
+          timestamp: parseTimestampOrEpoch(item.t),
         };
       })
     );
@@ -270,7 +271,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           price: Number(item.p),
           qty: Number(item.q),
           isReverted: false,
-          timestamp: new Date(item.t),
+          timestamp: parseTimestampOrEpoch(item.t),
         };
       })
     );
@@ -309,7 +310,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           status: item.status as OrderStatus,
           isReverted: false,
           fee: Number(item.fee),
-          timestamp: new Date(item.timestamp),
+          timestamp: parseTimestampOrEpoch(item.timestamp),
           side: item.side as OrderSide,
           filledQuantity: String(item.filled_quantity),
           quantity: String(item.qty),

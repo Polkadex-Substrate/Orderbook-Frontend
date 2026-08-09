@@ -118,6 +118,7 @@ export function useMarkets(market?: string) {
     const initialMarkets: InitialMarkets[] = [];
     const allTickets = markets.map((item) => {
       const ticker = allMarketTickers.find((val) => val.market === item.id);
+      const changePercent = (ticker || defaultTicker).priceChangePercent24Hr;
       return {
         ...item,
         // Display-only fallback: a market with no recent trades has a
@@ -130,12 +131,23 @@ export function useMarkets(market?: string) {
         // unreadable. Render it as a dash; a confident "0.00%" beside a market
         // the datafeed is quoting is what made the whole strip look broken.
         // The numeric field stays 0 so sorting does not produce NaN holes.
+        // null AND undefined both mean "unknown".
+        //
+        // Checking only `=== null` left the undefined case falling through to a
+        // template literal, which produces the STRING "undefined" - and
+        // `Number("undefined")` is NaN, which the markets list formatted to two
+        // decimal places as "NaN.00%". That is what was on screen next to every
+        // untraded pair. A ticker row that arrives without the field at all is
+        // the common case here, so undefined is not the exotic branch.
         price_change_percent:
-          (ticker || defaultTicker).priceChangePercent24Hr === null
+          changePercent === null || changePercent === undefined
             ? "-"
-            : `${(ticker || defaultTicker).priceChangePercent24Hr}`,
-        price_change_percent_num:
-          (ticker || defaultTicker).priceChangePercent24Hr ?? 0,
+            : `${changePercent}`,
+        // Numeric field stays a number so sorting never sees NaN, which would
+        // make comparisons false and scatter those rows unpredictably.
+        price_change_percent_num: Number.isFinite(changePercent)
+          ? (changePercent as number)
+          : 0,
         isFavourite: favoriteMarkets.includes(item.id),
       };
     });

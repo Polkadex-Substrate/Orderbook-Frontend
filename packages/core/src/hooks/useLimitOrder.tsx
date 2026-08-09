@@ -261,7 +261,10 @@ export const useLimitOrder = ({ isSell, market, values, setValues }: Props) => {
 
   useEffect(() => {
     if (!mount && !!lastPriceValue) {
-      onChangePrice(lastPriceValue.toString());
+      // `lastPriceValue` is currentTicker.currentPrice, typed `number | null`,
+      // and null on any market with no traded price - which is most of testnet.
+      if (lastPriceValue !== null && lastPriceValue !== undefined)
+        onChangePrice(lastPriceValue.toString());
       setMount(true);
     }
   }, [lastPriceValue, onChangePrice, mount]);

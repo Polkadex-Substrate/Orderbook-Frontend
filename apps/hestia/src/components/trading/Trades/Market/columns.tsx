@@ -98,15 +98,25 @@ export const columns = ({
     id: "change",
     cell: (e) => {
       const { price_change_percent } = e.getValue();
-      const changeFormatted = Decimal.format(
-        Number(price_change_percent),
-        2,
-        ","
-      );
-      const negative = isNegative(changeFormatted.toString());
+
+      // "NaN.00%" was on screen beside every untraded pair. Decimal.format
+      // faithfully formats NaN to two decimal places, so a missing change
+      // percentage became a confident-looking number that happened to read NaN.
+      //
+      // Unknown renders as a dash in neutral colour: colouring it green - which
+      // it was, because isNegative("NaN.00") is false - claims a direction
+      // nobody measured. The upstream fix in useMarkets stops the NaN being
+      // produced; this stops the cell being able to print one at all.
+      const change = Number(price_change_percent);
+      const known = Number.isFinite(change);
+      const changeFormatted = known ? Decimal.format(change, 2, ",") : "-";
+      const negative = known && isNegative(changeFormatted.toString());
       return (
-        <Typography.Text size="xs" appearance={negative ? "danger" : "success"}>
-          {changeFormatted}%
+        <Typography.Text
+          size="xs"
+          appearance={!known ? "secondary" : negative ? "danger" : "success"}
+        >
+          {known ? `${changeFormatted}%` : changeFormatted}
         </Typography.Text>
       );
     },
