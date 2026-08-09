@@ -50,6 +50,7 @@ import { useSettingsProvider } from "../../public/settings";
 import { useSessionProvider } from "../sessionProvider";
 import { useNativeApi } from "../../public/nativeApi";
 
+import { orderUpdateNotice } from "./orderUpdateNotice";
 import { Provider } from "./context";
 import * as T from "./types";
 
@@ -91,26 +92,33 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
               (order) => order.orderId === payload.orderId
             );
 
+            // What to TELL the user is decided in orderUpdateNotice, away from
+            // the cache bookkeeping. The old code gated both fill notices on
+            // `findOrder` - the order already being in this list - and an order
+            // that fills INSTANTLY never gets into it. One CLOSED update
+            // arrived, found nothing, said nothing, and the order was absent
+            // from Open Orders as well, so every signal on screen said it had
+            // vanished. That was the report.
+            //
+            // The notification is built from the PAYLOAD, which carries side,
+            // type, quantity and market - everything the message needs.
+            // `findOrder` is now only used to tell a fresh partial fill from a
+            // repeat of one already announced.
+            const notice = orderUpdateNotice(payload, findOrder);
+            if (notice.kind === "cancelled") {
+              onPushNotification(NOTIFICATIONS.cancelOrder(payload));
+            } else if (notice.kind !== "none") {
+              const notf =
+                notice.kind === "filled"
+                  ? NOTIFICATIONS.filledOrder(payload)
+                  : NOTIFICATIONS.partialFilledOrder(payload);
+              onPushNotification(notf);
+              onHandleInfo?.(notf.message, notf.description);
+            }
+
             if (payload.status === "OPEN") {
-              if (
-                findOrder &&
-                payload.filledQuantity > findOrder.filledQuantity
-              ) {
-                const notf = NOTIFICATIONS.partialFilledOrder(findOrder);
-                onPushNotification(notf);
-                onHandleInfo?.(notf.message, notf.description);
-              }
               updatedOpenOrders = replaceOrPushOrder(prevOpenOrders, payload);
             } else {
-              if (payload.status === "CANCELLED") {
-                onPushNotification(NOTIFICATIONS.cancelOrder(payload));
-              }
-              if (findOrder && payload.status === "CLOSED") {
-                const notf = NOTIFICATIONS.filledOrder(findOrder);
-                onPushNotification(notf);
-                onHandleInfo?.(notf.message, notf.description);
-              }
-
               // Remove from Open Orders if it is closed
               updatedOpenOrders = removeOrderFromList(prevOpenOrders, payload);
             }
