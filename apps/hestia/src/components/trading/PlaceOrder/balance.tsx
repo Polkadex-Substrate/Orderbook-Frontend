@@ -55,21 +55,31 @@ export const Balance = ({
   // rounded zero. It is already covered by packages/format's own suite.
   //
   // A non-numeric child (a skeleton element, a dash) passes through untouched.
+  // SPENDABLE, not total. Reported after the previous change went out: "my real
+  // balance in USDT is around $42, but the UI shows I still have $99". Both
+  // numbers were right - 42.993 tradable, 1 in funding, 56 locked in the user's
+  // own resting orders - but only the first two can be spent here, because this
+  // form can move funding across and cannot cancel an order. A headline the
+  // form will not honour is worse than the trading-only figure it replaced.
   const displayAmount =
     tradingAmount === null
       ? children
-      : formatDisplay(parts.total, BALANCE_DISPLAY);
+      : formatDisplay(parts.spendable, BALANCE_DISPLAY);
 
   // Only the non-zero encumbrances, in the order a trader cares about: what is
   // locked by their own orders (cancel to recover), then what is one transfer
   // away. Suppressed entirely when everything is already spendable, so the
   // common case stays a single clean line.
+  //
+  // Order matters: what is spendable now, then what is one click away, then what
+  // is locked. "in open orders" is listed last and phrased as locked because it
+  // is the only slice this form cannot reach.
   const encumbrances = [
-    parts.reserved > 0
-      ? `${formatDisplay(parts.reserved, BALANCE_DISPLAY)} in open orders`
-      : null,
     parts.funding > 0
-      ? `${formatDisplay(parts.funding, BALANCE_DISPLAY)} in funding`
+      ? `${formatDisplay(parts.tradable, BALANCE_DISPLAY)} tradable + ${formatDisplay(parts.funding, BALANCE_DISPLAY)} in funding`
+      : null,
+    parts.reserved > 0
+      ? `${formatDisplay(parts.reserved, BALANCE_DISPLAY)} locked in open orders`
       : null,
   ].filter(Boolean) as string[];
 
@@ -88,7 +98,7 @@ export const Balance = ({
             {displayAmount} {baseTicker}
           </Typography.Text>
           <Typography.Text size="xs" appearance="primary">
-            Total
+            Available
           </Typography.Text>
         </Link>
         <Dropdown>
@@ -151,9 +161,7 @@ export const Balance = ({
             className="hover:underline"
             title={`Move ${baseTicker} between your Funding and Trading accounts`}
           >
-            {formatDisplay(parts.tradable, BALANCE_DISPLAY)} tradable
-            {" - "}
-            {encumbrances.join(", ")}
+            {encumbrances.join(" - ")}
           </Link>
         </Typography.Text>
       )}

@@ -283,8 +283,14 @@ export const limitOrderValidations = ({
         `Maximum volume allowed: ${maxVolume}`,
         (value) => Number(value || 0) <= maxVolume
       )
-      .test("Balance check", `You don't have enough balance`, (value) =>
-        isSell ? true : +(Number(value) || 0) <= availableBalance
+      .test(
+        "Balance check",
+        // Naming the number is the difference between a user who tops up and a
+        // user who files a bug. "You don't have enough balance" beside a form
+        // headlining a larger figure reads as a contradiction; the two numbers
+        // have to appear together to be reconcilable.
+        `Exceeds your tradable balance of ${availableBalance}. Funds in your funding account can be moved across on submit; funds locked in open orders need the order cancelled first.`,
+        (value) => (isSell ? true : +(Number(value) || 0) <= availableBalance)
       ),
   });
 

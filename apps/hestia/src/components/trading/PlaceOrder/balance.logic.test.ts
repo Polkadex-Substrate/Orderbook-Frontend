@@ -246,4 +246,47 @@ describe("balanceBreakdown", () => {
     expect(p.tradable).toBe(0);
     expect(p.allTradable).toBe(false);
   });
+  it("headlines what the form can REACH, not everything the user owns", () => {
+    // The reported screen: 42.993 tradable, 1 in funding, 56 locked in the
+    // user's own resting orders. Total 99.993 - but typing 43 went red, because
+    // this form can move funding across and cannot cancel an order.
+    const reported = [
+      {
+        asset: { ticker: "USDT" },
+        free: 42.993,
+        reserved: 56,
+        onChainBalance: "1",
+      },
+    ];
+    const p = balanceBreakdown(reported, "USDT");
+    expect(p.total).toBeCloseTo(99.993, 6);
+    expect(p.spendable).toBeCloseTo(43.993, 6);
+    // 43 must be inside the headline the form shows.
+    expect(43).toBeLessThanOrEqual(p.spendable);
+  });
+
+  it("excludes reserved from spendable even when it dwarfs the rest", () => {
+    const p = balanceBreakdown(
+      [
+        {
+          asset: { ticker: "X" },
+          free: 1,
+          reserved: 9999,
+          onChainBalance: "0",
+        },
+      ],
+      "X"
+    );
+    expect(p.spendable).toBe(1);
+    expect(p.total).toBe(10000);
+  });
+
+  it("spendable equals total when nothing is locked", () => {
+    const p = balanceBreakdown(
+      [{ asset: { ticker: "X" }, free: 2, reserved: 0, onChainBalance: "3" }],
+      "X"
+    );
+    expect(p.spendable).toBe(5);
+    expect(p.spendable).toBe(p.total);
+  });
 });

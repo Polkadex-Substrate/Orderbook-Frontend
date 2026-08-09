@@ -92,6 +92,16 @@ const finite = (value: unknown): number => {
 };
 
 export type BalanceParts = {
+  /**
+   * What this order form can actually reach: tradable plus funding.
+   *
+   * NOT the total. Funds reserved by resting orders are the user's, but they
+   * cannot be spent without cancelling an order, and no button on this form
+   * does that. Headlining the total told a user holding 42.993 tradable, 1 in
+   * funding and 56 locked that they had 99.993 to spend - and then the input
+   * went red at 43. The headline has to be a number the form will honour.
+   */
+  spendable: number;
   /** Spendable right now, without any transfer. */
   tradable: number;
   /** Locked by the user's own resting orders. Recoverable by cancelling. */
@@ -144,11 +154,15 @@ export const balanceBreakdown = (
   const reserved = finite(row?.reserved);
   const funding = finite(row?.onChainBalance);
   const total = tradable + reserved + funding;
+  // The form's "Move X & Buy" button moves funding into trading on the user's
+  // behalf, so funding is reachable. Reserved is not - it needs a cancellation.
+  const spendable = tradable + funding;
 
   return {
     tradable,
     reserved,
     funding,
+    spendable,
     total,
     // Compare against the parts rather than `total === tradable`: floating point
     // addition of 0 is exact, but this reads as the intent and stays true if a

@@ -155,7 +155,18 @@ export const BuyOrder = ({
           <Input.Button variant="decrease" onClick={onDecreasePrice} />
         </Input.Primary>
       </div>
-      {!!errors.price && !!touched.price && isSignedIn && (
+      {/*
+        The message condition used to also require `touched.price`, while the
+        BORDER above required only `errors.price`. Those two conditions must
+        match or the field goes red and says nothing - which is exactly what was
+        reported ("the total box turned red without message what is going on").
+
+        Worse, `onBlur={() => setFieldTouched(FIELD, false)}` CLEARS touched on
+        blur, so it was rarely true; and Total is usually computed from Amount
+        rather than typed, so it was never touched at all. The gate could not
+        have worked.
+      */}
+      {!!errors.price && isSignedIn && (
         <Typography.Text size="xs" className="text-danger-base px-1">
           {errors.price}
         </Typography.Text>
@@ -191,7 +202,7 @@ export const BuyOrder = ({
           <Input.Button variant="decrease" onClick={onDecreaseAmount} />
         </Input.Primary>
       </div>
-      {!!errors.amount && !!touched.amount && isSignedIn && (
+      {!!errors.amount && isSignedIn && (
         <Typography.Text size="xs" className="text-danger-base px-1">
           {errors.amount}
         </Typography.Text>
@@ -253,7 +264,7 @@ export const BuyOrder = ({
           <Input.Button variant="decrease" onClick={onDecreaseTotal} />
         </Input.Primary>
       </div>
-      {!!errors.total && !!touched.total && isSignedIn && (
+      {!!errors.total && isSignedIn && (
         <Typography.Text size="xs" className="text-danger-base px-1">
           {errors.total}
         </Typography.Text>
