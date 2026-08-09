@@ -99,6 +99,35 @@ fi
 [ -n "$DOMAIN" ] || die "no --domain given (and none in scripts/deploy.conf)"
 [ -f "$BUILD_ENV_FILE" ] || die "env file not found: $BUILD_ENV_FILE"
 
+# ── Pre-flight: env drift against the Dockerfile ────────────────────────────
+# A key ABSENT from the env file does not fail the build - it bakes an EMPTY
+# STRING into the bundle. That is how six feature flags shipped unset, and how
+# SENTRY_ORG and SENTRY_PROJECT were missing for a whole deploy while source
+# maps quietly failed to upload. The Dockerfile's ARG list is the real source of
+# truth, and it lives in the repo, so this check needs nothing else present.
+#
+# REPORT ONLY, deliberately. sync-env.sh can also WRITE, and it is tempting to
+# automate that here - but:
+#   - reconciling VALUES needs a reference file (orderbook-fe.env.testnet) that
+#     is not in the repo and is not on this host, so the useful half could not
+#     run anyway;
+#   - this file decides what gets compiled into production, and sync-env.sh is
+#     dry-run-by-default on purpose. Making a deploy silently rewrite it would
+#     throw that away for the sake of one command.
+# So: name the drift, let the operator decide.
+if [ -x scripts/sync-env.sh ]; then
+  # --check, not a bare run: without it the script exits 0 whether or not keys
+  # are missing, so `if ! scripts/sync-env.sh ...` is dead code. It was written
+  # that way here first, and the behaviour test caught it.
+  if ! ENV_REPORT=$(scripts/sync-env.sh --into "$BUILD_ENV_FILE" --check 2>&1); then
+    printf '%s\n' "$ENV_REPORT" | sed 's/^/  /' >&2
+    die "Env keys are missing relative to the Dockerfile - they would bake as
+  empty strings. Add them, then re-run:
+    scripts/sync-env.sh --into $BUILD_ENV_FILE --from <reference> --apply"
+  fi
+  log "Pre-flight: env has every key the Dockerfile declares"
+fi
+
 # install.sh needs root; the build does not. Escalate only where required.
 if [ "$(id -u)" -eq 0 ]; then SUDO=""
 elif command -v sudo >/dev/null; then SUDO="sudo"

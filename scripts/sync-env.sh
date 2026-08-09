@@ -39,6 +39,15 @@
 #   scripts/sync-env.sh --from <ref> --update            # dry run, names only
 #   scripts/sync-env.sh --from <ref> --update --apply    # write
 #
+# --check makes drift an EXIT CODE rather than something to read. Without it the
+# script exits 0 whether or not keys are missing, because a dry run that found
+# work to do has not failed - it has reported. That is right for a human at a
+# terminal and useless in a pipeline: a deploy guard written as
+# `if ! scripts/sync-env.sh ...` is dead code, which is exactly how it was first
+# written here. --check exits 1 when anything is missing, and never writes.
+#
+#   scripts/sync-env.sh --check                          # 0 = no drift, 1 = drift
+#
 # A BLANK value in the reference never overwrites a non-empty value in the target.
 # The reference does not carry credentials, so without that rule --update would
 # wipe every secret on the box. Consequence: you cannot CLEAR a value with this
@@ -56,6 +65,7 @@ TARGET="apps/hestia/.env"
 REFERENCE=""
 APPLY=0
 UPDATE=0
+CHECK=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -63,6 +73,7 @@ while [ $# -gt 0 ]; do
     --from)   REFERENCE="$2"; shift 2 ;;
     --apply)  APPLY=1; shift ;;
     --update) UPDATE=1; shift ;;
+    --check)      CHECK=1; shift ;;
     -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -163,6 +174,16 @@ echo "  from reference       : $FROM_REF"
 echo "  from .env.example    : $FROM_TEMPLATE"
 echo "  no value available   : ${#BLANK[@]}"
 fi
+# --check: drift as an exit code, for callers that cannot read prose.
+if [ "$CHECK" -eq 1 ]; then
+  if [ ${#ADD[@]} -gt 0 ]; then
+    die "${#ADD[@]} key(s) missing from $TARGET (listed above). They would bake
+  as EMPTY STRINGS into the bundle, which does not fail the build."
+  fi
+  log "$TARGET has every key the Dockerfile declares."
+  exit 0
+fi
+
 if [ ${#BLANK[@]} -gt 0 ]; then
   echo
   warn "${#BLANK[@]} key(s) will be added EMPTY:
