@@ -18,7 +18,7 @@
     "@aksumite/chain-api": "^1.0.0",
     "@aksumite/local-wallets": "^1.0.0",
     "@aksumite/numericals": "^1.0.0",
-    "@aksumite/react-providers": "^1.0.0",
+    "@aksumite/react-providers": "^1.0.2",
     "@aksumite/subscan": "^1.0.0",
     "@aksumite/ui": "^1.0.3",
     "@cedelabs/widgets-universal": "^1.2.0",

@@ -276,6 +276,35 @@ if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; th
   log "Pre-flight: no credentials in tracked or untracked files"
 fi
 
+# ── Guard: a published fix must be the copy that actually ships ─────────────
+# Declaring "@aksumite/ui": "^1.0.3" in apps/hestia was NOT enough. @mitrabook/ux
+# depends on "@aksumite/ui": "^1.0.0" and yarn gave it its OWN nested copy at
+# 1.0.2 - the burned version without the Passcode fix. Every Passcode in this
+# app is imported from @mitrabook/ux, so the fixed 1.0.3 sat hoisted at the root
+# being used by nothing, while the crash shipped from a directory nobody looks
+# in. A `resolutions` entry forces one copy; this checks that it worked.
+#
+# Nested copies are legitimate in general. What is not legitimate is a nested
+# copy of a package we just published a fix to.
+if [ -d node_modules ]; then
+  nested=$(find node_modules -path "*/node_modules/@aksumite/*/package.json" \
+             -not -path "node_modules/@aksumite/*" 2>/dev/null || true)
+  if [ -n "$nested" ]; then
+    echo "DUPLICATE @aksumite COPIES - a published fix may not be the one shipping:" >&2
+    printf '%s\n' "$nested" | while read -r f; do
+      [ -n "$f" ] || continue
+      name=$(node -p "require('./$f').name" 2>/dev/null || echo "?")
+      ver=$(node -p "require('./$f').version" 2>/dev/null || echo "?")
+      under=${f%%/node_modules/@aksumite/*}
+      echo "  $name@$ver  nested under  $under" >&2
+    done
+    die "Add a \`resolutions\` entry in the root package.json pinning these to the
+  published version, then re-run \`yarn install\` so the lockfile agrees.
+  A hoisted fix that no importer resolves to is not a fix."
+  fi
+  log "Pre-flight: one copy of each @aksumite package"
+fi
+
 # `set -a` exports everything sourced, which is what makes the values visible
 # to `docker build --build-arg` below and to `next build` in tarball mode.
 set -a

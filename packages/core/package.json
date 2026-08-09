@@ -77,7 +77,7 @@
     "yup": "^0.32.9",
     "@aksumite/local-wallets": "^1.0.0",
     "@aksumite/chain-api": "^1.0.0",
-    "@aksumite/react-providers": "^1.0.0",
+    "@aksumite/react-providers": "^1.0.2",
     "@aksumite/bridge": "^1.0.0",
     "@aksumite/utils": "^1.0.0"
   },
