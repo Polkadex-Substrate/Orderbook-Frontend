@@ -305,6 +305,18 @@ if [ -d node_modules ]; then
   log "Pre-flight: one copy of each @aksumite package"
 fi
 
+# ── Pre-flight: lockfile agrees with the manifests ──────────────────────────
+# One second here, versus a failure minutes into the docker build whose obvious
+# remedy - `yarn install` on the deploy host - writes to a checkout that should
+# only ever be read, and then asks root@<host> for a commit.
+if [ -f scripts/check-lockfile.js ] && command -v node >/dev/null 2>&1; then
+  node scripts/check-lockfile.js >/dev/null 2>&1 || {
+    node scripts/check-lockfile.js || true
+    die "Regenerate the lockfile on a development machine and push it."
+  }
+  log "Pre-flight: lockfile in sync"
+fi
+
 # `set -a` exports everything sourced, which is what makes the values visible
 # to `docker build --build-arg` below and to `next build` in tarball mode.
 set -a
