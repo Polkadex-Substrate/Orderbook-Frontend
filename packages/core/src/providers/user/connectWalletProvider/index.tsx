@@ -9,6 +9,7 @@ import { KeyringPair$Json, KeyringPair } from "@polkadot/keyring/types";
 import FileSaver from "file-saver";
 import { ExtensionsArray } from "@polkadot-cloud/assets/extensions";
 import {
+  useEffect,
   PropsWithChildren,
   ReactNode,
   createContext,
@@ -28,6 +29,10 @@ import {
   splitSignableAccounts,
   unavailableProxies,
 } from "@orderbook/core/helpers/signableAccounts";
+import {
+  isStaleTradingSelection,
+  staleSelectionMessage,
+} from "@orderbook/core/helpers/staleTradingSelection";
 
 import { POLKADEX_ASSET } from "../../../constants";
 import { transformAddress, useProfile } from "../../user/profile";
@@ -445,6 +450,38 @@ export const ConnectWalletProvider = ({
   }, [
     localTradingAccounts,
     isReady,
+    selectedAddresses?.tradeAddress,
+    selectedWallet?.address,
+  ]);
+
+  // The picker only OFFERS signable accounts, but the selection is persisted and
+  // outlives the key: another browser profile, cleared site data, an account
+  // removed from the device. The stored address still reaches useCreateOrder and
+  // the withdraw/cancel hooks, so the user met the keyring error at submit for
+  // an account the UI never showed them. Drop it and fall back to "no trading
+  // account selected", which the UI already handles.
+  //
+  // `ready: isReady` is doing the load-bearing work. The keyring loads
+  // asynchronously, and clearing while the list is legitimately empty would
+  // deselect every user's trading account on every page load - much worse than
+  // the bug being fixed. isStaleTradingSelection returns false for every
+  // uncertain case; see its tests.
+  useEffect(() => {
+    const stale = isStaleTradingSelection({
+      selected: selectedAddresses?.tradeAddress,
+      extensionAddress: selectedWallet?.address,
+      signableAddresses: localTradingAccounts.map((pair) => pair.address),
+      ready: isReady,
+    });
+    if (!stale) return;
+
+    onUserResetTradingAddress();
+    onHandleAlert?.(staleSelectionMessage());
+  }, [
+    isReady,
+    localTradingAccounts,
+    onHandleAlert,
+    onUserResetTradingAddress,
     selectedAddresses?.tradeAddress,
     selectedWallet?.address,
   ]);
