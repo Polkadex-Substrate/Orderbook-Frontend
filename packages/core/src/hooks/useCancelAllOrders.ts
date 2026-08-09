@@ -11,6 +11,7 @@ import { appsyncOrderbookService } from "../utils/orderbookService";
 import { useSettingsProvider } from "../providers/public/settings";
 import { useProfile } from "../providers/user/profile";
 import { useNativeApi } from "../providers/public/nativeApi";
+import { localTradingPair } from "../helpers/localTradingPair";
 
 export const useCancelAllOrders = () => {
   const { wallet } = useUserAccounts();
@@ -51,10 +52,14 @@ export const useCancelAllOrders = () => {
         });
         signature = { Sr25519: result?.signature.slice(2) };
       } else {
-        const keyringPair = wallet.getPair(tradeAddress);
-
-        if (!isValidAddress(tradeAddress) || !keyringPair)
+        if (!isValidAddress(tradeAddress))
           throw new Error("Invalid trading account");
+
+        // See localTradingPair: getPair throws rather than returning
+        // undefined, so the check this replaces could never run.
+        const lookup = localTradingPair(wallet, tradeAddress);
+        if (!lookup.ok) throw new Error(lookup.message);
+        const keyringPair = lookup.pair;
 
         if (keyringPair?.isLocked)
           throw new Error("Please unlock your account first");

@@ -19,6 +19,7 @@ import { useSettingsProvider } from "../providers/public/settings";
 import { useProfile } from "../providers/user/profile";
 import { useNativeApi } from "../providers/public/nativeApi";
 import { NOTIFICATIONS } from "../constants";
+import { localTradingPair } from "../helpers/localTradingPair";
 
 type CreateOrderArgs = {
   symbol: string[];
@@ -76,13 +77,16 @@ export const useCreateOrder = () => {
         });
         signature = { Sr25519: result.signature.slice(2) };
       } else {
-        const keyringPair = wallet.getPair(tradeAddress);
-        if (!keyringPair) throw new Error("Invalid trading account");
+        // `wallet.getPair` THROWS when the pair is absent - polkadot's keyring
+        // raises "Unable to retrieve keypair '<address>'" - so the old
+        // `if (!keyringPair)` below it was unreachable and that raw message
+        // reached the user's toast. localTradingPair converts every failure
+        // into something actionable, and separates "not in this browser" from
+        // "locked", which have very different remedies.
+        const lookup = localTradingPair(wallet, tradeAddress);
+        if (!lookup.ok) throw new Error(lookup.message);
 
-        if (keyringPair?.isLocked)
-          throw new Error("Please unlock your account first");
-
-        signature = signPayload(api, keyringPair, signingPayload as Codec);
+        signature = signPayload(api, lookup.pair, signingPayload as Codec);
       }
       const payload = JSON.stringify({
         PlaceOrder: [signingPayload, signature],
