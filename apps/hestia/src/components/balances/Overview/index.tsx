@@ -28,11 +28,27 @@ export const Overview = () => {
   const value = portfolioValue(balances, () => null);
   const unavailable = value.status === "unavailable";
 
-  const amount = !view ? "*******" : unavailable ? "-" : value.total.toFixed(8);
+  // "- = -" under a tooltip is accurate and cryptic: it reads as broken rather
+  // than as unpriced. When there is no price source, show what the app DOES
+  // know - how many assets are held - which the user can check against the
+  // table below. The label changes with it, so the number is never mistaken for
+  // a valuation.
+  const held = unavailable ? value.heldCount : 0;
+
+  const label = unavailable ? "Assets held" : "Total assets in BTC";
+
+  const amount = !view
+    ? "*******"
+    : unavailable
+      ? `${held} ${held === 1 ? "asset" : "assets"}`
+      : value.total.toFixed(8);
+
+  // No second figure to show when there is no valuation - an empty string keeps
+  // the row from rendering a lone "=".
   const fiatAmount = !view
     ? "*******"
     : unavailable
-      ? "-"
+      ? ""
       : `$${value.total.toFixed(2)}`;
 
   return (
@@ -42,9 +58,7 @@ export const Overview = () => {
           <HoverCard.Trigger className="w-fit">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1">
-                <Typography.Text appearance="primary">
-                  Total assets in BTC
-                </Typography.Text>
+                <Typography.Text appearance="primary">{label}</Typography.Text>
                 <IconComponent
                   className="w-3 h-3 cursor-pointer"
                   onClick={() => setView(!view)}
@@ -54,15 +68,17 @@ export const Overview = () => {
                 <Typography.Text bold className="text-xl">
                   {amount}
                 </Typography.Text>
-                <Typography.Text appearance="primary">
-                  ≈ {fiatAmount}
-                </Typography.Text>
+                {fiatAmount ? (
+                  <Typography.Text appearance="primary">
+                    ≈ {fiatAmount}
+                  </Typography.Text>
+                ) : null}
               </div>
             </div>
           </HoverCard.Trigger>
           <HoverCard.Content side="right" withArrow>
             {unavailable
-              ? "Portfolio valuation is unavailable - no price source is configured for these assets."
+              ? "No price source is configured, so these holdings cannot be valued. The amounts in the table below are exact."
               : "Funding and trading accounts, including funds reserved by open orders."}
           </HoverCard.Content>
         </HoverCard>

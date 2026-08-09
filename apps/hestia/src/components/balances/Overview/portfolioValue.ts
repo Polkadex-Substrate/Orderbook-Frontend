@@ -31,7 +31,20 @@ export type HoldingRow = {
 export type PriceLookup = (ticker: string) => number | null | undefined;
 
 export type PortfolioValue =
-  | { status: "unavailable"; pricedCount: 0; unpricedTickers: string[] }
+  | {
+      status: "unavailable";
+      pricedCount: 0;
+      unpricedTickers: string[];
+      /**
+       * How many distinct assets the user actually holds.
+       *
+       * A valuation we cannot compute should not leave the header showing
+       * "- = -", which says nothing and looks broken. The count is something
+       * the app genuinely knows and the user can verify against the table
+       * below.
+       */
+      heldCount: number;
+    }
   | {
       status: "partial" | "complete";
       total: number;
@@ -65,6 +78,7 @@ export const portfolioValue = (
 ): PortfolioValue => {
   let total = 0;
   let pricedCount = 0;
+  let heldCount = 0;
   const unpricedTickers: string[] = [];
 
   for (const row of rows ?? []) {
@@ -73,6 +87,7 @@ export const portfolioValue = (
 
     const amount = holdingTotal(row);
     if (amount <= 0) continue;
+    heldCount += 1;
 
     const price = priceOf(ticker);
     if (price === null || price === undefined || !Number.isFinite(price)) {
@@ -85,7 +100,12 @@ export const portfolioValue = (
   }
 
   if (pricedCount === 0) {
-    return { status: "unavailable", pricedCount: 0, unpricedTickers };
+    return {
+      status: "unavailable",
+      pricedCount: 0,
+      unpricedTickers,
+      heldCount,
+    };
   }
 
   return {

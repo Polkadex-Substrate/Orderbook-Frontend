@@ -111,3 +111,37 @@ describe("portfolioValue", () => {
     expect(v.total).toBe(100);
   });
 });
+
+describe("portfolioValue - something to say when there is no price", () => {
+  /*
+   * Reported: the header showed "- = -" under a tooltip explaining the
+   * valuation was unavailable. Accurate and cryptic. The count of assets held
+   * is something the app genuinely knows and the user can check against the
+   * table below.
+   */
+  it("counts the assets actually held when nothing can be priced", () => {
+    const v = portfolioValue(rows, () => null);
+    expect(v.status).toBe("unavailable");
+    if (v.status !== "unavailable") throw new Error("unreachable");
+    // USDT, PDEX and LINK are held; PWETH is 0/0/0 and must not count.
+    expect(v.heldCount).toBe(3);
+  });
+
+  it("counts zero when the account is empty", () => {
+    const empty = [
+      { asset: { ticker: "X" }, free: 0, reserved: 0, onChainBalance: "0" },
+    ];
+    const v = portfolioValue(empty, () => null);
+    if (v.status !== "unavailable") throw new Error("unreachable");
+    expect(v.heldCount).toBe(0);
+  });
+
+  it("counts a dust holding as held - it is still the user's", () => {
+    const dust = [
+      { asset: { ticker: "X" }, free: 1e-8, reserved: 0, onChainBalance: "0" },
+    ];
+    const v = portfolioValue(dust, () => null);
+    if (v.status !== "unavailable") throw new Error("unreachable");
+    expect(v.heldCount).toBe(1);
+  });
+});
