@@ -21,18 +21,25 @@ export const Balance = ({
 }: PropsWithChildren<{ baseTicker: string }>) => {
   const chainName = getChainFromTicker(baseTicker);
 
-  // The headline is the TOTAL holding, not the trading free balance.
+  // The headline is SPENDABLE: trading free balance plus funding.
   //
-  // It used to be the trading balance, on the reasoning that an order spends
-  // that account. Correct, and useless: a user with hundreds of PDEX saw
+  // It arrived there in two steps, and both are worth keeping straight.
+  //
+  // It began as the trading balance alone, on the reasoning that an order
+  // spends that account. Correct, and useless: a user with hundreds of PDEX saw
   // "0.00000001 PDEX Available" and concluded the exchange had lost their
-  // money. TWO subtractions were invisible - funds reserved by their own resting
+  // money. Two subtractions were invisible - funds reserved by their own resting
   // orders, and funds in the funding account - and the form named neither.
   //
-  // A CEX headlines the total and explains the encumbrances underneath, because
-  // "how much do I have?" is the question being asked. The funding slice is not
-  // a warning either: this form can move funds, so it is just where the money is
-  // standing. `tradable` is still what validation and the percentage buttons use.
+  // The fix over-corrected to the TOTAL, and that was reported too: "my real
+  // balance is around $42 but the UI shows $99". Also true, also useless - the
+  // 56 locked in resting orders is not reachable from this form, so the headline
+  // promised money the very next click would refuse.
+  //
+  // Spendable is the number this form will actually honour: it can move funding
+  // across on submit (useMoveAndTrade deposits, waits for the credit, THEN
+  // places the order), and it cannot cancel an order. Validation uses the same
+  // figure, so the headline and the red border can no longer disagree.
   //
   // Read here rather than passed in as a prop on purpose. There are four call
   // sites (Limit/Market x buy/sell) and the value would have to be threaded
@@ -98,7 +105,7 @@ export const Balance = ({
             {displayAmount} {baseTicker}
           </Typography.Text>
           <Typography.Text size="xs" appearance="primary">
-            Available
+            Spendable
           </Typography.Text>
         </Link>
         <Dropdown>

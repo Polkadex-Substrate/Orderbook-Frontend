@@ -290,3 +290,56 @@ describe("balanceBreakdown", () => {
     expect(p.spendable).toBe(p.total);
   });
 });
+
+describe("spendable is the one number the whole form agrees on", () => {
+  /*
+   * After the reported screen, spendable became the single figure used by the
+   * headline, the 25/50/75/100% buttons and the validation ceiling. These
+   * assert the properties that made three disagreeing numbers possible.
+   */
+  const row = (free: number, reserved: number, funding: string) => [
+    { asset: { ticker: "USDT" }, free, reserved, onChainBalance: funding },
+  ];
+
+  it("is reachable by the form: it never exceeds tradable + funding", () => {
+    // The move-and-trade path can only pull from funding. Anything above this
+    // would be a promise the submit path cannot keep.
+    const p = balanceBreakdown(row(42.993, 56, "1"), "USDT");
+    expect(p.spendable).toBeLessThanOrEqual(p.tradable + p.funding);
+    expect(p.spendable).toBeCloseTo(43.993, 6);
+  });
+
+  it("never counts reserved, however large", () => {
+    // Nothing on this form cancels an order, so reserved is out of reach.
+    for (const reserved of [0.1, 56, 1e6]) {
+      const p = balanceBreakdown(row(10, reserved, "5"), "USDT");
+      expect(p.spendable).toBe(15);
+    }
+  });
+
+  it("is never greater than the total", () => {
+    const p = balanceBreakdown(row(42.993, 56, "1"), "USDT");
+    expect(p.spendable).toBeLessThanOrEqual(p.total);
+  });
+
+  it("collapses to tradable when the funding account is empty", () => {
+    const p = balanceBreakdown(row(7, 3, "0"), "USDT");
+    expect(p.spendable).toBe(7);
+  });
+
+  it("still refuses junk rather than producing NaN in a validation ceiling", () => {
+    // A NaN ceiling would make every comparison false and silently accept any
+    // order size.
+    const junk = [
+      {
+        asset: { ticker: "USDT" },
+        free: Number.NaN,
+        reserved: -1,
+        onChainBalance: "nope",
+      },
+    ];
+    const p = balanceBreakdown(junk, "USDT");
+    expect(Number.isNaN(p.spendable)).toBe(false);
+    expect(p.spendable).toBe(0);
+  });
+});

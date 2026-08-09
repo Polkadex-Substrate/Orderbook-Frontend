@@ -289,7 +289,7 @@ export const limitOrderValidations = ({
         // user who files a bug. "You don't have enough balance" beside a form
         // headlining a larger figure reads as a contradiction; the two numbers
         // have to appear together to be reconcilable.
-        `Exceeds your tradable balance of ${availableBalance}. Funds in your funding account can be moved across on submit; funds locked in open orders need the order cancelled first.`,
+        `Exceeds your spendable balance of ${availableBalance}. That is your trading balance plus your funding account, which is moved across on submit. Funds locked in open orders are not included - cancel the order to free them.`,
         (value) => (isSell ? true : +(Number(value) || 0) <= availableBalance)
       ),
   });

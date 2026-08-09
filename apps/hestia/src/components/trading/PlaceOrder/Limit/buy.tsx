@@ -4,12 +4,13 @@ import { ChangeEvent, useState } from "react";
 import { Button, Input, Spinner, Typography } from "@mitrabook/ux";
 import classNames from "classnames";
 import { useFormik } from "formik";
-import { useLimitOrder } from "@orderbook/core/hooks";
+import { useFunds, useLimitOrder } from "@orderbook/core/hooks";
 import { limitOrderValidations } from "@orderbook/core/validations";
 import { Market } from "@orderbook/core/utils/orderbookService/types";
 import { formatDisplay } from "@orderbook/format";
 
 import { Balance } from "../balance";
+import { balanceBreakdown } from "../balance.logic";
 import ConnectAccount from "../connectAccount";
 import { OrderAction } from "../orderAction";
 
@@ -39,6 +40,24 @@ export const BuyOrder = ({
 }) => {
   const [validateSubmit, setValidateSubmit] = useState(false);
 
+  // Validate against SPENDABLE, not the trading free balance.
+  //
+  // The form's own "Move X & trade" button pulls the shortfall out of the
+  // funding account and places the order only AFTER the engine credits it
+  // (useMoveAndTrade: deposit -> await credit -> run). So funding is genuinely
+  // reachable from this form, and rejecting an amount the very next button
+  // offers to fund is the form arguing with itself - which is what was
+  // reported: 43 typed against 42.993 tradable turned the field red, while the
+  // button read "Move 0.007029 USDT & Buy".
+  //
+  // Reserved is still excluded: nothing here cancels an order.
+  const { balances: allBalances } = useFunds();
+  const spendable = balanceBreakdown(
+    allBalances,
+    market?.quoteAsset?.ticker ?? "",
+    availableQuoteAmount
+  ).spendable;
+
   const {
     handleSubmit,
     errors,
@@ -58,7 +77,7 @@ export const BuyOrder = ({
       minQuantity: market?.minQty || 0,
       minVolume: market?.minVolume || 0,
       maxVolume: market?.maxVolume || 0,
-      availableBalance: availableQuoteAmount,
+      availableBalance: spendable,
       qtyStepSize: market?.qty_step_size || 0,
     }),
     validateOnChange: validateSubmit,
@@ -218,19 +237,19 @@ export const BuyOrder = ({
         ranges={[
           {
             value: "25%",
-            action: () => onChangeRange(25, availableQuoteAmount),
+            action: () => onChangeRange(25, spendable),
           },
           {
             value: "50%",
-            action: () => onChangeRange(50, availableQuoteAmount),
+            action: () => onChangeRange(50, spendable),
           },
           {
             value: "75%",
-            action: () => onChangeRange(75, availableQuoteAmount),
+            action: () => onChangeRange(75, spendable),
           },
           {
             value: "100%",
-            action: () => onChangeRange(100, availableQuoteAmount),
+            action: () => onChangeRange(100, spendable),
           },
         ]}
       />
