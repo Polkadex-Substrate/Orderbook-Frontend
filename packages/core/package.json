@@ -82,7 +82,7 @@
     "@aksumite/utils": "^1.0.0"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^14.2.1",
+    "@next/eslint-plugin-next": "^15.5.0",
     "@orderbook/eslint-config": "*",
     "@orderbook/tsconfig": "*",
     "@polkadot/types": "^14.0.0",

@@ -59,8 +59,7 @@
     "nanoid": "^3.3.17",
     "@aksumite/ui": "^1.0.3",
     "@aksumite/react-providers": "^1.0.2",
-    "debug": "^4.4.3",
-    "@next/eslint-plugin-next/glob": "^10.5.0"
+    "debug": "^4.4.3"
   },
   "dependencies": {
     "driver.js": "^1.6.0",

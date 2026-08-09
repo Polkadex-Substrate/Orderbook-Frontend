@@ -69,10 +69,10 @@ that is what produced this repo's version drift previously.
 
 ## Added 2026-08-09
 
-| resolution                          | why                                                     |
-| ----------------------------------- | ------------------------------------------------------- |
-| `debug: ^4.4.3`                     | floor under the MetaMask advisory's actual vector        |
-| `@next/eslint-plugin-next/glob: ^10.5.0` | clears the glob CLI advisory without touching v7 users |
+| change                                        | why                                              |
+| --------------------------------------------- | ------------------------------------------------ |
+| resolution `debug: ^4.4.3`                    | floor under the MetaMask advisory's actual vector |
+| `@next/eslint-plugin-next` `^14.2.1 -> ^15.5.0` | glob advisory, and it was a major behind `next`  |
 
 `debug` is a **floor, not a fix**. The MetaMask alerts are dismissible on the
 grounds that the vulnerable code is not used, because the advisory names
@@ -80,6 +80,38 @@ grounds that the vulnerable code is not used, because the advisory names
 install from drifting onto 4.4.2 and making that dismissal quietly false, with
 the alert already silenced. The floor makes the claim something the repo
 enforces rather than something that happened to be true on the day.
+
+It is **blanket, and it has collateral**: three packages that asked for `^3.2.7`
+(`eslint-plugin-import`, `eslint-module-utils`, `eslint-import-resolver-node`)
+were moved from debug v3 to v4 by it. All three are lint-time only and ESLint
+passes, so this is accepted rather than accidental - but see the warning below
+about why it could not be narrowed.
+
+## Yarn v1 nested resolutions do not work here. Verify, do not assume.
+
+`"@next/eslint-plugin-next/glob": "^10.5.0"` was tried on 2026-08-09 and
+**silently did nothing**. Yarn added a `glob@^10.5.0` entry that no package
+requests, and left `@next/eslint-plugin-next`'s exact `glob "10.3.10"` pin
+resolving to 10.3.10. No error, no warning.
+
+Two lessons, both of which cost a deploy cycle:
+
+1. `scripts/check-lockfile.js` passing is **not** evidence a resolution took
+   effect. It proves the pattern exists in the lockfile, not that anything
+   resolves through it. To check a resolution actually bit, confirm the OLD
+   version is gone:
+
+   ```
+   grep -n 'glob@10.3.10' yarn.lock
+   ```
+
+   An orphan entry that nothing requests is the failure signature.
+
+2. Because the nested form does not work, **blanket is the only resolution form
+   with any effect in this repo**. That makes `resolutions` a blunt instrument:
+   it cannot be aimed. Prefer bumping the offending package's own declaration,
+   as was done for `@next/eslint-plugin-next`, and keep resolutions for cases
+   where every consumer genuinely should move.
 
 **`scripts/check-lockfile.js` now checks `resolutions` too.** It did not before:
 it read only `dependencies` and `devDependencies`, so a resolution added without
@@ -129,9 +161,19 @@ that plugin is a devDependency of `packages/core`, so it runs at lint time and
 never enters a bundle or the server; and the plugin uses glob as a library,
 while nothing in this repo invokes the glob CLI in any script.
 
-Applied 2026-08-09 as a scoped resolution (see below). **Pending `yarn install`**
-- the lockfile does not yet carry it, and `scripts/check-lockfile.js` fails
-until it does.
+Addressed 2026-08-09 by bumping `@next/eslint-plugin-next` from `^14.2.1` to
+`^15.5.0`, which is the only route: a scoped resolution was tried first and did
+nothing (see "Yarn v1 nested resolutions" below). The plugin was a major version
+behind `next` (14.2.35 against 15.5.21), so this was worth doing regardless.
+
+**If the 15.x plugin still pins a glob below 10.5.0, the alert stays open** - and
+the right answer is then to dismiss it as "vulnerable code is not used", on the
+three grounds below, rather than to reach for a resolution again. Confirm after
+installing:
+
+```
+grep -n 'glob@10.3.10' yarn.lock
+```
 
 **Do not add a blanket `glob` resolution.** It would be worse than the alert.
 Three other consumers need v7, whose callback API is nothing like v10's
