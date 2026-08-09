@@ -28,6 +28,12 @@ import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { formatDisplay } from "@orderbook/format";
 
 import { useBridgeProvider } from "./BridgeProvider";
+import {
+  blocksSubmission,
+  describeFee,
+  describeFeeSource,
+  feeVerdict,
+} from "./feeVerdict";
 
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 import { describeRpcError } from "@/lib/hyperbridge/rpcTransport";
@@ -98,20 +104,60 @@ export const ConfirmTransaction = ({
     [sourceAccount?.address]
   );
 
+  // The same label the dialog already prints as "Source Wallet", reused so the
+  // fee explanation points at an account the user can see on screen rather than
+  // at an abstract "source chain".
+  const sourceWalletLabel = useMemo(
+    () =>
+      sourceAccount?.name
+        ? `${sourceAccount.name} ${shortSourceAddress}`
+        : shortSourceAddress || null,
+    [sourceAccount?.name, shortSourceAddress]
+  );
+
   const shortDestinationAddress = useMemo(
     () => truncateString(destinationAccount?.address ?? "", 4),
     [destinationAccount?.address]
   );
   const [isLoading, setIsLoading] = useState(false);
 
+  // The old check was `balance <= fee + existential` with both sides defaulting
+  // to 0, so an unfinished or failed fee estimate produced a confident
+  // "Insufficient balance" - an accusation built from missing data. It also
+  // rejected a balance exactly equal to the fee. feeVerdict distinguishes
+  // estimating / unknown / insufficient, and only the last two block.
+  const verdict = useMemo(
+    () =>
+      feeVerdict({
+        feeAmount: sourceFee?.amount,
+        feeTicker: sourceFee?.ticker ?? sourceFeeBalance?.ticker,
+        balanceAmount: sourceFeeBalance?.amount,
+        balanceTicker: sourceFeeBalance?.ticker,
+        existential: sourceFeeExistential?.amount,
+        estimating: transferConfigLoading,
+      }),
+    [
+      sourceFee?.amount,
+      sourceFee?.ticker,
+      sourceFeeBalance?.amount,
+      sourceFeeBalance?.ticker,
+      sourceFeeExistential?.amount,
+      transferConfigLoading,
+    ]
+  );
+
+  const feeLine = describeFee(
+    verdict,
+    sourceFee?.ticker ?? sourceFeeBalance?.ticker
+  );
+  const feeSourceLine = describeFeeSource(verdict, sourceWalletLabel);
+
   const error = useMemo(() => {
     const swapPrice = Number(swapPriceRaw);
     const autoSwapAmount = showAutoSwap ? swapPrice : 0;
-    const balance = sourceFeeBalance?.amount ?? 0;
-    const existential = sourceFeeExistential?.amount ?? 0;
-    const fee = sourceFee?.amount ?? 0;
 
-    if (balance <= fee + existential) return CrossChainError.SOURCE_FEE;
+    if (blocksSubmission(verdict))
+      return describeFeeSource(verdict, sourceWalletLabel);
     // if (showAutoSwap && !swapPrice) return CrossChainError.NOT_ENOUGH_LIQUIDITY;
 
     if (showAutoSwap && amount <= autoSwapAmount)
@@ -123,10 +169,9 @@ export const ConfirmTransaction = ({
     amount,
     selectedAsset?.ticker,
     showAutoSwap,
-    sourceFee?.amount,
-    sourceFeeBalance?.amount,
-    sourceFeeExistential?.amount,
     swapPriceRaw,
+    verdict,
+    sourceWalletLabel,
   ]);
 
   const disabled = useMemo(
@@ -139,16 +184,20 @@ export const ConfirmTransaction = ({
     destinationFeeTicker,
     sourceFeeAmount,
     sourceFeeTicker,
-    estimatedFee,
   ] = useMemo(() => {
-    const destValue = destinationFee?.amount ?? 0;
-    const sourceValue = sourceFee?.amount ?? 0;
+    // "Ø" is gone from the breakdown too. It conflated a zero fee, an
+    // in-flight estimate and a failed one, and it blanked the TICKER alongside
+    // the amount - so the hover card could not answer "in what currency?"
+    // either. The ticker is known before the amount is; always show it.
+    const destValue = destinationFee?.amount;
+    const sourceValue = sourceFee?.amount;
+    const show = (v: number | null | undefined) =>
+      v === null || v === undefined ? "Not available" : `~ ${formatAmount(v)}`;
     return [
-      destValue ? `~ ${formatAmount(destValue)}` : "Ø",
-      destValue ? destinationFee?.ticker : "",
-      sourceValue ? `~ ${formatAmount(sourceValue)}` : "Ø",
-      sourceValue ? sourceFee?.ticker : "",
-      sourceValue ? `~ ${formatAmount(sourceValue)}` : "Ø",
+      show(destValue),
+      destinationFee?.ticker ?? "",
+      show(sourceValue),
+      sourceFee?.ticker ?? "",
     ];
   }, [
     destinationFee?.amount,
@@ -257,9 +306,7 @@ export const ConfirmTransaction = ({
                         }
                         className="min-h-4 w-20 flex-none"
                       >
-                        <Typography.Text>
-                          {estimatedFee} {sourceFeeTicker}
-                        </Typography.Text>
+                        <Typography.Text>{feeLine}</Typography.Text>
                       </Skeleton>
                     </div>
                   </HoverInformation.Trigger>
@@ -281,6 +328,18 @@ export const ConfirmTransaction = ({
                     )}
                   </HoverInformation.Content>
                 </HoverInformation>
+                {/* Which account pays, in which currency, and what is left.
+                    The reported dialog answered none of those. Suppressed when
+                    the verdict already blocks, since the error below says it. */}
+                {feeSourceLine && !blocksSubmission(verdict) && (
+                  <Typography.Text
+                    appearance="secondary"
+                    size="xs"
+                    className="px-3 pb-3"
+                  >
+                    {feeSourceLine}
+                  </Typography.Text>
+                )}
                 {error && <ErrorMessage className="p-3">{error}</ErrorMessage>}
               </div>
               <div className="px-3 pt-4">

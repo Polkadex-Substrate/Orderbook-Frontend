@@ -326,11 +326,18 @@ export const Form = () => {
   ] = useMemo(() => {
     const destValue = destinationFee?.amount;
     const sourceValue = sourceFee?.amount;
+    // Same rule as the confirm dialog: never print "Ø". It read as a glyph for
+    // "nothing" while actually meaning zero, or pending, or failed - and it
+    // blanked the TICKER alongside the amount, so the summary could not say
+    // which currency the fee was even in. The ticker is known before the
+    // amount is; always show it.
+    const show = (v: number | null | undefined) =>
+      v === null || v === undefined ? "Not available" : `~ ${formatAmount(v)}`;
     return [
-      destValue ? `~ ${formatAmount(destValue)}` : "Ø",
-      destValue ? destinationFee?.ticker : "",
-      sourceValue ? `~ ${formatAmount(sourceValue)}` : "Ø",
-      sourceValue ? sourceFee?.ticker : "",
+      show(destValue),
+      destinationFee?.ticker ?? "",
+      show(sourceValue),
+      sourceFee?.ticker ?? "",
     ];
   }, [
     destinationFee?.amount,
