@@ -1,7 +1,7 @@
 "use client";
 
 import _ from "lodash";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   PublicTrade,
@@ -24,6 +24,11 @@ import {
   RECENT_TRADES_LIMIT,
 } from "@orderbook/core/constants";
 import { useOrderbookService } from "@orderbook/core/providers/public/orderbookServiceProvider/useOrderbookService";
+import {
+  initialSeqState,
+  nextSeqDecision,
+  SeqState,
+} from "@orderbook/core/utils/orderbookService/appsync/bookSequence";
 import {
   decimalPlaces,
   deleteFromBook,
@@ -195,9 +200,47 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
     [market, queryClient]
   );
 
+  // Highest increment sequence applied to the book, per market. A ref rather
+  // than state: it must not trigger a render, and it must be readable inside
+  // the subscription callback without making that callback change identity -
+  // which would tear down and re-create the websocket on every tick, dropping
+  // the very increments this is meant to protect.
+  const bookSeq = useRef<{ market: string | null; state: SeqState }>({
+    market: null,
+    state: initialSeqState(),
+  });
+
   const onOrderbookUpdates = useCallback(
     (payload: PriceLevel[]) => {
       if (!market) return;
+
+      // A market switch invalidates the sequence: the numbers belong to the
+      // stream, not to us.
+      if (bookSeq.current.market !== market) {
+        bookSeq.current = { market, state: initialSeqState() };
+      }
+
+      const decision = nextSeqDecision(bookSeq.current.state, payload);
+
+      if (decision.action === "skip") {
+        // A replay or an out-of-order duplicate. Applying it would double-count.
+        return;
+      }
+
+      if (decision.action === "resync") {
+        // The local book has diverged from the engine and cannot be repaired by
+        // applying this increment on top - that is precisely how an order stays
+        // missing until the 30s poll. Drop the baseline and refetch the
+        // snapshot; the next increment re-baselines against it.
+        bookSeq.current = { market, state: { lastSeq: null } };
+        console.warn(`[orderbook] ${market}: ${decision.reason}. Resyncing.`);
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.orderBook(market),
+        });
+        return;
+      }
+
+      bookSeq.current = { market, state: { lastSeq: decision.nextSeq } };
 
       // Functional update against the CACHE, not component state. The old
       // version closed over useOrderbook's asks/bids, which (a) made this
