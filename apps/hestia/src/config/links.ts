@@ -20,7 +20,6 @@ export const EXTERNAL_LINKS = {
   medium: "https://polkadex.medium.com",
   youtube: "https://www.youtube.com/channel/UC6fXRDT4lLKlXG3gP0PP06Q",
   docs: "https://docs.polkadex.ee",
-  analytics: "https://explorer.polkadex.ee/analytics",
   testnetGuide: "https://polkadex.ee/testnet-guide",
 } as const;
 

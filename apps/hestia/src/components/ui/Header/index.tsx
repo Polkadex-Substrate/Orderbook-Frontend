@@ -77,14 +77,15 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             <HeaderLink.Single href="/faucet" disabled={isFaucetDisabled}>
               Faucet
             </HeaderLink.Single>
-            {/* Analytics is a product feature and was buried under "More"
-                between five legal documents. Promoted to a top-level link. */}
-            <HeaderLink.Single href={EXTERNAL_LINKS.analytics}>
-              Analytics
-            </HeaderLink.Single>
-            {/* Was "Support", which duplicated Discord with the Community menu
-                below. Help is now purely documentation; Discord lives once, in
-                Community, where people look for it. */}
+            {/* Analytics was removed 2026-08-10, alongside Community.
+                It had been promoted to a top-level link on the reasoning that
+                it is a product feature - but it points at explorer.polkadex.ee,
+                so it is still a link OFF this site during a trading session.
+                Same test as Community: it serves the project, not the trade in
+                front of the user. It lives on the explorer, where someone
+                looking for analytics will go anyway. */}
+            {/* Was "Support", which duplicated Discord with the Community menu.
+                Help is now purely documentation. */}
             <HeaderLink.Dropdown
               items={[
                 {

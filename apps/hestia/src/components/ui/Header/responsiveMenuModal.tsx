@@ -91,14 +91,9 @@ export const ResponsiveMenuModal = ({
                   >
                     Faucet
                   </HeaderLink.Single>
-                  {/* Analytics promoted out of "More"; mirrors the desktop
-                      header so the two navs stay the same shape. */}
-                  <HeaderLink.Single
-                    href={EXTERNAL_LINKS.analytics}
-                    className="text-lg"
-                  >
-                    Analytics
-                  </HeaderLink.Single>
+                  {/* Analytics removed 2026-08-10 - see Header/index.tsx.
+                      Kept in step with the desktop header on purpose: two navs
+                      that disagree about what exists is its own bug. */}
                   <HeaderLink.Accordion
                     items={[
                       {
