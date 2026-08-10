@@ -10,6 +10,7 @@ import { Resizable, ImperativePanelHandle } from "@mitrabook/ux";
 import { AssetInfo } from "./AssetInfo";
 import { Orderbook } from "./Orderbook";
 import { Trades } from "./Trades";
+import { tradingLayout } from "./breakpoints";
 import { Orders } from "./Orders";
 import { PlaceOrder } from "./PlaceOrder";
 import { Graph } from "./Graph";
@@ -32,16 +33,26 @@ export function Template({ id }: { id: string }) {
   const mainPanelRef = useRef<ImperativePanelHandle>(null);
   const orderbookPanelRef = useRef<ImperativePanelHandle>(null);
 
-  const { width } = useWindowSize();
+  const { width, height } = useWindowSize();
   const { list } = useMarkets();
   const currentMarket = getCurrentMarket(list, id);
 
-  const mobileView = useMemo(() => width <= 954, [width]);
-  const desktopView = useMemo(() => width >= 1280, [width]);
-  // Ultrawide/4K: show Markets and Recent Trades simultaneously instead of
-  // tabs, and cap the grid so panels stop stretching into emptiness.
-  const superWideView = useMemo(() => width >= 2200, [width]);
-  const tabletView = useMemo(() => width >= 954 && width <= 1280, [width]);
+  // The four modes come from one place now, and are mutually exclusive.
+  //
+  // They used to be four independent comparisons, and two of them overlapped:
+  // `desktopView = width >= 1280` and `tabletView = width >= 954 && width <=
+  // 1280` were BOTH true at exactly 1280, so both branches rendered - mounting
+  // PlaceOrder twice and applying the tablet-only 710px floor to a desktop
+  // layout. 1280 CSS px is what a 1920-wide screen gives at Windows' default
+  // 150% scale, so that was the common case, not an edge case. It is what hid
+  // the order history. See breakpoints.ts for the full account.
+  const {
+    mobileView,
+    tabletView,
+    desktopView,
+    superWideView,
+    tabletStackHasRoom,
+  } = useMemo(() => tradingLayout(width, height), [width, height]);
 
   return (
     // Wraps BOTH the orderbook and the order form: the fill signal travels
@@ -137,7 +148,10 @@ export function Template({ id }: { id: string }) {
                 "min-h-0",
                 // Tablet stacks these vertically and genuinely needs the room;
                 // desktop must NOT set a pixel minimum (see note above).
-                tabletView && "min-h-[710px]"
+                // Requires the VERTICAL room too. A 710px floor inside an
+                // overflow-hidden parent with ~600px to give does not
+                // scroll, it clips - and what got clipped was Orders.
+                tabletStackHasRoom && "min-h-[710px]"
               )}
             >
               <Resizable
