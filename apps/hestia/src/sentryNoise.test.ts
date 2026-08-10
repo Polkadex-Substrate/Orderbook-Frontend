@@ -58,6 +58,26 @@ describe("KEEPS real defects - the over-match guard", () => {
     }
   });
 
+  it("drops 'MetaMask extension not found' - the user has no extension", () => {
+    // ORDERBOOK-TESTNET-3. The entire stack is MetaMask's own inpage.js and it
+    // arrives handled. Offering a wallet the browser lacks is correct
+    // behaviour; the fix belongs in the UI, not in an alert.
+    for (const m of [
+      "i: Failed to connect to MetaMask",
+      "MetaMask extension not found",
+    ]) {
+      expect(isIgnoredSentryMessage(m)).toBe(true);
+    }
+  });
+
+  it("still reports a MetaMask error that is NOT about a missing extension", () => {
+    // The over-match guard for the two patterns above. A real RPC failure from
+    // an installed MetaMask must survive.
+    expect(
+      isIgnoredSentryMessage("MetaMask JSON-RPC error: internal error")
+    ).toBe(false);
+  });
+
   it("does not drop an order that was rejected by the ENGINE", () => {
     // "Rejected" alone is a user choice; an engine rejection is a defect. The
     // anchored regex is what keeps these apart - a substring match would eat both.

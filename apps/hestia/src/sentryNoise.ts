@@ -35,6 +35,18 @@ export const SENTRY_IGNORED_ERRORS: (string | RegExp)[] = [
   "Connection request reset",
   "Modal closed by user",
 
+  // ── Wallet not installed ──
+  // "MetaMask extension not found", surfacing as "Failed to connect to
+  // MetaMask". Added 2026-08-10 after ORDERBOOK-TESTNET-3: a user without the
+  // extension clicked the MetaMask option. The whole stack is MetaMask's own
+  // injected `scripts/inpage.js`, not ours, and it arrives `handled: true`.
+  //
+  // Not a defect and nothing to fix in code - the connector list offers wallets
+  // the browser may not have, which is correct. What SHOULD change is the UI
+  // telling the user the extension is missing; a Sentry event does not.
+  "MetaMask extension not found",
+  "Failed to connect to MetaMask",
+
   // ── Browser/extension noise no app change can fix ──
   // Chrome extensions tearing down a port during navigation.
   "Extension context invalidated",
