@@ -143,6 +143,17 @@ const nextConfig = {
     DEFAULT_TRANSFER_TOKEN: process.env.DEFAULT_TRANSFER_TOKEN,
     SUBSCAN_API: process.env.SUBSCAN_API,
     SENTRY_DSN: process.env.SENTRY_DSN,
+    // Added 2026-08-10. instrumentation-client.ts and instrumentation.ts both
+    // read process.env.SENTRY_ENVIRONMENT, but it was never inlined here - so
+    // in the browser it was undefined and fell back to the literal
+    // "unspecified", no matter what the deploy env file said. The env file had
+    // been correct for hours; the value simply had no route into the bundle.
+    //
+    // The failure is invisible from the ops side: `grep SENTRY_ENVIRONMENT .env`
+    // shows it set, the build passes it as an ARG, and the page still reports
+    // "unspecified". Only a read of THIS list explains it. Anything read as
+    // `process.env.X` in client code and absent from this block is dead.
+    SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
     SENTRY_TRACES_SAMPLE_RATE: process.env.SENTRY_TRACES_SAMPLE_RATE,
     SENTRY_REPLAY_SESSION_SAMPLE_RATE:
       process.env.SENTRY_REPLAY_SESSION_SAMPLE_RATE,
