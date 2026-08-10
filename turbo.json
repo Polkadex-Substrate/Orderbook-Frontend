@@ -12,7 +12,12 @@
         ".next/**",
         "!.next/cache/**",
         "dist/**",
-        "lib/**"
+        "lib/**",
+        "apps/hestia/public/sw.js",
+        "apps/hestia/public/sw.js.map",
+        "apps/hestia/public/workbox-*.js",
+        "apps/hestia/public/workbox-*.js.map",
+        "apps/hestia/public/fallback-*.js"
       ],
       "env": [
         "BLOCKED_ASSETS",
@@ -28,6 +33,7 @@
         "LANDING_PAGE",
         "MAINTENACE_MODE",
         "MAIN_URL",
+        "NEXT_BUILD_ID",
         "NEXT_PUBLIC_ANALYZE",
         "NEXT_PUBLIC_APP_URL",
         "NEXT_PUBLIC_BRIDGE_AAVE_ADDRESS",
