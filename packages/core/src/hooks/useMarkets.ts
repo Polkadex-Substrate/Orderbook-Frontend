@@ -1,4 +1,4 @@
-import { ChangeEvent, useCallback, useMemo, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { Market } from "@orderbook/core/utils/orderbookService";
@@ -46,6 +46,37 @@ export function useMarkets(market?: string) {
     () => (market ? getCurrentMarket(markets, market) : undefined),
     [market, markets]
   );
+
+  /**
+   * Remember whichever market is actually being viewed, so the header's "Trade"
+   * link returns the user here.
+   *
+   * WHY THIS IS NOT ENOUGH TO DO IN handleChangeMarket
+   * That callback only fires when someone picks a market from the market list.
+   * Arrive any other way - a shared link, a bookmark, a refresh, a link out of
+   * the FAQ - and DEFAULT_MARKET was never written. So a user sitting on
+   * PDEX/USDT would click "Trade" and be sent to the LANDING_PAGE default
+   * instead, which reads as the app forgetting where they were.
+   *
+   * Writing it here covers every route into the page, because it is keyed on the
+   * market that actually resolved rather than on the gesture that selected it.
+   * handleChangeMarket still writes it too, which is harmless: same value.
+   *
+   * NOTE THE NAME FORMAT. `currentMarket.name` is "PDEX/USDT" - with a slash;
+   * marketTokens below splits it on "/" to derive the quote ticker. But
+   * getMarketUrl builds `/trading/${name}`, so storing that would produce
+   * `/trading/PDEX/USDT` and a dead route. The stored form has to be the
+   * concatenated tickers, exactly as handleChangeMarket writes it.
+   */
+  useEffect(() => {
+    if (!currentMarket) return;
+    const storedName =
+      currentMarket.baseAsset.ticker + currentMarket.quoteAsset.ticker;
+    setToStorage(
+      LOCAL_STORAGE_ID.DEFAULT_MARKET,
+      JSON.stringify({ id: currentMarket.id, name: storedName })
+    );
+  }, [currentMarket]);
 
   /**
    * @description Get the single market information for the current market

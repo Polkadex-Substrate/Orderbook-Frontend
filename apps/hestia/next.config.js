@@ -192,7 +192,27 @@ const sentryWebpackPluginOptions = {
   // Additional config options for the Sentry webpack plugin. Keep in mind that
   // the following options are set automatically, and overriding them is not
   // recommended:
-  //   release, url, configFile, stripPrefix, urlPrefix, include, ignore
+  //   url, configFile, stripPrefix, urlPrefix, include, ignore
+
+  // RELEASE IS OVERRIDDEN DELIBERATELY, despite the note above.
+  //
+  // Left alone, the plugin auto-detects the release from git and uses the full
+  // 40-character commit SHA. That is what appeared on ORDERBOOK-TESTNET-4:
+  //
+  //   release: 477e206577b92010aff1b92999c66e4a66010832
+  //
+  // Source maps still resolved, because the SDK and the plugin agreed on that
+  // same auto-detected value. But nothing else lines up: the artifact stamp,
+  // /opt/orderbook-fe/RELEASE, the deploy log and the served page all say
+  // `0.1.0-<short sha>`. So an operator holding a Sentry issue cannot tell which
+  // deploy produced it without translating between two identifiers by hand.
+  //
+  // NEXT_BUILD_ID is the one identity used everywhere else, so use it here.
+  // Falls back to the plugin's git detection when unset (local dev), which is
+  // better than an empty release.
+  release: {
+    name: process.env.SENTRY_RELEASE || process.env.NEXT_BUILD_ID || undefined,
+  },
 
   // Required for uploading source maps. Supplied as a BuildKit secret rather than
   // a build arg, so it never lands in an image layer or `docker history`.

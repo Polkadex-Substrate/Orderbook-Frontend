@@ -81,9 +81,24 @@ export const Balance = ({
   // Order matters: what is spendable now, then what is one click away, then what
   // is locked. "in open orders" is listed last and phrased as locked because it
   // is the only slice this form cannot reach.
+  // Reworded 2026-08-10 after tester feedback (Suresh): "the main one should
+  // just show the tradable amount or available amount to trade... below it
+  // should say spendable = trading + funding. Just the messaging."
+  //
+  // The NUMBER did not change, deliberately. It has to equal what the form will
+  // accept, or we recreate the "$42 real, $99 displayed" complaint from earlier
+  // in the week - a headline that disagrees with the validation ceiling and the
+  // percentage buttons is the same bug wearing different words.
+  //
+  // What changed is the label: "Spendable" -> "available to trade", and the
+  // sub-line now spells out the sum rather than listing parts side by side. The
+  // distinction worth holding onto is that funding IS available to trade; it is
+  // one automatic step away, not unavailable. So the sub-line says "moved
+  // automatically" instead of leaving the user to wonder why the two numbers
+  // differ.
   const encumbrances = [
     parts.funding > 0
-      ? `${formatDisplay(parts.tradable, BALANCE_DISPLAY)} tradable + ${formatDisplay(parts.funding, BALANCE_DISPLAY)} in funding`
+      ? `${formatDisplay(parts.tradable, BALANCE_DISPLAY)} ready now + ${formatDisplay(parts.funding, BALANCE_DISPLAY)} from funding, moved automatically`
       : null,
     parts.reserved > 0
       ? `${formatDisplay(parts.reserved, BALANCE_DISPLAY)} locked in open orders`
@@ -105,7 +120,7 @@ export const Balance = ({
             {displayAmount} {baseTicker}
           </Typography.Text>
           <Typography.Text size="xs" appearance="primary">
-            Spendable
+            available to trade
           </Typography.Text>
         </Link>
         <Dropdown>

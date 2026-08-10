@@ -9,6 +9,9 @@ import {
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
+
+import { isUnusableTitle, toastTitle } from "../toastTitle";
 
 import { defaultConfig } from "@/config";
 
@@ -135,16 +138,39 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
         <QueryClientProvider client={queryClient}>
           <SettingProvider
             defaultToast={{
+              // `.toString()` used to be called directly here. An order failed
+              // with a titleless error, so `title` was undefined and the ERROR
+              // HANDLER threw - see ORDERBOOK-TESTNET-4 and toastTitle.ts.
+              //
+              // The user saw no toast, the real failure was discarded, and
+              // Sentry reported this line instead of the order. 31 events from
+              // one person retrying in eight minutes.
               onError: (title, description) => {
-                toast.error(title.toString(), { description });
+                // Report the ORIGINAL value before replacing it. Fixing only
+                // the crash would leave some upstream path quietly emitting
+                // errors with no message, and nothing would ever say so.
+                if (isUnusableTitle(title)) {
+                  Sentry.captureMessage(
+                    "Toast error had no usable title - upstream error lost",
+                    {
+                      level: "warning",
+                      extra: {
+                        titleType: typeof title,
+                        titleValue: String(title),
+                        description,
+                      },
+                    }
+                  );
+                }
+                toast.error(toastTitle(title), { description });
               },
               onSuccess: (title, description) => {
-                toast.success(title.toString(), {
+                toast.success(toastTitle(title, "Done"), {
                   description,
                 });
               },
               onInfo: (title, description) => {
-                toast.info(title.toString(), { description });
+                toast.info(toastTitle(title, "Notice"), { description });
               },
             }}
           >
