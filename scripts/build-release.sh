@@ -556,11 +556,55 @@ else
   cp -R apps/hestia/public       "$PKG/apps/hestia/public"
 fi
 
+# ── What commit is ACTUALLY in this artifact? ───────────────────────────────
+#
+# Not necessarily HEAD. In --from-image mode (which is how deploy.sh always
+# repacks) the payload is extracted from a prebuilt image, and that image may
+# have been built from an earlier commit - most commonly because the newer
+# commit changed nothing inside the Docker build context, so every layer was
+# cached and `latest` still points at the older build.
+#
+# THE BUG THIS FIXES, observed 2026-08-10: RELEASE said commit=0dfc0b4d while
+# the served bundle reported release 0.1.0-a10811ad. RELEASE had simply recorded
+# `git rev-parse HEAD` of the checkout doing the packaging. An operator reading
+# RELEASE to answer "what is running?" got a confident wrong answer, which is
+# worse than no answer - it is the file you consult during an incident.
+#
+# Next writes generateBuildId's output to .next/BUILD_ID, and that value IS
+# NEXT_BUILD_ID, i.e. "<version>-<sha>". So the artifact carries its own
+# provenance and we read it back rather than assuming.
+ARTIFACT_STAMP=""
+if [ -r "$PKG/apps/hestia/.next/BUILD_ID" ]; then
+  ARTIFACT_STAMP="$(cat "$PKG/apps/hestia/.next/BUILD_ID" 2>/dev/null | tr -d '[:space:]')"
+fi
+
+TRUE_COMMIT="$GITSHA$DIRTY"
+if [ -n "$ARTIFACT_STAMP" ]; then
+  # BUILD_ID is "<version>-<sha>"; strip the version prefix to get the sha.
+  TRUE_COMMIT="${ARTIFACT_STAMP#"$VERSION"-}"
+  if [ "$ARTIFACT_STAMP" != "$STAMP" ]; then
+    warn "ARTIFACT IS NOT BUILT FROM THIS CHECKOUT.
+     checkout HEAD : $STAMP
+     artifact      : $ARTIFACT_STAMP   (from .next/BUILD_ID)
+   RELEASE will record the ARTIFACT's commit, which is what is actually running.
+   This is normal when the newer commit changed nothing inside the Docker build
+   context - the image layers were cached and ${FROM_IMAGE:-the image} still
+   holds the earlier build. If you expected a rebuild, the change was outside
+   the build context (a script, a doc) or .dockerignore excluded it."
+  fi
+fi
+
 # Runtime metadata, so a deployed host can report what it is running.
+#
+# `commit` is the artifact's own build id, NOT the packaging checkout's HEAD.
+# `packaged_from_head` records the checkout separately so a mismatch stays
+# visible on the host rather than being silently reconciled.
 cat > "$PKG/RELEASE" <<EOF
 name=orderbook-fe
 version=$VERSION
-commit=$GITSHA$DIRTY
+commit=$TRUE_COMMIT
+build_id=${ARTIFACT_STAMP:-$STAMP}
+packaged_from_head=$GITSHA$DIRTY
 built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 built_from=$(hostname 2>/dev/null || echo unknown)
 node=$(node -v 2>/dev/null || echo "n/a (extracted from image)")
