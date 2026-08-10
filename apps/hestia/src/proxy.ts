@@ -29,6 +29,10 @@ export function proxy(req: NextRequest) {
   }
 }
 
+// NOTE ON WHAT IS *NOT* MATCHED: /faq and /legal/* are deliberately absent, so
+// they stay reachable during maintenance mode. Legal pages have to be readable
+// at all times, and help is most wanted when something is wrong. A user sent to
+// /maintenance from /faq loses the only page that might answer them.
 export const config = {
   matcher: [
     "/",

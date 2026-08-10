@@ -16,10 +16,11 @@ export const QuickLinks = () => {
             on specific features.
           </Typography.Paragraph>
         </div>
-        <Link
-          href="https://docs.polkadex.ee/orderbookPolkadexFAQWallets/"
-          target="_blank"
-        >
+        {/* Was https://docs.polkadex.ee/orderbookPolkadexFAQWallets/, which is
+            dead. Now the in-app FAQ - so it stays in the same tab (no
+            target="_blank"), and it can be corrected in the same commit as
+            whatever bug prompted the question. */}
+        <Link href="/faq">
           <Button.Underline className="p-0 h-fit w-fit">
             Explore FAQ
             <RiArrowRightLine className="w-4 h-4 mr-4" />

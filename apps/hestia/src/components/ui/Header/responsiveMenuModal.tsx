@@ -101,7 +101,7 @@ export const ResponsiveMenuModal = ({
                         label: "Orderbook guide",
                       },
                       {
-                        href: "https://docs.polkadex.ee/orderbookPolkadexFAQWallets",
+                        href: "/faq",
                         label: "FAQ",
                       },
                       { href: EXTERNAL_LINKS.docs, label: "Documentation" },
