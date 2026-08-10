@@ -15,7 +15,7 @@ import {
   RiAlertLine,
 } from "@remixicon/react";
 
-import { Header } from "@/components/ui";
+import { Footer, Header } from "@/components/ui";
 import { defaultConfig } from "@/config";
 import { EXTERNAL_LINKS } from "@/config/links";
 
@@ -371,6 +371,8 @@ export function Faq() {
           </div>
         </div>
       </main>
+
+      <Footer fixedPosition={false} />
     </div>
   );
 }

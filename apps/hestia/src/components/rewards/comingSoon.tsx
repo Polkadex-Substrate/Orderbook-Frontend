@@ -13,6 +13,7 @@ import {
   RiLineChartLine,
 } from "@remixicon/react";
 
+import { Footer, Header } from "@/components/ui";
 import { defaultConfig } from "@/config";
 
 /**
@@ -59,192 +60,212 @@ export const ComingSoon = () => {
   const market = defaultConfig.landingPageMarket;
 
   return (
-    <div className="flex-1 flex flex-col items-center px-4 pb-16">
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="relative w-full max-w-5xl overflow-hidden rounded-b-3xl">
-        {/* Two soft brand-coloured washes instead of a flat block. Kept at low
+    // Header and Footer are NOT optional chrome here.
+    //
+    // The first version of this page rendered neither, which made it a dead
+    // end: a user who clicked Rewards had no nav, no logo, no way back except
+    // the browser button. Reported immediately, and rightly.
+    //
+    // The real rewards Template (rendered once ENABLE_LMP is true) has both, so
+    // including them also keeps /rewards the same shape in either state - the
+    // page swaps its middle, not its whole frame.
+    //
+    // Footer uses fixedPosition={false} deliberately. Its default is fixed,
+    // which expects the caller to measure the footer and reserve padding, the
+    // way Template does with footerHeight. On a plain scrolling page that dance
+    // buys nothing and gets it wrong by a few pixels; normal flow just works.
+    <div className="flex flex-1 flex-col bg-backgroundBase min-h-screen">
+      <Header />
+
+      <main className="flex flex-1 flex-col items-center px-4 pb-16">
+        {/* ── Hero ─────────────────────────────────────────────────── */}
+        <div className="relative w-full max-w-5xl overflow-hidden rounded-b-3xl">
+          {/* Two soft brand-coloured washes instead of a flat block. Kept at low
             opacity so text contrast stays well clear of the AA floor. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-32 -left-24 h-72 w-72 rounded-full bg-primary-base/20 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#6745D2]/25 blur-3xl"
-        />
-
-        <div className="relative flex flex-col items-center gap-5 px-6 py-16 text-center md:py-24">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary-base/40 bg-primary-base/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary-base">
-            <RiFlashlightLine className="h-3.5 w-3.5" />
-            Coming soon
-          </span>
-
-          <h1 className="max-w-2xl text-4xl font-semibold leading-tight text-textBase md:text-5xl">
-            Get paid to help{" "}
-            <span className="bg-gradient-to-r from-primary-base to-[#6745D2] bg-clip-text text-transparent">
-              others trade
-            </span>
-          </h1>
-
-          <p className="max-w-xl text-base leading-relaxed text-primary">
-            Soon you will earn rewards for leaving buy and sell offers on the
-            market. Nothing is locked up, and you can cancel any offer at any
-            time.
-          </p>
-
-          <Link
-            href={`/trading/${market}`}
-            className="group mt-2 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-base to-[#6745D2] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Start placing offers
-            <RiArrowRightLine className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex w-full max-w-5xl flex-col gap-16 px-2 pt-4">
-        {/* ── How you earn ──────────────────────────────────────────── */}
-        <section className="flex flex-col gap-6">
-          <SectionTitle
-            eyebrow="How it works"
-            title="Four things that decide what you earn"
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-32 -left-24 h-72 w-72 rounded-full bg-primary-base/20 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#6745D2]/25 blur-3xl"
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Card
-              icon={<RiStackLine className="h-5 w-5" />}
-              tint="pink"
-              title="Leave offers on the market"
-            >
-              Place a buy or sell offer and let it sit. When someone trades
-              against it, that counts. Offers you fill yourself do not.
-            </Card>
-            <Card
-              icon={<RiTimerFlashLine className="h-5 w-5" />}
-              tint="violet"
-              title="Show up often"
-              badge="Matters most"
-            >
-              This counts for more than anything else. Being there day after day
-              beats placing one big offer once.
-            </Card>
-            <Card
-              icon={<RiPriceTag3Line className="h-5 w-5" />}
-              tint="info"
-              title="Stay near the going price"
-            >
-              Your offer has to be close to the current price, and big enough to
-              be useful. Offers parked far away do not earn.
-            </Card>
-            <Card
-              icon={<RiFlashlightLine className="h-5 w-5" />}
-              tint="attention"
-              title="Earn more when it is busy"
-            >
-              A fast-moving market needs help the most, so rewards rise during
-              those periods.
-            </Card>
-          </div>
-        </section>
-
-        {/* ── Where the rewards come from ───────────────────────────── */}
-        <section className="flex flex-col gap-6">
-          <SectionTitle
-            eyebrow="The pot"
-            title="Funded by real trading, not printed tokens"
-          />
-
-          <div className="overflow-hidden rounded-2xl border border-primary bg-level-1">
-            <div className="grid divide-y divide-primary md:grid-cols-3 md:divide-x md:divide-y-0">
-              <Flow
-                step="1"
-                icon={<RiHandCoinLine className="h-5 w-5" />}
-                title="People trade"
-                body="The exchange collects a fee on trades, as any exchange does."
-              />
-              <Flow
-                step="2"
-                icon={<RiCoinsLine className="h-5 w-5" />}
-                title="A share fills the pot"
-                body="Part of those fees goes into a reward pot for each round."
-              />
-              <Flow
-                step="3"
-                icon={<RiLineChartLine className="h-5 w-5" />}
-                title="You take your share"
-                body="Split between everyone who helped, by how much each did."
-              />
-            </div>
-            <div className="border-t border-primary bg-level-0 px-6 py-4">
-              <p className="text-sm text-primary">
-                Because the pot comes from trading, it grows as the exchange
-                gets busier. No inflation, no token emission.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Why it is good for you ────────────────────────────────── */}
-        <section className="flex flex-col gap-6">
-          <SectionTitle eyebrow="The upside" title="You gain twice over" />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-danger-base/30 bg-danger-base/5 p-6">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-danger-base">
-                A thin market
-              </p>
-              <p className="text-sm leading-relaxed text-primary">
-                Only a few offers waiting. A large order eats through them, and
-                you end up paying more than the price you saw on screen.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[#00E676]/30 bg-[#00E676]/5 p-6">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#00E676]">
-                A deep market
-              </p>
-              <p className="text-sm leading-relaxed text-primary">
-                Always someone on the other side. The price you see stays close
-                to the price you get, and you can trade larger amounts without
-                pushing the market against yourself.
-              </p>
-            </div>
-          </div>
-
-          <p className="text-sm leading-relaxed text-primary">
-            Rewards are how a market gets from the first to the second. You are
-            paid for the part you play in it, and you benefit from everyone else
-            playing theirs.
-          </p>
-        </section>
-
-        {/* ── Fairness + what to do ─────────────────────────────────── */}
-        <section className="grid gap-4 md:grid-cols-2">
-          <div className="flex gap-4 rounded-2xl border border-primary bg-level-1 p-6">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00E676]/10 text-[#00E676]">
-              <RiShieldCheckLine className="h-5 w-5" />
+          <div className="relative flex flex-col items-center gap-5 px-6 py-16 text-center md:py-24">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-base/40 bg-primary-base/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary-base">
+              <RiFlashlightLine className="h-3.5 w-3.5" />
+              Coming soon
             </span>
-            <div className="flex flex-col gap-1">
-              <h3 className="font-medium text-textBase">Kept fair</h3>
-              <p className="text-sm leading-relaxed text-primary">
-                Trading with yourself to inflate your score will not work. Those
-                trades are filtered out, so the pot goes to people genuinely
-                helping the market.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex flex-col justify-center gap-2 rounded-2xl border border-primary-base/30 bg-gradient-to-br from-primary-base/10 to-[#6745D2]/10 p-6">
-            <h3 className="font-medium text-textBase">
-              Nothing to do right now
-            </h3>
-            <p className="text-sm leading-relaxed text-primary">
-              No sign-up, no waiting list. When it starts, this page shows what
-              you have earned and lets you claim it. Getting used to placing
-              offers now is the best preparation there is.
+            <h1 className="max-w-2xl text-4xl font-semibold leading-tight text-textBase md:text-5xl">
+              Get paid to help{" "}
+              <span className="bg-gradient-to-r from-primary-base to-[#6745D2] bg-clip-text text-transparent">
+                others trade
+              </span>
+            </h1>
+
+            <p className="max-w-xl text-base leading-relaxed text-primary">
+              Soon you will earn rewards for leaving buy and sell offers on the
+              market. Nothing is locked up, and you can cancel any offer at any
+              time.
             </p>
+
+            <Link
+              href={`/trading/${market}`}
+              className="group mt-2 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-base to-[#6745D2] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Start placing offers
+              <RiArrowRightLine className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
-        </section>
-      </div>
+        </div>
+
+        <div className="flex w-full max-w-5xl flex-col gap-16 px-2 pt-4">
+          {/* ── How you earn ──────────────────────────────────────────── */}
+          <section className="flex flex-col gap-6">
+            <SectionTitle
+              eyebrow="How it works"
+              title="Four things that decide what you earn"
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Card
+                icon={<RiStackLine className="h-5 w-5" />}
+                tint="pink"
+                title="Leave offers on the market"
+              >
+                Place a buy or sell offer and let it sit. When someone trades
+                against it, that counts. Offers you fill yourself do not.
+              </Card>
+              <Card
+                icon={<RiTimerFlashLine className="h-5 w-5" />}
+                tint="violet"
+                title="Show up often"
+                badge="Matters most"
+              >
+                This counts for more than anything else. Being there day after
+                day beats placing one big offer once.
+              </Card>
+              <Card
+                icon={<RiPriceTag3Line className="h-5 w-5" />}
+                tint="info"
+                title="Stay near the going price"
+              >
+                Your offer has to be close to the current price, and big enough
+                to be useful. Offers parked far away do not earn.
+              </Card>
+              <Card
+                icon={<RiFlashlightLine className="h-5 w-5" />}
+                tint="attention"
+                title="Earn more when it is busy"
+              >
+                A fast-moving market needs help the most, so rewards rise during
+                those periods.
+              </Card>
+            </div>
+          </section>
+
+          {/* ── Where the rewards come from ───────────────────────────── */}
+          <section className="flex flex-col gap-6">
+            <SectionTitle
+              eyebrow="The pot"
+              title="Funded by real trading, not printed tokens"
+            />
+
+            <div className="overflow-hidden rounded-2xl border border-primary bg-level-1">
+              <div className="grid divide-y divide-primary md:grid-cols-3 md:divide-x md:divide-y-0">
+                <Flow
+                  step="1"
+                  icon={<RiHandCoinLine className="h-5 w-5" />}
+                  title="People trade"
+                  body="The exchange collects a fee on trades, as any exchange does."
+                />
+                <Flow
+                  step="2"
+                  icon={<RiCoinsLine className="h-5 w-5" />}
+                  title="A share fills the pot"
+                  body="Part of those fees goes into a reward pot for each round."
+                />
+                <Flow
+                  step="3"
+                  icon={<RiLineChartLine className="h-5 w-5" />}
+                  title="You take your share"
+                  body="Split between everyone who helped, by how much each did."
+                />
+              </div>
+              <div className="border-t border-primary bg-level-0 px-6 py-4">
+                <p className="text-sm text-primary">
+                  Because the pot comes from trading, it grows as the exchange
+                  gets busier. No inflation, no token emission.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Why it is good for you ────────────────────────────────── */}
+          <section className="flex flex-col gap-6">
+            <SectionTitle eyebrow="The upside" title="You gain twice over" />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-danger-base/30 bg-danger-base/5 p-6">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-danger-base">
+                  A thin market
+                </p>
+                <p className="text-sm leading-relaxed text-primary">
+                  Only a few offers waiting. A large order eats through them,
+                  and you end up paying more than the price you saw on screen.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[#00E676]/30 bg-[#00E676]/5 p-6">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#00E676]">
+                  A deep market
+                </p>
+                <p className="text-sm leading-relaxed text-primary">
+                  Always someone on the other side. The price you see stays
+                  close to the price you get, and you can trade larger amounts
+                  without pushing the market against yourself.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm leading-relaxed text-primary">
+              Rewards are how a market gets from the first to the second. You
+              are paid for the part you play in it, and you benefit from
+              everyone else playing theirs.
+            </p>
+          </section>
+
+          {/* ── Fairness + what to do ─────────────────────────────────── */}
+          <section className="grid gap-4 md:grid-cols-2">
+            <div className="flex gap-4 rounded-2xl border border-primary bg-level-1 p-6">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00E676]/10 text-[#00E676]">
+                <RiShieldCheckLine className="h-5 w-5" />
+              </span>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-medium text-textBase">Kept fair</h3>
+                <p className="text-sm leading-relaxed text-primary">
+                  Trading with yourself to inflate your score will not work.
+                  Those trades are filtered out, so the pot goes to people
+                  genuinely helping the market.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center gap-2 rounded-2xl border border-primary-base/30 bg-gradient-to-br from-primary-base/10 to-[#6745D2]/10 p-6">
+              <h3 className="font-medium text-textBase">
+                Nothing to do right now
+              </h3>
+              <p className="text-sm leading-relaxed text-primary">
+                No sign-up, no waiting list. When it starts, this page shows
+                what you have earned and lets you claim it. Getting used to
+                placing offers now is the best preparation there is.
+              </p>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <Footer fixedPosition={false} />
     </div>
   );
 };
