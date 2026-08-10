@@ -230,7 +230,19 @@ fi
 # itself. Shape-matched on purpose: high confidence, no false positives on the
 # public identifiers that legitimately live in tracked files.
 if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
-  secret_pat="AIza""Sy[0-9A-Za-z_-]{33}|sntry""s_[A-Za-z0-9]|sntry""u_[A-Za-z0-9]"
+  # GOCSPX- is a Google OAuth CLIENT SECRET. Added 2026-08-09 after a
+  # `client_secret_*.json` was downloaded from the Google console for the GDrive
+  # backup feature: the guard would have let that file straight through, because
+  # it only knew about API keys (AIzaSy) and Sentry tokens. The download is the
+  # normal way Google hands you an OAuth client, so the file lands in Downloads
+  # and gets copied next to the code it configures - which is exactly the
+  # sequence this guard exists to interrupt.
+  #
+  # Note the frontend never needs the secret at all: the GDrive flow is
+  # browser-side and uses only the client ID. So any GOCSPX- string in this repo
+  # is by definition misplaced, which makes this the rare pattern with no
+  # legitimate exception.
+  secret_pat="AIza""Sy[0-9A-Za-z_-]{33}|sntry""s_[A-Za-z0-9]|sntry""u_[A-Za-z0-9]|GOCS""PX-[A-Za-z0-9_-]{20}"
   # Tracked files AND untracked-but-unignored ones. The tracked-only version
   # missed the real near-miss: sync-env.sh's .env.bak.<timestamp> backups carry
   # credentials and were not ignored, so they sat in the tree one `git add -A`
