@@ -8,11 +8,6 @@ import {
   RiEarthLine,
   RiMoonLine,
   RiPaletteLine,
-  RiRedditFill,
-  RiTelegramFill,
-  RiGithubFill,
-  RiTwitterXFill,
-  RiDiscordFill,
 } from "@remixicon/react";
 import { defaultConfig } from "@orderbook/core/config";
 
@@ -29,7 +24,6 @@ export const ResponsiveMenuModal = ({
   open: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const isRewardDisabled = !defaultConfig.enableLmp;
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
   const isFaucetDisabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
   const lastUsedMarketUrl = getMarketUrl();
@@ -80,11 +74,12 @@ export const ResponsiveMenuModal = ({
                   >
                     Bridge
                   </HeaderLink.Single>
+                  {/* Not gated: the page shows the programme when live and an
+                      explanation when not. Mirrors Header/index.tsx. */}
                   <HeaderLink.Single
                     size="lg"
                     href="/rewards"
                     className="text-lg"
-                    disabled={isRewardDisabled}
                   >
                     Rewards
                   </HeaderLink.Single>
@@ -122,47 +117,7 @@ export const ResponsiveMenuModal = ({
                   <HeaderLink.Accordion items={[...LEGAL_LINKS]}>
                     Legal
                   </HeaderLink.Accordion>
-                  <HeaderLink.Accordion
-                    items={[
-                      {
-                        href: EXTERNAL_LINKS.telegram,
-                        label: "Telegram",
-                        svg: (
-                          <RiTelegramFill className="bg-sky-500 text-textBase rounded-full w-5 h-5" />
-                        ),
-                      },
-                      {
-                        href: EXTERNAL_LINKS.discord,
-                        label: "Discord",
-                        svg: (
-                          <RiDiscordFill className="bg-blue-700  text-textBase rounded-full w-5 h-5 p-0.5" />
-                        ),
-                      },
-                      {
-                        href: EXTERNAL_LINKS.twitter,
-                        label: "X",
-                        svg: (
-                          <RiTwitterXFill className="rounded-full text-textBase w-5 h-5" />
-                        ),
-                      },
-                      {
-                        href: EXTERNAL_LINKS.github,
-                        label: "Github",
-                        svg: (
-                          <RiGithubFill className="rounded-full text-textBase w-5 h-5" />
-                        ),
-                      },
-                      {
-                        href: EXTERNAL_LINKS.reddit,
-                        label: "Reddit",
-                        svg: (
-                          <RiRedditFill className="bg-red-500 text-textBase rounded-full w-5 h-5" />
-                        ),
-                      },
-                    ]}
-                  >
-                    Community
-                  </HeaderLink.Accordion>
+                  {/* Community accordion removed 2026-08-10 - see Header/index.tsx */}
                 </div>
               </div>
             )}

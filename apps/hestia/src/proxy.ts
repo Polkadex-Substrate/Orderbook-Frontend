@@ -8,15 +8,22 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function proxy(req: NextRequest) {
-  const { enableLmp: isRewardsActive, maintenanceMode } = defaultConfig;
+  const { maintenanceMode } = defaultConfig;
   const isFaucetEnabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET === "true";
 
   if (maintenanceMode) {
     return NextResponse.redirect(new URL("/maintenance", req.url));
   }
-  if (!isRewardsActive && req.nextUrl.pathname.startsWith("/rewards")) {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
+  // /rewards is NO LONGER redirected when the programme is off.
+  //
+  // It used to bounce to "/" whenever `enableLmp` was false, which meant a
+  // shared or bookmarked link silently dumped the user on the landing page with
+  // no explanation - indistinguishable from a broken link. The page itself now
+  // decides what to render: the live programme, or an explanation of what is
+  // coming. See app/rewards/page.tsx.
+  //
+  // The sub-routes (/rewards/info, /rewards/[id]) are still matched below and
+  // still reach their own components; only the redirect is gone.
   if (!isFaucetEnabled && req.nextUrl.pathname.startsWith("/faucet")) {
     return NextResponse.redirect(new URL("/", req.url));
   }

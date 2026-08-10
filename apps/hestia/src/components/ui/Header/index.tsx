@@ -6,13 +6,6 @@ import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { Logo } from "@mitrabook/ux";
 import { getMarketUrl } from "@orderbook/core/helpers";
 import { defaultConfig } from "@orderbook/core/config";
-import {
-  RiRedditFill,
-  RiTelegramFill,
-  RiGithubFill,
-  RiTwitterXFill,
-  RiDiscordFill,
-} from "@remixicon/react";
 
 import { ConnectWalletInteraction } from "../ConnectWalletInteraction";
 import { ConnectTradingInteraction } from "../ConnectWalletInteraction/connectTradingInteraction";
@@ -36,7 +29,10 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
     onToogleFundWallet,
   } = useSettingsProvider();
   const lastUsedMarketUrl = getMarketUrl();
-  const isRewardDisabled = !defaultConfig.enableLmp;
+  // Rewards is no longer gated on `enableLmp`. The tab is always reachable;
+  // the PAGE decides what to show - the live programme when it is running, an
+  // explanation of what is coming when it is not. A hidden tab told people
+  // nothing and made the feature impossible to anticipate.
   const isBridgeDisabled = !defaultConfig.isBridgeEnabled;
   const isFaucetDisabled = process.env.NEXT_PUBLIC_ENABLE_FAUCET !== "true";
 
@@ -77,9 +73,7 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             <HeaderLink.Single href="/bridge" disabled={isBridgeDisabled}>
               Bridge
             </HeaderLink.Single>
-            <HeaderLink.Single disabled={isRewardDisabled} href="/rewards">
-              Rewards
-            </HeaderLink.Single>
+            <HeaderLink.Single href="/rewards">Rewards</HeaderLink.Single>
             <HeaderLink.Single href="/faucet" disabled={isFaucetDisabled}>
               Faucet
             </HeaderLink.Single>
@@ -109,43 +103,19 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
             >
               Help
             </HeaderLink.Dropdown>
-            <HeaderLink.Dropdown
-              items={[
-                {
-                  href: EXTERNAL_LINKS.telegram,
-                  label: "Telegram",
-                  svg: (
-                    <RiTelegramFill className="bg-sky-500 rounded-full w-5 h-5" />
-                  ),
-                },
-                {
-                  href: EXTERNAL_LINKS.discord,
-                  label: "Discord",
-                  svg: (
-                    <RiDiscordFill className="bg-blue-700 rounded-full w-5 h-5 p-0.5" />
-                  ),
-                },
-                {
-                  href: EXTERNAL_LINKS.twitter,
-                  label: "X",
-                  svg: <RiTwitterXFill className="rounded-full w-5 h-5" />,
-                },
-                {
-                  href: EXTERNAL_LINKS.github,
-                  label: "Github",
-                  svg: <RiGithubFill className="rounded-full w-5 h-5" />,
-                },
-                {
-                  href: EXTERNAL_LINKS.reddit,
-                  label: "Reddit",
-                  svg: (
-                    <RiRedditFill className="bg-red-500 rounded-full w-5 h-5" />
-                  ),
-                },
-              ]}
-            >
-              Community
-            </HeaderLink.Dropdown>
+            {/* The Community dropdown was removed on 2026-08-10.
+                Tester feedback, and the reasoning behind acting on it: every
+                link out of the orderbook during a session is a chance to lose
+                the session, and Telegram/Discord/X/Reddit/Github serve the
+                project rather than the trade in front of the user. They remain
+                reachable from the footer and the landing page, which is where
+                people look for them anyway.
+
+                Deliberately NOT moved under a "More" menu. A catch-all is where
+                links go to be forgotten, and it dodges the actual question of
+                whether a link earns a place in a trading surface. Links that
+                serve the trade belong at the point of need - an explorer link
+                belongs in the transfer row that is stuck, not in navigation. */}
           </div>
         </div>
         <Profile
