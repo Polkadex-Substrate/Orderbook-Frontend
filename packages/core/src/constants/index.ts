@@ -33,6 +33,8 @@ export const LOCAL_STORAGE_ID = {
   DEFAULT_MARKET: "default_market",
   DEFAULT_AVATAR: "default_avatar",
   DEFAULT_DISCLAIMER: "default_disclaimer",
+  // Opt-in, default off. Absent means off - see helpers/fillSound.ts.
+  FILL_SOUND: "fill_sound_enabled",
 };
 
 export const USER_EVENTS = {

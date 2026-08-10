@@ -20,6 +20,7 @@ import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import {
   DEFAULT_BATCH_LIMIT,
   QUERY_KEYS,
+  LOCAL_STORAGE_ID,
   NOTIFICATIONS,
   RECENT_TRADES_LIMIT,
 } from "@orderbook/core/constants";
@@ -33,6 +34,10 @@ import {
   decimalPlaces,
   deleteFromBook,
   fetchOnChainBalance,
+  getFromStorage,
+  isFillSoundEnabled,
+  playFillSound,
+  shouldPlayFillSound,
   getAbsoluteResolution,
   getCorrectTimestamp,
   getCurrentMarket,
@@ -114,6 +119,25 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
                   : NOTIFICATIONS.partialFilledOrder(payload);
               onPushNotification(notf);
               onHandleInfo?.(notf.message, notf.description);
+            }
+
+            // The optional fill chime, requested because a trader watching the
+            // order book can miss a toast in the corner. Off unless the user
+            // turned it on; silent in a background tab. Deliberately placed
+            // AFTER the toast so the sound never arrives without the message
+            // that explains it, and it reads the setting on every fill rather
+            // than caching it so a change in another tab takes effect at once.
+            if (
+              shouldPlayFillSound({
+                kind: notice.kind,
+                enabled: isFillSoundEnabled(
+                  getFromStorage(LOCAL_STORAGE_ID.FILL_SOUND)
+                ),
+                documentHidden:
+                  typeof document !== "undefined" && document.hidden,
+              })
+            ) {
+              playFillSound();
             }
 
             if (payload.status === "OPEN") {

@@ -3,6 +3,8 @@ import { ExtensionAccount } from "@aksumite/react-providers";
 
 import { GenericHorizontalCard } from "../ReadyToUse";
 
+import { FillSoundToggle } from "./fillSoundToggle";
+
 export const UserActions = ({
   onClose,
   onCreateTradingAccount,
@@ -52,6 +54,13 @@ export const UserActions = ({
           icon="History"
           onClick={onTradingAccountList}
         />
+
+        {/* Preferences sit below the account actions, separated, because they are
+            a different kind of thing: everything above navigates somewhere, this
+            changes a setting in place. */}
+        <div className="mt-1 border-t border-primary pt-3">
+          <FillSoundToggle />
+        </div>
       </Interaction.Content>
       <Interaction.Footer>
         <Interaction.Close onClick={onClose}>Cancel</Interaction.Close>

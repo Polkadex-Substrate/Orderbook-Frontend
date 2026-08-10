@@ -10,6 +10,7 @@ export * from "./createWithdrawHelpers";
 export * from "./DateTime";
 export * from "./enclavePayloadSigner";
 export * from "./fetchOnChainBalance";
+export * from "./fillSound";
 export * from "./filterBlockedAssets";
 export * from "./getIsDecreasingArray";
 export * from "./getNonce";

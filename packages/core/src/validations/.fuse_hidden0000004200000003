@@ -11,8 +11,6 @@ import {
   MAX_DIGITS_AFTER_DECIMAL,
 } from "@orderbook/core/constants";
 
-import { isAmountLike } from "./amountFormat";
-
 export const bridgeValidations = (
   minAmount = 0,
   maxAmount = 0,
@@ -242,7 +240,9 @@ export const limitOrderValidations = ({
   Yup.object().shape({
     price: Yup.string()
       .required("Required")
-      .test("Valid number", "Must be a number", (value) => isAmountLike(value))
+      .test("Valid number", "Must be a number", (value) =>
+        value ? /^\d+(\.\d+)?$/.test(value) : false
+      )
       .test(
         "Min Price",
         `Minimum price: ${minMarketPrice}`,
@@ -250,7 +250,9 @@ export const limitOrderValidations = ({
       ),
     amount: Yup.string()
       .required("Required")
-      .test("Valid number", "Must be a number", (value) => isAmountLike(value))
+      .test("Valid number", "Must be a number", (value) =>
+        value ? /^\d+(\.\d+)?$/.test(value) : false
+      )
       .test(
         "Min Quantity",
         `Minimum amount: ${minQuantity}`,
@@ -268,7 +270,9 @@ export const limitOrderValidations = ({
         }
       ),
     total: Yup.string()
-      .test("Valid number", "Must be a number", (value) => isAmountLike(value))
+      .test("Valid number", "Must be a number", (value) =>
+        value ? /^\d+(\.\d+)?$/.test(value) : false
+      )
       .test(
         "Min Volume",
         `Minimum volume required: ${minVolume}`,
@@ -309,7 +313,9 @@ export const marketOrderValidations = ({
 }: MarketOrderValidations) =>
   Yup.object().shape({
     amount: Yup.string()
-      .test("Valid number", "Must be a number", (value) => isAmountLike(value))
+      .test("Valid number", "Must be a number", (value) =>
+        value ? /^\d+(\.\d+)?$/.test(value) : false
+      )
       .test("Min volume", `Minimum volume required: ${minVolume}`, (value) => {
         if (isSell) {
           // No current price available (e.g. market has no recent trades) -
