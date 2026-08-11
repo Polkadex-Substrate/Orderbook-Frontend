@@ -75,10 +75,10 @@
     bignumber "^1.1.0"
     millify "^6.1.0"
 
-"@aksumite/react-providers@^1.0.0", "@aksumite/react-providers@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@aksumite/react-providers/-/react-providers-1.0.2.tgz#1f4f99b347f81f6972ae63b433884a2a614ce726"
-  integrity sha512-jJ6iU8L4slIM72LETgprDuS92tOwHRwA1nR9UR3Z1otvRbY206LyEpKuG2p+bJkM4vHhdvItRVTzYtZPxUX1IQ==
+"@aksumite/react-providers@^1.0.0", "@aksumite/react-providers@^1.0.2", "@aksumite/react-providers@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@aksumite/react-providers/-/react-providers-1.0.4.tgz#965ecdb68ab7af9a5d9c8c4573f512c97a234553"
+  integrity sha512-CX2PIAL/YV7YrqJDlqGDXOJDyxW79iXoblKvUo3cTMx0xHXn9FPAnliEe7PU7vqMel9yvnwWBJv4fT8V1phxUQ==
   dependencies:
     "@aksumite/local-wallets" "^1.0.0"
     "@aksumite/sdk-utils" "^1.0.0"
