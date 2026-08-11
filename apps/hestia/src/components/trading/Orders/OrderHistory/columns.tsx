@@ -2,6 +2,7 @@ import { parseScientific } from "@aksumite/numericals";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 import { createColumnHelper } from "@tanstack/react-table";
 import { HoverCard, Tooltip, Typography } from "@mitrabook/ux";
+import { marketNameLabel, orderFieldLabel } from "@orderbook/core/helpers";
 
 import { formatedDate } from "@/helpers";
 import { FilledCard } from "@/components/ui/ReadyToUse";
@@ -34,7 +35,7 @@ export const columns = [
               size="xs"
               className="first-letter:uppercase"
             >
-              {status.toLowerCase()}
+              {orderFieldLabel(status)}
             </Typography.Text>
           </div>
         </div>
@@ -65,7 +66,7 @@ export const columns = [
               bold
               appearance={isSell ? "danger" : "success"}
             >
-              {e.getValue().type.toLowerCase()} / {isSell ? "Sell" : "Buy"}
+              {orderFieldLabel(e.getValue().type)} / {isSell ? "Sell" : "Buy"}
             </Typography.Text>
           </div>
         </div>

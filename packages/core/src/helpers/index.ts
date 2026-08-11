@@ -44,3 +44,4 @@ export * from "./orderbook";
 // New GraphQL infrastructure (Phase 1 migration)
 export * from "./graphql";
 export * from "./graphqlCompat";
+export * from "./orderFieldLabels";

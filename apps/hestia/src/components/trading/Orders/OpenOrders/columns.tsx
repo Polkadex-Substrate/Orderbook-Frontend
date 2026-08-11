@@ -5,6 +5,7 @@ import {
 import { createColumnHelper } from "@tanstack/react-table";
 import { Tooltip, Typography } from "@mitrabook/ux";
 import { CancelOrderArgs } from "@orderbook/core/hooks";
+import { marketNameLabel, orderFieldLabel } from "@orderbook/core/helpers";
 
 import { CancelAllOrdersAction } from "../../../ui/ReadyToUse/cancelAllOrdersAction";
 
@@ -58,7 +59,7 @@ export const columns = ({
       return (
         <div className="flex flex-col">
           <Typography.Text bold size="xs">
-            {e.getValue().market.name}
+            {marketNameLabel(e.getValue().market)}
           </Typography.Text>
           <div className="flex items-center">
             <Typography.Text
@@ -67,7 +68,7 @@ export const columns = ({
               bold
               appearance={isSell ? "danger" : "success"}
             >
-              {e.getValue().type.toLowerCase()} / {isSell ? "Sell" : "Buy"}
+              {orderFieldLabel(e.getValue().type)} / {isSell ? "Sell" : "Buy"}
             </Typography.Text>
           </div>
         </div>
