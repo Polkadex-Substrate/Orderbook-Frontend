@@ -4,6 +4,7 @@ import { mainnet, sepolia } from "wagmi/chains";
 import type { Chain } from "viem";
 
 import { SUPPORTED_EVM_CHAIN_IDS } from "@/config/bridge";
+import { originMismatch, resolveAppOrigin } from "@/config/appOrigin";
 
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 if (!projectId) throw new Error("Project ID is not defined");
