@@ -21,6 +21,7 @@
 #   --env <file>        runtime env to install            (default ./orderbook-fe.env if present)
 #   --with-nginx        install and configure an nginx reverse proxy
 #   --domain <fqdn>     domain for the nginx vhost        (implies --with-nginx)
+#   --redirect-from <list>  comma-separated old hostnames to 301 -> --domain
 #   --no-start          install but do not start the service
 #   --dry-run           print what would happen, change nothing
 #   --keep-backups <n>  previous installs to retain           (default 3, 0 = none)
@@ -55,6 +56,7 @@ PREFIX=/opt/orderbook-fe
 ENV_SRC=""
 WITH_NGINX=0
 DOMAIN=""
+REDIRECT_FROM=""
 NO_START=0
 DRY_RUN=0
 HARDEN=0
@@ -81,6 +83,7 @@ while [ $# -gt 0 ]; do
     --env)         ENV_SRC="$2"; shift 2 ;;
     --with-nginx)  WITH_NGINX=1; shift ;;
     --domain)      DOMAIN="$2"; WITH_NGINX=1; shift 2 ;;
+    --redirect-from) REDIRECT_FROM="$2"; shift 2 ;;
     --no-start)    NO_START=1; shift ;;
     --dry-run)     DRY_RUN=1; shift ;;
     --harden)      HARDEN=1; shift ;;
@@ -113,6 +116,32 @@ echo "$SVC_USER" | grep -Eq '^[a-z_][a-z0-9_-]{0,31}$' || die "invalid --user: $
 case "$PREFIX" in /*) : ;; *) die "--prefix must be an absolute path: $PREFIX" ;; esac
 if [ -n "$DOMAIN" ]; then
   echo "$DOMAIN" | grep -Eq '^[A-Za-z0-9._-]+$' || die "invalid --domain: $DOMAIN"
+
+  # --redirect-from: retired hostnames that must 301 to $DOMAIN.
+  #
+  # WHY THIS EXISTS. orderbook-app-test.polkadex.ee is a DNS alias onto
+  # testnet.polkadex.ee. The old instance behind it was destroyed, so the alias
+  # served the CURRENT app - but with the alias in the Host header, which means
+  # the browser's origin was the alias. Reown's allowlist only contains the
+  # canonical origin, so its relay closed on connect and wallet connect died.
+  # Users on the old link reported "absolutely nothing works" while the canonical
+  # host was fine: same build, same allowlist, different hostname.
+  #
+  # A 301 at the edge puts the browser on the canonical origin BEFORE any wallet
+  # code runs, so there is exactly one origin to allowlist and to reason about.
+  # Doing it here rather than in Next.js keeps it out of the app bundle and means
+  # the request never boots the node process just to be told to go elsewhere.
+  for _rf in $(printf '%s' "$REDIRECT_FROM" | tr ',' ' '); do
+    [ -n "$_rf" ] || continue
+    echo "$_rf" | grep -Eq '^[A-Za-z0-9._-]+$' \
+      || die "invalid --redirect-from host: $_rf"
+    # `if`, not `[ ... ] && die`: on the NORMAL path that test returns 1, which
+    # becomes the loop body's exit status and would abort under `set -e`.
+    if [ "$_rf" = "$DOMAIN" ]; then
+      die "--redirect-from $_rf is the same as --domain; that is a redirect loop"
+    fi
+  done
+
 fi
 # Does any SAN in $2 (newline-separated) cover hostname $1?
 # TLS wildcards match EXACTLY ONE label: *.example.com covers a.example.com
@@ -192,6 +221,29 @@ Certificate) listing the exact hostname, e.g.:
 and copy BOTH the certificate and the private key from that same screen."
     else
       log "Origin certificate covers $DOMAIN"
+    fi
+
+    # Each --redirect-from host terminates TLS on THIS origin too (see the 443
+    # redirect block in the vhost), so the cert must cover those names as well.
+    # If it does not, Cloudflare answers 526 for the alias - which looks exactly
+    # like the wallet-connect outage this redirect exists to fix, and would be
+    # diagnosed all over again.
+    if [ -n "$CERT_SANS" ]; then
+      for _rf in $(printf '%s' "$REDIRECT_FROM" | tr ',' ' '); do
+        [ -n "$_rf" ] || continue
+        if cert_san_covers "$_rf" "$CERT_SANS"; then
+          log "Origin certificate covers redirect host $_rf"
+        else
+          die "Origin certificate does not cover --redirect-from host $_rf.
+
+  Certificate covers : $(echo "$CERT_SANS" | tr '\n' ' ')
+  Needed             : $_rf
+
+Either reissue the Cloudflare Origin CA certificate to include $_rf, or drop it
+from --redirect-from and retire that hostname at the DNS/Cloudflare layer
+instead."
+        fi
+      done
     fi
   fi
 fi
@@ -870,7 +922,41 @@ EOF
         fi
       fi
 
+      # Retired-hostname 301s. One server block per --redirect-from host, matched
+      # by server_name so they take precedence over the catch-all below; without
+      # them an alias falls through to the canonical vhost and is served the app
+      # under the WRONG Host header, which is what broke wallet connect.
+      #
+      # Redirects straight to https://$DOMAIN rather than https://$host, so the
+      # browser lands on the canonical origin in ONE hop.
+      REDIRECT_BLOCKS=""
+      for _rf in $(printf '%s' "$REDIRECT_FROM" | tr ',' ' '); do
+        [ -n "$_rf" ] || continue
+        REDIRECT_BLOCKS="$REDIRECT_BLOCKS
+# Retired hostname: 301 to the canonical origin.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $_rf;
+    return 301 https://$DOMAIN\$request_uri;
+}
+
+server {
+$LISTEN_443
+$HTTP2_DIRECTIVE
+    server_name $_rf;
+
+    ssl_certificate     $CF_CERT;
+    ssl_certificate_key $CF_KEY;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    return 301 https://$DOMAIN\$request_uri;
+}
+"
+      done
+
       cat > "$VHOST" <<EOF
+$REDIRECT_BLOCKS
 # HTTP: redirect to HTTPS. Cloudflare should also be set to Full (strict).
 server {
     listen 80;
@@ -905,7 +991,23 @@ $PROXY_BLOCK
 }
 EOF
     else
+      # Same retired-hostname 301s, HTTP only: this branch terminates no TLS.
+      REDIRECT_BLOCKS=""
+      for _rf in $(printf '%s' "$REDIRECT_FROM" | tr ',' ' '); do
+        [ -n "$_rf" ] || continue
+        REDIRECT_BLOCKS="$REDIRECT_BLOCKS
+# Retired hostname: 301 to the canonical host.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $_rf;
+    return 301 http://$DOMAIN\$request_uri;
+}
+"
+      done
+
       cat > "$VHOST" <<EOF
+$REDIRECT_BLOCKS
 server {
     listen 80;
     listen [::]:80;
