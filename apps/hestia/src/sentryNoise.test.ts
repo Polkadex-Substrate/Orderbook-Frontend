@@ -52,7 +52,18 @@ describe("KEEPS real defects - the over-match guard", () => {
       // RPC and chain failures.
       "FATAL: Unable to initialize the API: No response received from RPC endpoint in 60s",
       "Cannot set property chainId of #<i> which has only a getter",
-      "The source https://orderbook-app-test.polkadex.ee/trading/wstETHWETH has not been authorized yet",
+      // Reown origin rejection. MUST keep reporting: it means wallet connect is
+      // dead, which users experience as the whole app being broken - one Ybug
+      // report for this was literally "absolutely nothing works".
+      //
+      // The host used to be orderbook-app-test.polkadex.ee, a DNS alias onto
+      // testnet.polkadex.ee. That alias origin is NOT on the Reown allowlist, so
+      // anyone arriving on the old link got a closed relay while the canonical
+      // host worked fine - same build, same allowlist, different hostname.
+      // Asserted against the CANONICAL host now: once the alias 301-redirects the
+      // old one can no longer produce this error, and a test pinned to a hostname
+      // that cannot fail is a test that has quietly stopped meaning anything.
+      "The source https://testnet.polkadex.ee/ has not been authorized yet",
     ]) {
       expect(isIgnoredSentryMessage(m)).toBe(false);
     }

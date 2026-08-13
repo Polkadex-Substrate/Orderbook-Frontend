@@ -8,10 +8,46 @@ import { SUPPORTED_EVM_CHAIN_IDS } from "@/config/bridge";
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 if (!projectId) throw new Error("Project ID is not defined");
 
+/*
+ * ORDERBOOK-TESTNET-2: "The source https://testnet.polkadex.ee/ has not been
+ * authorized yet".
+ *
+ * This used to be:
+ *
+ *   url: process.env.NEXT_PUBLIC_APP_URL ?? "<hardcoded mainnet url>"
+ *
+ * NEXT_PUBLIC_ vars are inlined at BUILD time, so a build that did not receive
+ * NEXT_PUBLIC_APP_URL silently declared the testnet bundle to be the MAINNET
+ * origin. Reown compares the origin against the project's allowlist and rejects
+ * it, and the failure reads like a dashboard problem rather than a missing build
+ * arg. See config/appOrigin.ts.
+ *
+ * In the browser we now use window.location.origin - the origin Reown actually
+ * sees, so it cannot disagree with itself - and the env value only for the
+ * server pass. A disagreement between the two is reported rather than hidden.
+ */
+const appOrigin = resolveAppOrigin(
+  typeof window !== "undefined" ? window.location.origin : undefined,
+  process.env.NEXT_PUBLIC_APP_URL
+);
+
+if (
+  typeof window !== "undefined" &&
+  originMismatch(window.location.origin, process.env.NEXT_PUBLIC_APP_URL)
+) {
+  // Loud, because it means this bundle was built for a different deployment and
+  // every other build-time inlined URL in it is suspect too.
+  console.error(
+    "[wagmi] NEXT_PUBLIC_APP_URL does not match the origin this app is served " +
+      "from. This build was made for a different deployment.",
+    { built: process.env.NEXT_PUBLIC_APP_URL, serving: window.location.origin }
+  );
+}
+
 const metadata = {
   name: "Polkadex Bridge",
   description: "Cross-chain bridge powered by Hyperbridge",
-  url: process.env.NEXT_PUBLIC_APP_URL ?? "https://orderbook.polkadex.trade",
+  url: appOrigin,
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
