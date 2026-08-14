@@ -12,6 +12,7 @@ import { useParams } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 
 import { isUnusableTitle, toastTitle } from "../toastTitle";
+import { ApiConnectionNotice } from "../ApiConnectionNotice";
 
 import { defaultConfig } from "@/config";
 
@@ -198,6 +199,12 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
                               <ConnectWalletProvider>
                                 <Fragment>
                                   <YbugUserIdentifier />
+                                  {/* Renders nothing; raises a persistent toast
+                                      when the chain is unreachable. Mounted here
+                                      rather than in the footer because the
+                                      footer is not fixed on mobile, and every
+                                      reported RPC timeout was on a phone. */}
+                                  <ApiConnectionNotice />
                                   <Progress />
                                   {children}
                                 </Fragment>

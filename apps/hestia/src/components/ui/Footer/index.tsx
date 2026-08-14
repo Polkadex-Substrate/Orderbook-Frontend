@@ -2,6 +2,10 @@ import { Fragment, forwardRef, useMemo } from "react";
 import { Dropdown, Typography } from "@mitrabook/ux";
 import { useNativeApi } from "@orderbook/core/providers/public/nativeApi";
 import {
+  apiConnectionLabel,
+  apiConnectionStatus,
+} from "@orderbook/core/helpers";
+import {
   useSettingsProvider,
   marketCarouselValues,
 } from "@orderbook/core/providers/public/settings";
@@ -28,7 +32,8 @@ export const Footer = forwardRef<
   const { marketCarousel, onChangeMarketCarousel } = useSettingsProvider();
 
   const { width } = useWindowSize();
-  const { connected } = useNativeApi();
+  const { connected, connecting } = useNativeApi();
+  const connectionStatus = apiConnectionStatus({ connected, connecting });
 
   const mobileView = useMemo(() => width <= 640, [width]);
 
@@ -125,15 +130,27 @@ export const Footer = forwardRef<
               </Dropdown.Content>
             </Dropdown>
           </div>
-          <div className="flex items-center gap-1">
+          {/* Three states, not two.
+              This was `connected ? "Connected" : "Connecting"`, a two-way
+              branch over a three-way state, so after the 60s RPC bootstrap
+              timeout the app said "Connecting" when it had already stopped
+              trying. See helpers/apiConnectionStatus.ts. */}
+          <div
+            className="flex items-center gap-1"
+            role="status"
+            aria-live="polite"
+          >
             <div
               className={classNames(
-                "w-2 h-2 rounded-full ",
-                connected ? "bg-success-base" : "bg-attention-base"
+                "w-2 h-2 rounded-full shrink-0",
+                connectionStatus === "connected" && "bg-success-base",
+                connectionStatus === "connecting" &&
+                  "bg-attention-base animate-pulse",
+                connectionStatus === "unavailable" && "bg-danger-base"
               )}
             />
             <Typography.Text>
-              {connected ? "Connected" : "Connecting"}
+              {apiConnectionLabel(connectionStatus)}
             </Typography.Text>
           </div>
           <Typography.Text appearance="primary">
