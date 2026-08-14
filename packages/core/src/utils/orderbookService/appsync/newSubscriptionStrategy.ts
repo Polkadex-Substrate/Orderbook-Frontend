@@ -13,6 +13,7 @@ import gql from "graphql-tag";
 import { getApolloClient } from "../../../helpers/graphql";
 import * as SUBS from "../../../graphql/subscriptions";
 import { parseTimestampOrEpoch } from "../../../helpers/parseTimestamp";
+import { placeholderMarket } from "../../../helpers/placeholderMarket";
 
 import { KlineIntervals } from "./constants";
 import {
@@ -302,7 +303,12 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
         const market = this._marketList.find((item) => item.id === marketId);
         return {
           tradeAddress: item.user,
-          market: market || ({} as MarketBase),
+          // `{} as MarketBase` was a LIE to the compiler: that object has no
+          // baseAsset/quoteAsset, so all 22 `market.baseAsset.ticker` reads in the
+          // Orders panel threw (ORDERBOOK-TESTNET-6). A structurally complete
+          // placeholder is safe to read at any depth and shows a dash rather than
+          // inventing a pair. See helpers/placeholderMarket.ts.
+          market: market || (placeholderMarket(marketId) as MarketBase),
           orderId: item.id?.toString(),
           price: Number(item.price),
           averagePrice: item.avg_filled_price,
