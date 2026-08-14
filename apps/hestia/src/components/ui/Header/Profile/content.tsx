@@ -238,9 +238,6 @@ export const Content = () => {
                 props?.onPage("ExportGoogleDriveAccount")
               }
               backupGDriveAccountLoading={backupGoogleDriveLoading}
-              onBackupGDriveAccount={(account) =>
-                onBackupGoogleDrive({ account })
-              }
               onConnectGDrive={onConnectGoogleDrive}
               connectGDriveLoading={connectGoogleDriveLoading}
               gDriveReady={gDriveReady}

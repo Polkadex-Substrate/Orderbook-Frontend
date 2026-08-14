@@ -436,8 +436,10 @@ export const Form = () => {
         className="flex flex-col gap-5 max-w-[640px] mx-auto py-8 w-full px-4"
       >
         <div className="flex flex-col gap-6 border border-primary rounded-md bg-level-0 p-6 max-sm:p-4">
+          {/* "Networks" heading removed. The From and To selectors below are
+              self-describing, and the connection-steps text carries the actual
+              instruction. */}
           <div className="flex flex-col gap-3">
-            <Typography.Heading>Networks</Typography.Heading>
             {/* Both sides need an account. Stating that up front stops the
                 second request reading like the first one failed.
 

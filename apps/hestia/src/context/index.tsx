@@ -17,7 +17,14 @@ if (typeof window !== "undefined") {
   createWeb3Modal({
     wagmiConfig: config,
     projectId,
-    enableAnalytics: true, // optional
+    /*
+     * BLOCKER B3. Was `enableAnalytics: true`, which ships wallet-modal usage
+     * telemetry to Reown. It arrived as scaffold default marked "optional" and
+     * nobody asked for it. Sending user behaviour to a third party is a decision
+     * that should be made deliberately, not inherited from a template, so it is
+     * off until somebody asks for it.
+     */
+    enableAnalytics: false,
   });
 }
 

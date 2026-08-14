@@ -35,7 +35,22 @@ export const UnlockAccount = ({
       onSubmit: async ({ password }) => {
         try {
           const pass = password?.replace(/\s+/g, "");
-          tempBrowserAccount?.unlock(pass);
+          /*
+           * Only unlock when there is something to unlock.
+           *
+           * `unlock()` on a pair that carries no encrypted data THROWS with
+           * "No encrypted data available to decode" - verified against
+           * @polkadot/keyring, not assumed. The unconditional call meant this
+           * form could not be used with an already-unlocked pair: it would
+           * report "Invalid Password" for a perfectly good password.
+           *
+           * That matters for the Google Drive backup (blocker B1). Backing up
+           * requires a passphrase, and `toJson(passphrase)` encrypts correctly
+           * even for a pair that was never password-protected, so this form is
+           * the right place to collect it - but only once it stops throwing on
+           * the unlocked case.
+           */
+          if (tempBrowserAccount?.isLocked) tempBrowserAccount.unlock(pass);
           if (tempBrowserAccount) {
             await onAction(tempBrowserAccount, pass);
             handleClose();

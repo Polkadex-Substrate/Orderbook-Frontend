@@ -210,8 +210,24 @@ const sentryWebpackPluginOptions = {
   // NEXT_BUILD_ID is the one identity used everywhere else, so use it here.
   // Falls back to the plugin's git detection when unset (local dev), which is
   // better than an empty release.
+  // BLOCKER B4, 2026-08-14: the precedence used to be SENTRY_RELEASE first.
+  //
+  // Testnet events on 14 Aug carried `release: 6.108.0` while the build stamp
+  // said `0.1.0-167ac0b1`, so something in the deploy environment exports a
+  // SENTRY_RELEASE that is not this application's version. Because that variable
+  // won, every event was tagged with an identity matching no build we ship.
+  //
+  // This is not cosmetic. Release tagging is the ONLY mechanism that answers
+  // "did the fixed build produce this error", and its absence caused three wrong
+  // conclusions in a row about ORDERBOOK-TESTNET-2: without it, an error after a
+  // deploy is indistinguishable from a stale bundle still in someone's tab.
+  //
+  // NEXT_BUILD_ID is the identity used by the artifact stamp, RELEASE file,
+  // deploy log and served page, so it now wins. SENTRY_RELEASE remains as an
+  // explicit override for anyone who needs one, and a disagreement is reported
+  // rather than silently resolved.
   release: {
-    name: process.env.SENTRY_RELEASE || process.env.NEXT_BUILD_ID || undefined,
+    name: process.env.NEXT_BUILD_ID || process.env.SENTRY_RELEASE || undefined,
   },
 
   // Required for uploading source maps. Supplied as a BuildKit secret rather than
@@ -265,11 +281,27 @@ if (sentryEnabled) {
         `not - source maps will NOT be uploaded and stack traces will be minified.`
     );
   }
-  if (!process.env.SENTRY_RELEASE) {
+  if (!process.env.SENTRY_RELEASE && !process.env.NEXT_BUILD_ID) {
     // eslint-disable-next-line no-console
     console.warn(
-      "[sentry] SENTRY_RELEASE is not set - events will have no release, so " +
-        "regressions and suspect commits cannot be tracked."
+      "[sentry] neither NEXT_BUILD_ID nor SENTRY_RELEASE is set - events will " +
+        "have no release, so regressions and suspect commits cannot be tracked."
+    );
+  }
+  // B4: surface the disagreement that produced `release: 6.108.0` rather than
+  // resolving it quietly. A release that names no shipped build is worse than
+  // no release at all, because it looks trustworthy.
+  if (
+    process.env.SENTRY_RELEASE &&
+    process.env.NEXT_BUILD_ID &&
+    process.env.SENTRY_RELEASE !== process.env.NEXT_BUILD_ID
+  ) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[sentry] SENTRY_RELEASE ("${process.env.SENTRY_RELEASE}") disagrees with ` +
+        `NEXT_BUILD_ID ("${process.env.NEXT_BUILD_ID}"). Using NEXT_BUILD_ID, ` +
+        "which is the identity in the artifact stamp and deploy log. Unset " +
+        "SENTRY_RELEASE in the deploy environment unless the override is intended."
     );
   }
 }

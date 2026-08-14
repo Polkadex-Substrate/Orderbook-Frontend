@@ -62,7 +62,11 @@ export function Template() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b border-secondary-base">
+              {/* Mobile only. On desktop the active nav item already says
+                  "Bridge", so this repeated the page title immediately below
+                  it. Mobile has no visible nav, so the label earns its space
+                  there and only there. */}
+              <div className="flex items-center justify-between p-4 border-b border-secondary-base md:hidden">
                 <Typography.Text bold size="lg">
                   Bridge
                 </Typography.Text>

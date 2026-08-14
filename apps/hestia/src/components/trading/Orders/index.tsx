@@ -101,8 +101,15 @@ export const Orders = () => {
       <div className="flex items-center justify-between border-b border-primary">
         <ScrollArea className=" overflow-hidden" style={{ maxWidth }}>
           <Tabs.List className="px-2 py-2.5 whitespace-nowrap">
+            {/* The count is dropped when zero. "Open Orders(0)" is noise, but
+                the number is kept when there is something to count: it tells
+                you the panel has content without switching tabs, which is
+                exactly the signal that was missing while ORDERBOOK-TESTNET-6
+                was silently failing to render rows. */}
             <Tabs.Trigger value="openOrders" onClick={() => setShow(true)}>
-              Open Orders({openOrders?.length || 0})
+              {openOrders?.length
+                ? `Open Orders (${openOrders.length})`
+                : "Open Orders"}
             </Tabs.Trigger>
             <Tabs.Trigger value="orderHistory" onClick={() => setShow(true)}>
               Order History

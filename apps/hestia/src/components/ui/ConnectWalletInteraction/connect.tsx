@@ -212,7 +212,6 @@ const CardsCompontent = ({ onClose, onNext }: InteractableProps) => {
           onExportGoogleCallback={() => setPage("ExportGoogleDriveAccount")}
           enabledExtensionAccount
           backupGDriveAccountLoading={backupGoogleDriveLoading}
-          onBackupGDriveAccount={(account) => onBackupGoogleDrive({ account })}
           onConnectGDrive={onConnectGoogleDrive}
           connectGDriveLoading={connectGoogleDriveLoading}
           gDriveReady={gDriveReady}

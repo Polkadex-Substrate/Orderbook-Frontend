@@ -276,8 +276,10 @@ export const Form = () => {
     >
       <div className="flex flex-col gap-6 border border-primary rounded-md bg-level-0 p-6 max-sm:p-4">
         {/* Network + Token - equal width side by side */}
+        {/* "Network & Token" heading removed: the two field labels directly
+            below it already read "Network" and "Token", so the heading restated
+            them one line later. */}
         <div className="flex flex-col gap-3">
-          <Typography.Heading>Network & Token</Typography.Heading>
           <div className="flex gap-2">
             <div className="flex flex-col gap-2 flex-1">
               <Typography.Text appearance="primary">Network</Typography.Text>
@@ -318,9 +320,11 @@ export const Form = () => {
             chosen, which meant the form opened as a single dropdown with no
             indication of what came next. The guard is kept only because
             selectedNetwork is what supplies addressLabel below. */}
+        {/* "Wallet Address" heading removed: `addressLabel` below is more
+            specific, e.g. "Polkadex Testnet Wallet Address", so the heading was
+            the same information with less of it. */}
         {selectedNetwork && (
           <div className="flex flex-col gap-3">
-            <Typography.Heading>Wallet Address</Typography.Heading>
             <div className="flex flex-col gap-2">
               <Typography.Text appearance="primary">
                 {addressLabel}

@@ -185,7 +185,6 @@ const CardsComponent = ({ onClose, onNext }: InteractableProps) => {
           onImportMnemonic={() => setPage("ImportTradingAccountMnemonic")}
           onExportGoogleCallback={() => setPage("ExportGoogleDriveAccount")}
           backupGDriveAccountLoading={backupGoogleDriveLoading}
-          onBackupGDriveAccount={(account) => onBackupGoogleDrive({ account })}
           onConnectGDrive={onConnectGoogleDrive}
           connectGDriveLoading={connectGoogleDriveLoading}
           gDriveReady={gDriveReady}

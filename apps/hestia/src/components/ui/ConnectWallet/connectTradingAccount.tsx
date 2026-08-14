@@ -32,7 +32,6 @@ export const ConnectTradingAccount = ({
   onRemoveCallback,
   onExportBrowserAccountCallback,
   onExportBrowserAccount,
-  onBackupGDriveAccount,
   onConnectGDrive,
   backupGDriveAccountLoading,
   enabledExtensionAccount = false,
@@ -52,7 +51,9 @@ export const ConnectTradingAccount = ({
   onExportGoogleCallback: () => void;
   onExportBrowserAccountCallback: () => void;
   onExportBrowserAccount: (account: KeyringPair) => void;
-  onBackupGDriveAccount: (account: KeyringPair) => Promise<void>;
+  /* onBackupGDriveAccount was REMOVED (blocker B1). It backed an account up
+     with no passphrase, producing an unencrypted keystore. Backup now always
+     goes through the passphrase prompt via onExportGoogleCallback. */
   onConnectGDrive: () => Promise<void>;
   enabledExtensionAccount?: boolean;
   backupGDriveAccountLoading?: boolean;
@@ -158,12 +159,28 @@ export const ConnectTradingAccount = ({
                         onBackupGDrive={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          if (value?.isLocked) {
-                            onTempBrowserAccount(value);
-                            onExportGoogleCallback();
-                            return;
-                          }
-                          await onBackupGDriveAccount(value);
+                          /*
+                           * BLOCKER B1: always take the passphrase route.
+                           *
+                           * This used to branch on `isLocked`, and only a LOCKED
+                           * account was sent to the prompt. An unlocked one went
+                           * straight to `onBackupGDriveAccount(value)` with no
+                           * password, and `toJson(undefined)` yields an
+                           * UNENCRYPTED keystore, so the secret key was uploaded
+                           * in the clear.
+                           *
+                           * That was not the rare path. A KeyringPair stays
+                           * unlocked once unlocked, and a freshly created
+                           * account starts unlocked, so "create an account then
+                           * back it up" took it every time.
+                           *
+                           * A passphrase is now always collected before anything
+                           * is written off-device. helpers/keystoreBackup.ts
+                           * enforces the same rule at the upload itself, so this
+                           * cannot silently regress here.
+                           */
+                          onTempBrowserAccount(value);
+                          onExportGoogleCallback();
                         }}
                       />
                     );

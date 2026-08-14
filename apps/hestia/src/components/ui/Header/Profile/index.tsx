@@ -26,6 +26,7 @@ export const Profile = ({
   onOpenNotifications,
   onOpenFundWallet,
   unreadNotifications,
+  hideConnect = false,
 }: {
   onClick: () => void;
   onOpenMenu: () => void;
@@ -33,6 +34,10 @@ export const Profile = ({
   onOpenFundWallet: () => void;
   showFundingWallet: boolean;
   unreadNotifications: number;
+  /** Suppress the app-level connect button where the page owns connection
+   *  itself. Set on /bridge, which has its own per-chain connect controls and
+   *  a submit button that walks through them. See Header/index.tsx. */
+  hideConnect?: boolean;
 }) => {
   const { width } = useWindowSize();
   const {
@@ -118,6 +123,16 @@ export const Profile = ({
         </Button.Icon>
       </div>
     );
+  // The hamburger stays either way: it is the only route to the menu on mobile.
+  if (hideConnect)
+    return (
+      <div className="flex items-center gap-2">
+        <Button.Icon variant="ghost" onClick={onOpenMenu}>
+          <RiMenuLine className="h-full w-full" />
+        </Button.Icon>
+      </div>
+    );
+
   return (
     <div data-tour="connect-wallet-btn" className="flex items-center gap-2">
       <Button.Solid size="2sm" className="font-medium" onClick={onClick}>

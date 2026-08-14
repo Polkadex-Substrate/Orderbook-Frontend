@@ -2,6 +2,7 @@
 
 import { Fragment, forwardRef, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { Logo } from "@mitrabook/ux";
 import { getMarketUrl } from "@orderbook/core/helpers";
@@ -19,6 +20,7 @@ import { FundWalletModal } from "./fundWalletModal";
 import { EXTERNAL_LINKS } from "@/config/links";
 
 export const Header = forwardRef<HTMLDivElement>((_, ref) => {
+  const pathname = usePathname();
   const [menu, setMenu] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const {
@@ -86,6 +88,10 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
                 looking for analytics will go anyway. */}
             {/* Was "Support", which duplicated Discord with the Community menu.
                 Help is now purely documentation. */}
+            {/* "Documentation" removed 2026-08-14 until the new docs exist. A
+                menu item pointing at stale documentation is worse than a
+                shorter menu, and this is mirrored in responsiveMenuModal.tsx
+                so the two navs agree. Restore both together. */}
             <HeaderLink.Dropdown
               items={[
                 {
@@ -95,10 +101,6 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
                 {
                   href: "/faq",
                   label: "FAQ",
-                },
-                {
-                  href: EXTERNAL_LINKS.docs,
-                  label: "Documentation",
                 },
               ]}
             >
@@ -119,8 +121,20 @@ export const Header = forwardRef<HTMLDivElement>((_, ref) => {
                 belongs in the transfer row that is stuck, not in navigation. */}
           </div>
         </div>
+        {/* `hideConnect` on /bridge only.
+            The bridge page offered THREE ways to connect for TWO connections:
+            this app-level button, the inline Connect links in each network box,
+            and the bottom primary action. A reviewer read that as redundancy and
+            was right about the count. The bottom button is NOT redundant - it is
+            the submit control in its pre-connection state, walking through each
+            wallet and then bridging - so this is the one that goes.
+
+            Scoped to the route deliberately. On /trading this button is the
+            primary call to action and removing it globally would be a much worse
+            bug than the one being fixed. */}
         <Profile
           showFundingWallet
+          hideConnect={pathname?.startsWith("/bridge")}
           unreadNotifications={unreadNotifications}
           onClick={() => onToogleConnectExtension(!connectExtension)}
           onOpenMenu={() => setMenu(true)}

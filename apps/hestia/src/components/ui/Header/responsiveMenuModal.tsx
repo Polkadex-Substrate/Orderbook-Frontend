@@ -36,10 +36,10 @@ export const ResponsiveMenuModal = ({
       closeOnClickOutside
       className="flex flex-col border-primary bg-level-0 border-x w-screen h-screen md:max-w-md overflow-x-hidden overflow-y-auto"
     >
-      <Modal.Title className="flex justify-between items-center py-4 pl-4">
-        <Typography.Text size="lg" bold>
-          Menu
-        </Typography.Text>
+      {/* The "Menu" title was removed: a panel of navigation links opened from
+          a hamburger does not need to announce that it is a menu. The close
+          button stays, so the row is kept and justified to the end. */}
+      <Modal.Title className="flex justify-end items-center py-4 pl-4">
         <Button.Icon
           variant="ghost"
           size="lg"
@@ -53,11 +53,10 @@ export const ResponsiveMenuModal = ({
       <Modal.Content className="flex flex-col flex-1">
         <div className="flex flex-col justify-between flex-1">
           <div className="flex flex-col gap-10 p-4">
+            {/* "Quick links" removed - the links are self-evidently links, and
+                the label competed with them for attention. */}
             {width <= 1024 && (
               <div className="flex flex-col gap-8">
-                <Typography.Text appearance="secondary">
-                  Quick links
-                </Typography.Text>
                 <div className="flex flex-col gap-5">
                   <HeaderLink.Single
                     size="lg"
@@ -94,6 +93,11 @@ export const ResponsiveMenuModal = ({
                   {/* Analytics removed 2026-08-10 - see Header/index.tsx.
                       Kept in step with the desktop header on purpose: two navs
                       that disagree about what exists is its own bug. */}
+                  {/* "Documentation" removed until the new docs exist. A menu
+                      item that lands somewhere stale is worse than a shorter
+                      menu. Kept in step with the desktop Help dropdown in
+                      Header/index.tsx - two navs that disagree about what
+                      exists is its own bug. */}
                   <HeaderLink.Accordion
                     items={[
                       {
@@ -104,7 +108,6 @@ export const ResponsiveMenuModal = ({
                         href: "/faq",
                         label: "FAQ",
                       },
-                      { href: EXTERNAL_LINKS.docs, label: "Documentation" },
                     ]}
                   >
                     Help
@@ -117,10 +120,10 @@ export const ResponsiveMenuModal = ({
               </div>
             )}
 
+            {/* "General settings" removed. It was the only section label left
+                after "Quick links" went, so it read as a heading for a group
+                that is already visually separated. */}
             <div className="flex flex-col gap-8">
-              <Typography.Text appearance="secondary">
-                General settings
-              </Typography.Text>
               <div className="flex flex-col gap-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -152,6 +155,10 @@ export const ResponsiveMenuModal = ({
                     <div className="w-4 h-4 bg-danger-base" />
                   </div>
                 </div>
+                {/* Every row in this group carries a leading icon: Language,
+                    Appearance and Color Preference. The reviewer's note was that
+                    the icon treatment was inconsistent, so if a row is added
+                    here it needs an icon too rather than being the odd one out. */}
               </div>
             </div>
           </div>

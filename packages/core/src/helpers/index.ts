@@ -47,3 +47,4 @@ export * from "./graphqlCompat";
 export * from "./orderFieldLabels";
 export * from "./placeholderMarket";
 export * from "./apiConnectionStatus";
+export * from "./keystoreBackup";

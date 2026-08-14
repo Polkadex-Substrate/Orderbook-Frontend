@@ -46,7 +46,9 @@ export function Template() {
         >
           <div className="flex-1 flex flex-col">
             <div className="flex flex-col flex-1">
-              <div className="flex items-center justify-between p-4 border-b border-secondary-base">
+              {/* Mobile only - see the matching note in bridge/template.tsx.
+                  The desktop nav already names this page. */}
+              <div className="flex items-center justify-between p-4 border-b border-secondary-base md:hidden">
                 <Typography.Text bold size="lg">
                   Faucet
                 </Typography.Text>
