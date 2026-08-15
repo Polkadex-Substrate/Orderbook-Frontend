@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@mitrabook/ux";
 import {
   RiStackLine,
   RiTimerFlashLine,
@@ -13,10 +14,7 @@ import {
   RiLineChartLine,
 } from "@remixicon/react";
 
-import {
-  BRAND_GRADIENT_PILL,
-  BRAND_GRADIENT_TEXT,
-} from "@/config/brandGradient";
+import { BRAND_GRADIENT_TEXT } from "@/config/brandGradient";
 import { Footer, Header } from "@/components/ui";
 import { defaultConfig } from "@/config";
 
@@ -112,13 +110,24 @@ export const ComingSoon = () => {
               time.
             </p>
 
-            <Link
-              href={`/trading/${market}`}
-              className={`group mt-2 ${BRAND_GRADIENT_PILL}`}
+            {/* `appearance="brand"` comes from @aksumite/ui 1.0.5. This was a
+                hand-rolled gradient pill, which is what a design review pointed
+                at when asking for the treatment "across all the web". It is a
+                design-system variant now, so adopting it elsewhere is a prop
+                rather than a copied class string. `asChild` keeps it a real
+                Link, so the nav is still a navigation. */}
+            <Button.Solid
+              asChild
+              appearance="brand"
+              rounded
+              size="md"
+              className="group mt-2 gap-2 px-6 py-3"
             >
-              Start placing offers
-              <RiArrowRightLine className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+              <Link href={`/trading/${market}`}>
+                Start placing offers
+                <RiArrowRightLine className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </Button.Solid>
           </div>
         </div>
 

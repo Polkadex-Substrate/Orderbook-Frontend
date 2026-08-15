@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 
 import {
   RELOAD_ATTEMPT_KEY,
   errorCopy,
   isChunkLoadError,
-  shouldAutoReload,
 } from "./errorRecovery";
 
 /**
@@ -29,23 +28,48 @@ export default function ErrorPage({
   reset?: () => void;
 }) {
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+  const reported = useRef(false);
 
+  /*
+   * THE AUTOMATIC RELOAD IS GONE. It caused a worse bug than it fixed.
+   *
+   * This effect used to be keyed on `[error]` and did two dangerous things at
+   * once: it called `setAlreadyAttempted` AND `window.location.replace`. Next
+   * can hand the boundary a fresh `error` object identity on each render, so
+   * the effect re-ran, set state, re-rendered, re-ran. An infinite render loop,
+   * which Chrome reports as "Page Unresponsive".
+   *
+   * The reported signature matched exactly: it hung ONCE, after a deployment,
+   * on a cached page - which is precisely when a stale service worker serves a
+   * manifest naming chunks the new build no longer has, and therefore precisely
+   * when this boundary is reached.
+   *
+   * Before that change the boundary rendered a static dead end. So the
+   * "improvement" converted a visible dead end into an invisible hang, and a
+   * hang is worse: the user cannot even read the message or click away.
+   *
+   * A button does the same job without any of the risk. It cannot loop, it
+   * cannot navigate on its own, and the user can see what is being offered.
+   * `[]` deps and a ref guard mean this runs exactly once per mount no matter
+   * what identity `error` has.
+   */
   useEffect(() => {
+    if (reported.current) return;
+    reported.current = true;
+
     let attempted = false;
     try {
       attempted = !!sessionStorage.getItem(RELOAD_ATTEMPT_KEY);
     } catch {
-      // Storage unavailable. Treating it as "already attempted" is the safe
-      // direction: no auto-reload rather than a possible loop we cannot count.
       attempted = true;
     }
     setAlreadyAttempted(attempted);
 
     const chunkError = isChunkLoadError(error);
 
-    // Report either way, but at the severity the situation deserves. A stale
-    // chunk after a deploy is expected background noise; an application error
-    // is not, and the two should not sit in one Sentry issue.
+    // Reported at the severity the situation deserves. A stale chunk after a
+    // deploy is expected background noise; an application error is not, and the
+    // two should not share a Sentry issue.
     Sentry.captureException(error, {
       level: chunkError ? "warning" : "error",
       tags: {
@@ -53,20 +77,7 @@ export default function ErrorPage({
         reloadAlreadyAttempted: String(attempted),
       },
     });
-
-    if (shouldAutoReload(error, attempted)) {
-      try {
-        sessionStorage.setItem(RELOAD_ATTEMPT_KEY, "1");
-      } catch {
-        // If we cannot record the attempt we must not reload, or the guard is
-        // meaningless and this becomes an infinite loop.
-        return;
-      }
-      // `reload()` alone can be served from the same stale cache. Replacing the
-      // URL forces a fresh navigation and a current manifest.
-      window.location.replace(window.location.href);
-    }
-  }, [error]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copy = useMemo(
     () => errorCopy(error, alreadyAttempted),
@@ -75,6 +86,14 @@ export default function ErrorPage({
 
   const onAction = () => {
     if (isChunkLoadError(error)) {
+      // User-initiated, so no loop is possible: nothing here runs without a
+      // click. Recorded so the copy can stop claiming a reload will help if the
+      // user lands back here.
+      try {
+        sessionStorage.setItem(RELOAD_ATTEMPT_KEY, "1");
+      } catch {
+        // Not being able to record it only costs us the second-attempt wording.
+      }
       window.location.replace(window.location.href);
       return;
     }

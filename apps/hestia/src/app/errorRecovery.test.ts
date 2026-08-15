@@ -1,4 +1,4 @@
-import { errorCopy, isChunkLoadError, shouldAutoReload } from "./errorRecovery";
+import { errorCopy, isChunkLoadError } from "./errorRecovery";
 
 /*
  * Jest globals, matching the rest of this app.
@@ -81,29 +81,34 @@ describe("isChunkLoadError - what it must NOT match", () => {
   });
 });
 
-describe("shouldAutoReload - the loop guard", () => {
-  it("reloads once for a chunk error", () => {
-    expect(shouldAutoReload(REAL, false)).toBe(true);
-  });
-
-  it("refuses a second reload in the same session", () => {
-    // Without this, a chunk missing for any reason other than a stale cache -
-    // a bad deploy, a CDN gap, an extension blocking it - loops forever.
-    expect(shouldAutoReload(REAL, true)).toBe(false);
-  });
-
-  it("never reloads for an ordinary error", () => {
-    const ordinary = new Error("Cannot read properties of undefined");
-    expect(shouldAutoReload(ordinary, false)).toBe(false);
-    expect(shouldAutoReload(ordinary, true)).toBe(false);
+describe("there is no automatic reload any more", () => {
+  it("does not export a shouldAutoReload predicate", async () => {
+    // The automatic reload turned a visible dead end into an unresponsive page:
+    // the effect that performed it was keyed on `[error]` and also set state, so
+    // a fresh error identity per render produced an infinite render loop. It hung
+    // exactly once per deployment on a cached page, which is precisely when this
+    // boundary is reached.
+    //
+    // Asserting the ABSENCE of the export is the regression guard. Anyone wiring
+    // an automatic reload back in has to delete this test first, and will read
+    // why while doing so.
+    const mod = await import("./errorRecovery");
+    expect("shouldAutoReload" in mod).toBe(false);
   });
 });
 
 describe("errorCopy - say which situation this is", () => {
-  it("frames a first chunk failure as an update, not a fault", () => {
+  it("frames a first chunk failure as a new version, not a fault", () => {
     const copy = errorCopy(REAL, false);
-    expect(copy.title.toLowerCase()).toContain("updating");
+    expect(copy.title.toLowerCase()).toContain("new version");
     expect(copy.title.toLowerCase()).not.toContain("wrong");
+  });
+
+  it("does not promise a reload that no longer happens on its own", () => {
+    // The old copy said "Reloading now." while an effect navigated. Nothing
+    // navigates without a click now, so saying so would be false.
+    const copy = errorCopy(REAL, false);
+    expect(copy.detail.toLowerCase()).not.toContain("reloading now");
   });
 
   it("stops claiming it is an update once reloading has failed", () => {
@@ -111,7 +116,7 @@ describe("errorCopy - say which situation this is", () => {
     // the user can see through.
     const copy = errorCopy(REAL, true);
     expect(copy.detail.toLowerCase()).toContain("did not help");
-    expect(copy.title.toLowerCase()).not.toContain("updating");
+    expect(copy.title.toLowerCase()).not.toContain("new version");
   });
 
   it("does not call an application error an update", () => {

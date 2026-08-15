@@ -55,16 +55,17 @@ export const isChunkLoadError = (error?: unknown): boolean => {
   );
 };
 
-/**
- * Should the app reload itself to pick up a current manifest?
+/*
+ * `shouldAutoReload` was REMOVED along with the automatic reload it gated.
  *
- * @param error           The error that reached the boundary.
- * @param alreadyAttempted Whether a reload has already been spent this session.
+ * The reload now happens only when the user presses the button, so there is no
+ * decision left to make and nothing to guard. The automatic version turned a
+ * visible dead end into an unresponsive page - see the note in error.tsx - and
+ * leaving the predicate here would invite someone to wire it back up.
+ *
+ * `RELOAD_ATTEMPT_KEY` stays, because the copy still needs to know whether a
+ * reload has already been tried in this session.
  */
-export const shouldAutoReload = (
-  error: unknown,
-  alreadyAttempted: boolean
-): boolean => isChunkLoadError(error) && !alreadyAttempted;
 
 export type ErrorCopy = {
   title: string;
@@ -96,9 +97,11 @@ export const errorCopy = (
           action: "Try again",
         }
       : {
-          title: "Updating to the latest version",
-          detail: "A new version was released. Reloading now.",
-          action: "Reload now",
+          title: "A new version is available",
+          detail:
+            "This page was loaded from an older version that is no longer " +
+            "available. Reloading picks up the current one.",
+          action: "Reload",
         };
   }
   return {

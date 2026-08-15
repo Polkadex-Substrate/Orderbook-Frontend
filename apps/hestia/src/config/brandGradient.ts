@@ -29,15 +29,13 @@ export const BRAND_GRADIENT = "bg-gradient-to-r from-primary-base to-[#6745D2]";
 /** Gradient applied to text rather than to a fill, for display headings. */
 export const BRAND_GRADIENT_TEXT = `${BRAND_GRADIENT} bg-clip-text text-transparent`;
 
-/**
- * The pill button treatment the design review pointed at.
+/*
+ * `BRAND_GRADIENT_PILL` was removed in favour of `appearance="brand"` on
+ * `Button.Solid`, added in @aksumite/ui 1.0.5. A local class string was the
+ * right holding position while the treatment was undecided; once it became a
+ * design-system variant, keeping a second definition here would have been the
+ * duplication this module exists to prevent.
  *
- * Kept here rather than promoted to a shared component on purpose: a component
- * would imply this is the sanctioned primary button, and it is not yet. It is
- * one marketing-surface treatment pending a decision about `Button.Solid`.
+ * The two gradient TEXT constants above stay, because gradient text on a
+ * heading is not a button and has no component to belong to.
  */
-export const BRAND_GRADIENT_PILL = [
-  BRAND_GRADIENT,
-  "inline-flex items-center gap-2 rounded-full px-6 py-3",
-  "text-sm font-semibold text-white transition-opacity hover:opacity-90",
-].join(" ");
