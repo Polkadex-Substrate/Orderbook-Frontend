@@ -139,11 +139,18 @@ const Single = ({
       className={classNames(
         // Tailwind sizes are rem-based, so the root-font scaling in
         // globals.scss already grows these on wide screens. It is not enough
-        // on its own: nav links start at the smallest step (text-sm), so they
-        // stay the smallest thing on a 4K display even after scaling. This
-        // moves them up a step at the same 1680px threshold the root scaling
-        // uses, so there is a single breakpoint to reason about.
-        "min-[1680px]:text-base",
+        // on its own: nav links start at text-sm, so they stay among the
+        // smallest things on a 4K display even after scaling. This moves them
+        // up a step at the same 1680px threshold the root scaling uses, so
+        // there is a single breakpoint to reason about.
+        //
+        // `text-md`, NOT `text-base`. This read `min-[1680px]:text-base` and so
+        // did the exact opposite of its own comment: themeConfig overrides
+        // Tailwind's base to 0.80rem while sm stays at 0.875rem, making
+        // text-base SMALLER than text-sm. The nav shrank on wide screens, which
+        // is what prompted a reviewer to ask for it to be enlarged. See
+        // config/typeScale.ts - `oneStepUp("sm")` is `md`.
+        "min-[1680px]:text-md",
         !disabled &&
           "transition-colors ease-out duration-300 hover:text-primary-base",
         disabled && "cursor-not-allowed opacity-50",
@@ -186,7 +193,7 @@ const DropdownMenu = ({
     <Dropdown.Trigger className="gap-2 items-center inline-flex opacity-80 transition-opacity ease-out duration-300 hover:opacity-100 w-full">
       {/* Matches Single above so the dropdown triggers do not end up smaller
           than the plain links sitting beside them. */}
-      <Typography.Text className="text-sm min-[1680px]:text-base whitespace-nowrap">
+      <Typography.Text className="text-sm min-[1680px]:text-md whitespace-nowrap">
         {children as string}
       </Typography.Text>
       <Dropdown.Icon />
@@ -197,7 +204,7 @@ const DropdownMenu = ({
           <Link
             href={href}
             target="_blank"
-            className="text-left flex items-center gap-2 text-sm min-[1680px]:text-base w-full"
+            className="text-left flex items-center gap-2 text-sm min-[1680px]:text-md w-full"
           >
             {svg}
             {label}

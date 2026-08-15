@@ -122,7 +122,15 @@ export const Table = ({
               <PolkadexTable.Body>
                 {table.getRowModel().rows.map((row) => {
                   return (
-                    <PolkadexTable.Row key={row.id}>
+                    /* Zebra striping. Applied via `odd:` on the ROW rather than
+                       by index, so it keeps alternating correctly when rows are
+                       sorted, filtered, or hidden by "Hide 0 balances" - an
+                       index-based stripe would double up a colour wherever a row
+                       is removed from the middle. */
+                    <PolkadexTable.Row
+                      key={row.id}
+                      className="odd:bg-level-1/40"
+                    >
                       {row.getVisibleCells().map((cell, i) => {
                         if (
                           responsiveView &&

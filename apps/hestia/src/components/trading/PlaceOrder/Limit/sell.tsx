@@ -327,7 +327,7 @@ export const SellOrder = ({
             </Button.Solid>
           )
         ) : (
-          <ConnectAccount />
+          <ConnectAccount side="sell" ticker={market?.baseAsset?.ticker} />
         )}
       </OrderAction>
     </form>

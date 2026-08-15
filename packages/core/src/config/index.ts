@@ -3,6 +3,26 @@ import { Features } from "./types";
 import { DefaultConfig } from ".";
 export * from "./types";
 
+/**
+ * The market a visitor lands on with no market of their own.
+ *
+ * ONE definition, exported, because this constant has already rotted twice.
+ * `apps/hestia` read `"PDEXCUSDT"` while this file read `"DOTUSDT"`, so with
+ * LANDING_PAGE unset the app redirected to one pair while `getMarketUrl` built
+ * links to another, and neither pair existed on the testnet. The repair at the
+ * time was a comment in both files saying they "must stay identical", which is a
+ * convention with nothing enforcing it - the same shape of mistake as the seven
+ * copies of the amount regex. Hestia now imports this value instead of
+ * redeclaring it, so the two cannot disagree.
+ *
+ * The fallback matches the deployed `LANDING_PAGE=PDEXUSDT`, confirmed on the
+ * VPS 2026-08-14. It is still a hardcoded instance name and will rot again if
+ * the pair is delisted. The real fix is to validate it against the loaded market
+ * list at boot and fall back to the first available market, which needs the
+ * market list at config time and is tracked as UX-LEARNINGS 1.8.
+ */
+export const LANDING_PAGE_MARKET = process.env.LANDING_PAGE || "PDEXUSDT";
+
 export const defaultConfig: DefaultConfig = {
   polkadexFeature: process.env.POLKADEX_FEATURE,
   // Single endpoint, from the environment.
@@ -31,7 +51,7 @@ export const defaultConfig: DefaultConfig = {
   // Must stay identical to apps/hestia/src/config/index.ts. This read
   // "DOTUSDT" while hestia read "PDEXCUSDT", so with LANDING_PAGE unset the app
   // redirected to one pair while getMarketUrl built links to another.
-  landingPageMarket: process.env.LANDING_PAGE || "WETHUSDT",
+  landingPageMarket: LANDING_PAGE_MARKET,
   incrementalOrderBook: false,
   orderBookSideLimit: 25,
   defaultStorageLimit: 100,

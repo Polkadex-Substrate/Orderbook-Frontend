@@ -1,3 +1,5 @@
+import { LANDING_PAGE_MARKET } from "@orderbook/core/config";
+
 export const defaultConfig = {
   polkadexFeature: process.env.POLKADEX_FEATURE,
   // No mainnet default. This read `|| "wss://mainnet.polkadex.ee"`, so a
@@ -8,11 +10,11 @@ export const defaultConfig = {
   // pointing the UI at real funds.
   polkadexChain: process.env.POLKADEX_CHAIN || "",
   gaTrackerKey: process.env.GA_MEASUREMENT_ID ?? "G-PWZK8JEFLX",
-  // Must stay identical to packages/core/src/config/index.ts. This read
-  // "PDEXCUSDT" while core read "DOTUSDT", so with LANDING_PAGE unset the app
-  // redirected to one pair while getMarketUrl built links to another - and
-  // neither pair exists on this testnet, so both were dead ends.
-  landingPageMarket: process.env.LANDING_PAGE || "WETHUSDT",
+  // Imported, not redeclared. This used to be a copy with a comment saying it
+  // "must stay identical" to packages/core, which is a convention with no check
+  // - and the two had already drifted to "PDEXCUSDT" here and "DOTUSDT" there,
+  // neither of which existed on the testnet. Now there is one definition.
+  landingPageMarket: LANDING_PAGE_MARKET,
   defaultTransferToken: process.env.DEFAULT_TRANSFER_TOKEN || "USDT",
   withCredentials: false,
   incrementalOrderBook: false,

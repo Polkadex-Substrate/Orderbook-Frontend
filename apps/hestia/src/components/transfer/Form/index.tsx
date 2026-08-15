@@ -430,7 +430,13 @@ export const Form = ({
                     type="text"
                     autoComplete="off"
                     placeholder="0.000000000"
-                    className="text-current flex-1 p-4 bg-transparent"
+                    /* `max-sm:focus:text-[16px]` matches the other fourteen
+                       inputs in this app. iOS Safari zooms the whole page when
+                       a focused input's font-size is under 16px, and the app's
+                       `text-base` is 0.80rem, so every field is under it. This
+                       one input was missed, which made the transfer amount the
+                       only field that jerks the layout on an iPhone. */
+                    className="max-sm:focus:text-[16px] text-current flex-1 p-4 bg-transparent"
                     onFocus={() => setCardFocus(true)}
                     disabled={loading}
                     {...getFieldProps("amount")}

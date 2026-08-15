@@ -3,6 +3,7 @@ import { defaultConfig } from "@orderbook/core/config";
 import { Asset } from "@orderbook/core/utils/orderbookService";
 
 import { isAssetPDEX } from "../helpers";
+import { shouldShowAsset } from "../helpers/balanceVisibility";
 import { EVM_TOKENS, POLKADEX_ASSET } from "../constants";
 import { useOrderbookService } from "../providers/public/orderbookServiceProvider/useOrderbookService";
 
@@ -17,7 +18,7 @@ export interface AssetsProps extends Asset {
 // BalanceFormatter.toHuman, which ignored it (see packages/format/src/balances.ts,
 // where the third argument is unused), and no caller in this repo passed one.
 export function useAssets() {
-  const [filters, setFilters] = useState({ search: "", hideZero: false });
+  const [filters, setFilters] = useState({ search: "", hideZero: true });
 
   const { assets: assetsList, isReady } = useOrderbookService();
   const { balances, loading: balancesLoading } = useFunds();
@@ -88,16 +89,23 @@ export function useAssets() {
           };
         })
         ?.filter((e: AssetsProps) => {
-          const hasZeroAmount =
-            filters.hideZero && Number(e?.free_balance || 0) < 0.001;
-
           const matchesNameOrTicker =
             e.name.toLowerCase().includes(filters.search.toLowerCase()) ||
             e.ticker.toLowerCase().includes(filters.search.toLowerCase());
 
+          // Was `Number(e?.free_balance || 0) < 0.001`, which asked whether the
+          // TRADING balance was zero while calling itself "hide 0 balances".
+          // An asset sitting in the funding account after a deposit was
+          // classified as empty and hidden. See helpers/balanceVisibility.ts.
+          const visible = shouldShowAsset(
+            e,
+            filters.hideZero,
+            filters.search.trim().length > 0
+          );
+
           return (
             matchesNameOrTicker &&
-            !hasZeroAmount &&
+            visible &&
             !defaultConfig.blockedAssets?.some((value) => e.id === value)
           );
         })

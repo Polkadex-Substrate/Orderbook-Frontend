@@ -145,7 +145,29 @@ export const themeConfig = {
       fontSize: {
         heading: "0.95rem",
         md: "0.9rem",
-        base: "0.80rem",
+        // `base` is NOT redefined here. It used to read `base: "0.80rem"`,
+        // overriding Tailwind's 1rem, and that caused two distinct problems.
+        //
+        // 1. AN INVERTED SCALE. `sm` stays at Tailwind's 0.875rem, so
+        //    `text-base` (12.8px) came out SMALLER than `text-sm` (14px),
+        //    breaking the one convention every Tailwind codebase assumes.
+        //    `headerLink.tsx` carried `min-[1680px]:text-base` in three places
+        //    with a comment saying it moved nav links "up a step" on wide
+        //    screens. It moved them down, so the primary navigation shrank on
+        //    4K displays, which is what prompted a reviewer to ask for it to be
+        //    made bigger.
+        //
+        // 2. THE SAME CLASS MEANING TWO SIZES. `@aksumite/ui` ships a prebuilt
+        //    stylesheet containing `.text-base{font-size:1rem}`. So a component
+        //    from the design system rendered `text-base` at 16px while the app's
+        //    own Tailwind build rendered it at 12.8px, with the winner decided
+        //    by stylesheet order. Removing the override makes the app agree with
+        //    its own design system rather than fighting it.
+        //
+        // Blast radius when this was removed: three real usages, in
+        // rewards/comingSoon, legal/layout and trading/template. See
+        // apps/hestia/src/config/typeScale.ts, whose test asserts the scale
+        // ascends strictly so this cannot silently invert again.
       },
       animation: {
         infiniteHorizontalScroll: "30s linear infinite infiniteHorizontal ",

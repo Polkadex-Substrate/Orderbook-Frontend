@@ -18,6 +18,7 @@ import {
 import { Footer, Header } from "@/components/ui";
 import { defaultConfig } from "@/config";
 import { EXTERNAL_LINKS } from "@/config/links";
+import { BRAND_GRADIENT_TEXT } from "@/config/brandGradient";
 
 /**
  * The FAQ.
@@ -74,10 +75,7 @@ export function Faq() {
             </Link>
 
             <h1 className="text-4xl font-semibold leading-tight text-textBase md:text-5xl">
-              Questions,{" "}
-              <span className="bg-gradient-to-r from-primary-base to-[#6745D2] bg-clip-text text-transparent">
-                answered
-              </span>
+              Questions, <span className={BRAND_GRADIENT_TEXT}>answered</span>
             </h1>
 
             <div className="mt-6 flex items-start gap-3 rounded-2xl border border-attention-base/30 bg-attention-base/5 p-4">

@@ -48,3 +48,4 @@ export * from "./orderFieldLabels";
 export * from "./placeholderMarket";
 export * from "./apiConnectionStatus";
 export * from "./keystoreBackup";
+export * from "./balanceVisibility";

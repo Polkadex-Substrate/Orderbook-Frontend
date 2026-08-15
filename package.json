@@ -62,6 +62,7 @@
     "debug": "^4.4.3"
   },
   "dependencies": {
+    "@aksumite/ui": "1.0.5",
     "driver.js": "^1.6.0",
     "minimatch": "^10.2.4"
   }

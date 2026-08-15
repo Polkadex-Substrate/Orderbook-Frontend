@@ -13,6 +13,10 @@ import {
   RiLineChartLine,
 } from "@remixicon/react";
 
+import {
+  BRAND_GRADIENT_PILL,
+  BRAND_GRADIENT_TEXT,
+} from "@/config/brandGradient";
 import { Footer, Header } from "@/components/ui";
 import { defaultConfig } from "@/config";
 
@@ -99,9 +103,7 @@ export const ComingSoon = () => {
 
             <h1 className="max-w-2xl text-4xl font-semibold leading-tight text-textBase md:text-5xl">
               Get paid to help{" "}
-              <span className="bg-gradient-to-r from-primary-base to-[#6745D2] bg-clip-text text-transparent">
-                others trade
-              </span>
+              <span className={BRAND_GRADIENT_TEXT}>others trade</span>
             </h1>
 
             <p className="max-w-xl text-base leading-relaxed text-primary">
@@ -112,7 +114,7 @@ export const ComingSoon = () => {
 
             <Link
               href={`/trading/${market}`}
-              className="group mt-2 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-base to-[#6745D2] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className={`group mt-2 ${BRAND_GRADIENT_PILL}`}
             >
               Start placing offers
               <RiArrowRightLine className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
