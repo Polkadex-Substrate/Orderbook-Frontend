@@ -12,7 +12,7 @@ import classNames from "classnames";
 import Link from "next/link";
 import { RiArrowDownSLine } from "@remixicon/react";
 import { useMarkets } from "@orderbook/core/hooks";
-import { isNegative } from "@orderbook/core/helpers";
+import { isNegative, marketKey, marketSlug } from "@orderbook/core/helpers";
 import { Decimal } from "@orderbook/core/utils";
 
 /**
@@ -45,7 +45,10 @@ export const Asset = ({
     [marketTokens]
   );
 
-  const currentRoute = `${baseTicker}${quoteTicker}`;
+  // Compared by key, not by string. The URL may legitimately be spelled
+  // PDEX-USDT, PDEXUSDT or PDEX at this moment - a legacy link is only rewritten
+  // once the markets arrive - and the current row must highlight in all three.
+  const currentKey = marketKey(`${baseTicker}${quoteTicker}`);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -106,8 +109,11 @@ export const Asset = ({
           </Typography.Text>
         ) : (
           sortedMarkets.map((market) => {
-            const route = `${market.baseAsset.ticker}${market.quoteAsset.ticker}`;
-            const active = route === currentRoute;
+            const route = marketSlug({
+              id: market.id,
+              name: `${market.baseAsset.ticker}/${market.quoteAsset.ticker}`,
+            });
+            const active = marketKey(route) === currentKey;
             const negative = isNegative(market.price_change_percent ?? "0");
             return (
               <Link

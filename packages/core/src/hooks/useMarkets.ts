@@ -2,7 +2,11 @@ import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@orderbook/core/providers/user/profile";
 import { Market } from "@orderbook/core/utils/orderbookService";
-import { getCurrentMarket, setToStorage } from "@orderbook/core/helpers";
+import {
+  getCurrentMarket,
+  marketSlug,
+  setToStorage,
+} from "@orderbook/core/helpers";
 import { defaultConfig } from "@orderbook/core/config";
 
 import { LOCAL_STORAGE_ID, defaultTicker } from "../constants";
@@ -63,15 +67,15 @@ export function useMarkets(market?: string) {
    * handleChangeMarket still writes it too, which is harmless: same value.
    *
    * NOTE THE NAME FORMAT. `currentMarket.name` is "PDEX/USDT" - with a slash;
-   * marketTokens below splits it on "/" to derive the quote ticker. But
-   * getMarketUrl builds `/trading/${name}`, so storing that would produce
-   * `/trading/PDEX/USDT` and a dead route. The stored form has to be the
-   * concatenated tickers, exactly as handleChangeMarket writes it.
+   * marketTokens below splits it on "/" to derive the quote ticker. A slash
+   * cannot go in the stored value because getMarketUrl builds a single path
+   * segment from it, and `/trading/PDEX/USDT` is a dead route. What is stored is
+   * now the canonical slug, "PDEX-USDT", rather than the tickers jammed
+   * together: same constraint, but the stored value is the URL we actually want.
    */
   useEffect(() => {
     if (!currentMarket) return;
-    const storedName =
-      currentMarket.baseAsset.ticker + currentMarket.quoteAsset.ticker;
+    const storedName = marketSlug(currentMarket);
     setToStorage(
       LOCAL_STORAGE_ID.DEFAULT_MARKET,
       JSON.stringify({ id: currentMarket.id, name: storedName })
@@ -120,19 +124,18 @@ export function useMarkets(market?: string) {
     (e: string, onClose: () => void): void => {
       const marketToSet = markets?.find((el) => el.name === e);
       if (marketToSet) {
+        const slug = marketSlug(marketToSet);
+
         setToStorage(
           LOCAL_STORAGE_ID.DEFAULT_MARKET,
-          JSON.stringify({
-            id: marketToSet.id,
-            name: `${
-              marketToSet.baseAsset.ticker + marketToSet.quoteAsset.ticker
-            }`,
-          })
+          JSON.stringify({ id: marketToSet.id, name: slug })
         );
 
-        router.push(
-          `${marketToSet.baseAsset.ticker + marketToSet.quoteAsset.ticker}`
-        );
+        // Relative, as before: this hook is only used from /trading/<id>, so a
+        // bare segment replaces the last one. Absolute would be clearer, but
+        // changing both the format and the resolution in one edit would leave
+        // two suspects if it broke.
+        router.push(slug);
 
         onClose();
       }

@@ -28,6 +28,7 @@ export * from "./updateBook";
 export * from "./Utils";
 export * from "./getChainFromTicker";
 export * from "./getCurrentMarket";
+export * from "./marketSlug";
 export * from "./getMarketUrl";
 export * from "./getAddressFromMnemonic";
 export * from "./validateAddress";

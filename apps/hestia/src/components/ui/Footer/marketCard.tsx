@@ -1,6 +1,7 @@
 import { Typography } from "@mitrabook/ux";
 import Link from "next/link";
 import { formatDisplay } from "@orderbook/format";
+import { marketSlug } from "@orderbook/core/helpers";
 
 // Matches the balances page and the order form so one holding never reads
 // differently in three places.
@@ -42,7 +43,10 @@ export const MarketCard = ({
 
   return (
     <Link
-      href={`/trading/${marketName.replace("/", "")}`}
+      // marketSlug, not `.replace("/", "")`: the canonical URL is PDEX-USDT,
+      // and a hand-rolled second definition of the rule is how the two forms
+      // would drift apart.
+      href={`/trading/${marketSlug({ id: "", name: marketName })}`}
       className="flex gap-2 ml-2"
       title={
         unknownPrice

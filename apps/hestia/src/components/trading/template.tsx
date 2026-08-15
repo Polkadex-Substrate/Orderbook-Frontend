@@ -1,8 +1,13 @@
 "use client";
 
-import { Fragment, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useMarkets } from "@orderbook/core/hooks";
-import { getCurrentMarket } from "@orderbook/core/helpers";
+import {
+  canonicalMarketPath,
+  getCurrentMarket,
+  getMarketUrl,
+} from "@orderbook/core/helpers";
 import { useWindowSize } from "react-use";
 import classNames from "classnames";
 import { Resizable, ImperativePanelHandle } from "@mitrabook/ux";
@@ -18,6 +23,7 @@ import { ResponsiveInteraction } from "./PlaceOrder/responsiveInteraction";
 import { Responsive } from "./responsive";
 import { ResponsiveAssetInfo } from "./AssetInfo/responsiveAssetInfo";
 import { OrderbookFillProvider } from "./orderbookFill";
+import { MarketNotFound } from "./marketNotFound";
 
 import { ConnectTradingInteraction } from "@/components/ui/ConnectWalletInteraction/connectTradingInteraction";
 import { Footer, Header } from "@/components/ui";
@@ -34,8 +40,40 @@ export function Template({ id }: { id: string }) {
   const orderbookPanelRef = useRef<ImperativePanelHandle>(null);
 
   const { width, height } = useWindowSize();
-  const { list } = useMarkets();
+  const { list, loading } = useMarkets();
   const currentMarket = getCurrentMarket(list, id);
+
+  const router = useRouter();
+  const canonicalised = useRef(false);
+
+  /**
+   * Rewrite a legacy URL to the canonical one: /trading/PDEXUSDT becomes
+   * /trading/PDEX-USDT.
+   *
+   * Which spelling a segment uses cannot be decided without the market list -
+   * nothing can tell where PDEX ends and USDT begins - so this cannot happen on
+   * the server and has to wait for the markets to arrive.
+   *
+   * THREE GUARDS, AND EACH ONE IS THERE FOR A REASON.
+   *
+   * `canonicalMarketPath` returns null when the URL is already canonical, and a
+   * test feeds it its own output to prove that. So the second pass after this
+   * navigation is a no-op by construction rather than by luck. An automatic
+   * navigation in an effect is exactly what turned the error boundary into an
+   * unresponsive page in August; the difference here is that the terminating
+   * condition is a tested property of a pure function.
+   *
+   * The ref means it happens at most once per mount even if `list` changes
+   * identity, and `replace` rather than `push` keeps the legacy URL out of the
+   * back button, so Back does not walk the user through the redirect again.
+   */
+  useEffect(() => {
+    if (canonicalised.current || !currentMarket) return;
+    const target = canonicalMarketPath(id, currentMarket);
+    if (!target) return;
+    canonicalised.current = true;
+    router.replace(target);
+  }, [id, currentMarket, router]);
 
   // The four modes come from one place now, and are mutually exclusive.
   //
@@ -53,6 +91,22 @@ export function Template({ id }: { id: string }) {
     superWideView,
     tabletStackHasRoom,
   } = useMemo(() => tradingLayout(width, height), [width, height]);
+
+  /*
+   * Not found, stated rather than hidden.
+   *
+   * `loading` is what separates "this pair does not exist" from "the market list
+   * has not arrived yet". Without that check every visitor would see the
+   * not-found screen for a moment on every load, which is worse than the bug
+   * being fixed. It comes from `isReady` on the market service, so it is the
+   * service's own answer rather than a guess from an empty array.
+   *
+   * After every hook, because a conditional return before one changes the hook
+   * order between renders.
+   */
+  if (!loading && list?.length && !currentMarket) {
+    return <MarketNotFound id={id} href={getMarketUrl()} />;
+  }
 
   return (
     // Wraps BOTH the orderbook and the order form: the fill signal travels
