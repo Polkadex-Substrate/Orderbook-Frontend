@@ -169,6 +169,23 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
     log "Pre-flight: eslint ok"
   fi
 
+  # Is node_modules on THIS machine current? Ask BEFORE tsc, because a stale
+  # install does not announce itself - it produces a type error in application
+  # code. `@aksumite/ui` 1.0.5 added `appearance="brand"`; a host still holding
+  # 1.0.4 failed here with TS2322 on comingSoon.tsx, which reads as a code bug
+  # and is not one. node_modules is the only build input git does not carry, so
+  # it is the only one that can drift while every tracked file is correct.
+  if [ -f scripts/check-installed-versions.js ] && command -v node >/dev/null 2>&1; then
+    node scripts/check-installed-versions.js >/dev/null 2>&1 || {
+      node scripts/check-installed-versions.js || true
+      die "Stale node_modules. Fix it with \`yarn install\`, then re-run.
+  Building anyway with --no-preflight will NOT reproduce this failure: the
+  docker build runs its own \`yarn install --frozen-lockfile\` and would
+  compile correctly. Only this host's copy is behind."
+    }
+    log "Pre-flight: node_modules matches the manifests"
+  fi
+
   # Type check. Neither check above can see a missing import: prettier only
   # formats, and eslint's no-undef is DISABLED for TypeScript on the assumption
   # that tsc owns that job - so if tsc never runs, nothing owns it. A

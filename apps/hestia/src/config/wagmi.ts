@@ -5,6 +5,7 @@ import type { Chain } from "viem";
 
 import { SUPPORTED_EVM_CHAIN_IDS } from "@/config/bridge";
 import { originMismatch, resolveAppOrigin } from "@/config/appOrigin";
+import { WALLET_AUTH } from "@/config/walletAuthPolicy";
 
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 if (!projectId) throw new Error("Project ID is not defined");
@@ -76,4 +77,15 @@ export const config = defaultWagmiConfig({
   enableInjected: true,
   enableEIP6963: true,
   enableCoinbase: true,
+  /*
+   * THE TAB FREEZE. Omitting this key is what caused it.
+   *
+   * `defaultWagmiConfig` defaults `auth` to email plus seven social providers,
+   * and adds an authConnector whenever either is set. That connector builds
+   * `W3mFrameProvider`, i.e. the secure.walletconnect.org iframe that the
+   * debugger caught looping over MetaMask's inpage messages while Chrome
+   * reported the tab unresponsive. See config/walletAuthPolicy.ts for the full
+   * account and the test that holds this shut.
+   */
+  auth: WALLET_AUTH,
 });
