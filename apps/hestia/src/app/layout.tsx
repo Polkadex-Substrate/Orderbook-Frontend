@@ -9,7 +9,7 @@ import { headers } from "next/headers";
 import { cookieToInitialState } from "wagmi";
 
 import { config } from "@/config/wagmi";
-import Web3ModalProvider from "@/context";
+import { EvmWalletProviders } from "@/components/evm/EvmWalletProviders";
 import { DynamicProviders } from "@/components/ui/DynamicProviders";
 import { TestnetModal } from "@/components/ui/testnetModal.lazy";
 /**
@@ -111,9 +111,14 @@ export default async function RootLayout({
         )}
       >
         <TestnetModal />
-        <Web3ModalProvider initialState={initialState}>
+        {/* The EVM stack mounts only on /bridge and /faucet. It used to start
+            on every page - WalletConnect core, the verify iframe, the injected
+            connector's MetaMask handshake, EIP-6963 discovery and the Coinbase
+            SDK - on a trading screen that calls none of it. See
+            components/evm/EvmWalletProviders.tsx. */}
+        <EvmWalletProviders initialState={initialState}>
           <DynamicProviders>{children}</DynamicProviders>
-        </Web3ModalProvider>
+        </EvmWalletProviders>
       </body>
     </html>
   );
