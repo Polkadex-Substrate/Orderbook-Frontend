@@ -4,6 +4,7 @@ import {
   blockedMessage,
   canProceed,
   isStalled,
+  shouldDisableResizeHandles,
   shouldShowTestnetNotice,
   showEscapeHatch,
   stallReport,
@@ -152,5 +153,58 @@ describe("stallReport: making a non-error visible to Sentry", () => {
       "message",
       "openedForMs",
     ]);
+  });
+});
+
+describe("shouldDisableResizeHandles - the checkbox that would not tick", () => {
+  /*
+   * The second cause of an unclickable gate, and a different one from the Radix
+   * pointer-events bug that prompted the native <dialog> rewrite.
+   *
+   * react-resizable-panels intercepts pointerdown on <body> in the capture
+   * phase and calls stopImmediatePropagation when the pointer falls inside a
+   * handle's hit area, which deletes the click before it reaches the checkbox.
+   * Its guard against this compares stacking order and cannot see the top
+   * layer, so the dialog is invisible to it. Disabling the handles empties the
+   * library's registry, and an empty registry attaches no listeners.
+   */
+
+  it("disables handles exactly while the notice is showing", () => {
+    // Tied to the same condition deliberately: if the gate is up, nothing
+    // behind it should be resizable. Two conditions that could drift apart is
+    // how a fix like this rots.
+    for (const [isTestnet, acked] of [
+      [true, false],
+      [true, true],
+      [false, false],
+      [false, true],
+    ] as const) {
+      expect({
+        isTestnet,
+        acked,
+        disabled: shouldDisableResizeHandles(isTestnet, acked),
+      }).toEqual({
+        isTestnet,
+        acked,
+        disabled: shouldShowTestnetNotice(isTestnet, acked),
+      });
+    }
+  });
+
+  it("blocks resizing on an unacknowledged testnet", () => {
+    expect(shouldDisableResizeHandles(true, false)).toBe(true);
+  });
+
+  it("restores resizing the moment the notice is acknowledged", () => {
+    // The handles must come back, or the fix for an unclickable checkbox
+    // becomes a permanently unresizable trading layout.
+    expect(shouldDisableResizeHandles(true, true)).toBe(false);
+  });
+
+  it("never disables anything on mainnet", () => {
+    // Mainnet shows no notice, so there is nothing to protect and no reason to
+    // take a feature away.
+    expect(shouldDisableResizeHandles(false, false)).toBe(false);
+    expect(shouldDisableResizeHandles(false, true)).toBe(false);
   });
 });

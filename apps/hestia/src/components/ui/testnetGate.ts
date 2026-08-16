@@ -56,6 +56,49 @@ export const shouldShowTestnetNotice = (
   alreadyAcked: boolean
 ): boolean => isTestnet && !alreadyAcked;
 
+/**
+ * Must the trading page's resize handles be switched off?
+ *
+ * THE BUG THIS FIXES: THE CHECKBOX THAT WOULD NOT TICK
+ * Hovering the notice's checkbox showed a resize cursor, and clicking it did
+ * nothing. Both come from `react-resizable-panels`, which registers
+ * `pointerdown` and `pointermove` on `document.body` in the CAPTURE phase and,
+ * when the pointer falls within a handle's hit area, does this:
+ *
+ *     event.preventDefault();
+ *     if (!isWithinResizeHandle(target)) event.stopImmediatePropagation();
+ *
+ * A capture listener on `<body>` runs before the event can reach anything
+ * inside it, so `stopImmediatePropagation` deletes the click on its way to the
+ * checkbox. The same code path calls `setGlobalCursorStyle`, which injects
+ * `*{cursor: ns-resize !important}` - that is the "scroll" cursor, applied to
+ * every element on the page including ours.
+ *
+ * The library does try to handle this. It compares stacking order between the
+ * click target and the handle, with a comment naming a modal as the case. But
+ * `compare` is a fork of `stacking-order@2.0.0`: it reads z-index and DOM
+ * order, and the browser's TOP LAYER is expressible in neither. Our notice is a
+ * native `<dialog>` opened with `showModal()`, so it lives in the top layer and
+ * that check cannot see it. The dialog is drawn above everything and, to this
+ * library, is not there at all.
+ *
+ * Worth stating plainly: the rewrite onto a native `<dialog>` is what made the
+ * library blind. A Radix modal has a z-index, which `compare` can read. Escaping
+ * one library's pointer bookkeeping put us inside another's blind spot.
+ *
+ * `disabled` on a handle short-circuits the effect that registers it. Disable
+ * every handle and the registry is empty, at which point the library attaches no
+ * listeners at all - no preventDefault, no stopImmediatePropagation, no global
+ * cursor rule. Nothing to intercept the click, because nothing is listening.
+ *
+ * Deliberately the same condition as the notice itself: while the gate blocks
+ * the viewport, nothing behind it should be resizable anyway.
+ */
+export const shouldDisableResizeHandles = (
+  isTestnet: boolean,
+  alreadyAcked: boolean
+): boolean => shouldShowTestnetNotice(isTestnet, alreadyAcked);
+
 export type GateState = {
   /** Has the user ticked the acknowledgement? */
   checked: boolean;

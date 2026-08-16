@@ -27,7 +27,7 @@ import { MarketNotFound } from "./marketNotFound";
 
 import { ConnectTradingInteraction } from "@/components/ui/ConnectWalletInteraction/connectTradingInteraction";
 import { Footer, Header } from "@/components/ui";
-import { useSizeObserver, useTour } from "@/hooks";
+import { useConsentGateOpen, useSizeObserver, useTour } from "@/hooks";
 
 export function Template({ id }: { id: string }) {
   // Height no longer needed: the footer renders in normal flow on this
@@ -40,6 +40,26 @@ export function Template({ id }: { id: string }) {
   const orderbookPanelRef = useRef<ImperativePanelHandle>(null);
 
   const { width, height } = useWindowSize();
+
+  /*
+   * Every resize handle is switched off while the testnet notice is up.
+   *
+   * react-resizable-panels listens for pointerdown on <body> in the CAPTURE
+   * phase and, when the pointer is within a handle's hit area, calls
+   * `stopImmediatePropagation()` - which deletes the click before it can reach
+   * anything inside, including the notice's own checkbox. It also injects
+   * `*{cursor: ns-resize !important}`, which is the resize cursor that appears
+   * over the checkbox.
+   *
+   * The library guards against exactly this by comparing stacking order, but its
+   * `compare` is a fork of stacking-order@2.0.0 and reads z-index and DOM order
+   * only. Our notice is a native <dialog> in the browser's top layer, which
+   * neither expresses, so the guard cannot see it. Disabling the handles empties
+   * the library's registry, and with an empty registry it attaches no listeners
+   * at all. See testnetGate.ts.
+   */
+  const consentGateOpen = useConsentGateOpen();
+
   const { list, loading } = useMarkets();
   const currentMarket = getCurrentMarket(list, id);
 
@@ -167,7 +187,7 @@ export function Template({ id }: { id: string }) {
                     <Graph currentMarket={currentMarket} />
                   </div>
                 </Resizable.Panel>
-                <Resizable.Handle />
+                <Resizable.Handle disabled={consentGateOpen} />
                 {(tabletView || desktopView) && (
                   <Resizable.Panel
                     ref={orderbookPanelRef}
@@ -181,7 +201,7 @@ export function Template({ id }: { id: string }) {
 
                 {desktopView && (
                   <Fragment>
-                    <Resizable.Handle />
+                    <Resizable.Handle disabled={consentGateOpen} />
                     <Resizable.Panel
                       defaultSize={21}
                       minSize={21}
@@ -194,7 +214,7 @@ export function Template({ id }: { id: string }) {
                 )}
               </Resizable>
             </Resizable.Panel>
-            <Resizable.Handle />
+            <Resizable.Handle disabled={consentGateOpen} />
             <Resizable.Panel
               defaultSize={32}
               minSize={24}
@@ -229,7 +249,7 @@ export function Template({ id }: { id: string }) {
                     >
                       <PlaceOrder market={currentMarket} />
                     </Resizable.Panel>
-                    <Resizable.Handle />
+                    <Resizable.Handle disabled={consentGateOpen} />
                     <Resizable.Panel
                       defaultSize={22}
                       minSize={21}
@@ -255,7 +275,7 @@ export function Template({ id }: { id: string }) {
                 </Resizable.Panel>
                 {desktopView && (
                   <Fragment>
-                    <Resizable.Handle />
+                    <Resizable.Handle disabled={consentGateOpen} />
                     <Resizable.Panel
                       // No pixel min-height: it would make this panel taller
                       // than the group can allocate on short viewports, and the
