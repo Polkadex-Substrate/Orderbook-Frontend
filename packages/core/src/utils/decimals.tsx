@@ -1,4 +1,8 @@
 import * as React from "react";
+import * as Sentry from "@sentry/nextjs";
+
+import { expandExponent, wouldHaveHung } from "./expandExponent";
+import { formatDecimal, formatWithSeparators } from "./formatDecimal";
 
 export interface DecimalProps {
   /**
@@ -25,61 +29,58 @@ export interface DecimalProps {
   hasStyle?: boolean;
 }
 
-const handleRemoveExponent = (value: DecimalProps["children"]) => {
-  const data = String(value).split(/[eE]/);
+/**
+ * Report an input that would have hung the old formatter, once per session.
+ *
+ * THIS IS THE LOOP THAT FROZE THE TRADING PAGE. The old expansion counted zeros
+ * with `while (power--)`, which terminates only by reaching zero from above.
+ * Any input that made `power` negative counted away from zero forever while
+ * appending to a string: `"9.99e0"`, `"1.23e1"`, `"1.2345e2"` - anything whose
+ * mantissa has more digits than the exponent accounts for. `String(number)`
+ * cannot produce those, but a STRING from the API can, and prices, quantities
+ * and balances all arrive as strings.
+ *
+ * The expansion now lives in expandExponent.ts and the formatter in
+ * formatDecimal.ts, both import-free and tested against the inputs that hung.
+ *
+ * WHY THE MESSAGE
+ * The fix proves the loop was REACHABLE, not that it was REACHED. One
+ * deduplicated report tells us whether such a value actually arrives in
+ * production, which is the difference between "this was the freeze" and "this
+ * was a freeze waiting to happen". At most one message per session.
+ *
+ * `wouldHaveHung`, NOT "is exponential". Most exponential values were always
+ * harmless - `String(1e-8)` is `"1e-8"` and every dust balance produces one, so
+ * the broader check would send a message per rendered number. That mistake was
+ * caught by a test rather than by review.
+ */
+let dangerousInputReported = false;
 
-  if (data.length === 1) {
-    return data[0];
+const reportDangerousInput = (value: string) => {
+  if (dangerousInputReported) return;
+  dangerousInputReported = true;
+  try {
+    Sentry.captureMessage("Value that would have hung the decimal formatter", {
+      level: "info",
+      tags: { formatter: "decimal" },
+      // The value itself: a price or quantity, not user identity. Which shape
+      // arrives is the entire point of the report.
+      extra: { value, expanded: expandExponent(value) },
+    });
+  } catch {
+    // Telemetry must never break rendering. This sits on the path of every
+    // number on screen.
   }
-
-  const sign = Number(value) < 0 ? "-" : "";
-  const str = data[0].replace(".", "");
-  let result = "";
-  let power = Number(data[1]) + 1;
-
-  if (power < 0) {
-    result = `${sign}0.`;
-
-    while (power++) {
-      result += "0";
-    }
-
-    // eslint-disable-next-line
-    return result + str.replace(/^\-/, "");
-  }
-
-  power -= str.length;
-
-  while (power--) {
-    result += "0";
-  }
-
-  return `${str}${result}`;
 };
 
-const formatWithSeparators = (
-  value: string,
-  thousSep?: string,
-  floatSep?: string
-) => {
-  let fmtNum = value;
-
-  if (thousSep !== floatSep) {
-    if (floatSep) {
-      fmtNum = fmtNum.replace(".", floatSep);
-    }
-
-    if ((thousSep && floatSep) || (thousSep && !floatSep && thousSep !== ".")) {
-      const fmtNumParts = fmtNum.toString().split(floatSep || ".");
-      fmtNumParts[0] = fmtNumParts[0].replace(
-        /\B(?=(\d{3})+(?!\d))/g,
-        thousSep
-      );
-      fmtNum = fmtNumParts.join(floatSep || ".");
-    }
-  }
-
-  return fmtNum;
+/**
+ * Kept exported: other modules import it. Now a thin wrapper over the tested
+ * expansion, with the reporting attached.
+ */
+const handleRemoveExponent = (value: DecimalProps["children"]) => {
+  const input = String(value ?? "");
+  if (wouldHaveHung(input)) reportDangerousInput(input);
+  return expandExponent(input);
 };
 
 class Decimal extends React.Component<DecimalProps> {
@@ -89,45 +90,16 @@ class Decimal extends React.Component<DecimalProps> {
     thousSep?: string,
     floatSep?: string
   ) {
-    if (typeof value === "undefined") {
-      return "0";
-    }
-
-    let fmtVal: DecimalProps["children"] = "";
-    let isPositive = true;
-    let result = "0";
-
-    if (typeof value === "string" && Number(value) < 0) {
-      fmtVal = value.slice(1);
-      isPositive = false;
-    } else if (typeof value === "number" && value < 0) {
-      fmtVal = value * -1;
-      isPositive = false;
-    } else {
-      fmtVal = value;
-    }
-
-    if (fmtVal !== "" && fmtVal !== 0) {
-      result = handleRemoveExponent(
-        Number(
-          `${Math.floor(
-            Number(`${handleRemoveExponent(fmtVal)}e${precision}`)
-          )}e-${precision}`
-        )
-      );
-    }
-
-    if (result.indexOf(".") === -1 && precision > 0) {
-      result += ".";
-    }
-
-    while (result.slice(result.indexOf(".")).length <= precision) {
-      result += "0";
-    }
-
-    result = formatWithSeparators(result, thousSep, floatSep);
-
-    return isPositive ? result : `-${result}`;
+    // Delegated to an import-free module so it can be unit tested: this file
+    // holds a React component and ts-jest here does not compile JSX, which is
+    // why two tab-freezing loops sat in it untested for years.
+    return formatDecimal(
+      value,
+      precision,
+      thousSep,
+      floatSep,
+      reportDangerousInput
+    );
   }
 
   public static getNumberBeforeDot(
