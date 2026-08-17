@@ -1,6 +1,7 @@
 import {
   isStaleTradingSelection,
   staleSelectionMessage,
+  staleSelectionReport,
 } from "./staleTradingSelection";
 
 /*
@@ -114,5 +115,64 @@ describe("staleSelectionMessage", () => {
     expect(m).toContain("not in this browser");
     expect(m).toMatch(/Select or import/);
     expect(m).not.toContain("keypair");
+  });
+});
+
+describe("staleSelectionReport - for the open 'keeps asking' bug", () => {
+  /*
+   * A user is being asked to connect a trading account repeatedly in one
+   * session, and reconnecting the wallet fixes it. A genuinely absent key does
+   * not come back when you reconnect a wallet, so that is a spurious drop -
+   * most likely an empty signable list arriving while `ready` is already true.
+   *
+   * One render cannot tell that from a real absence. The report captures what
+   * distinguishes them over time.
+   */
+
+  it("flags the suspicious case: ready, but nothing signable at all", () => {
+    const report = staleSelectionReport({
+      selected: GONE,
+      signableAddresses: [],
+      ready: true,
+    });
+    expect(report.emptySignableList).toBe(true);
+    expect(report.signableCount).toBe(0);
+    expect(report.ready).toBe(true);
+  });
+
+  it("does not flag a genuine stale selection alongside other accounts", () => {
+    // The legitimate case this feature was built for: the key is gone, but the
+    // browser holds others. Not a timing artefact.
+    const report = staleSelectionReport({ ...base, selected: GONE });
+    expect(report.emptySignableList).toBe(false);
+    expect(report.signableCount).toBe(1);
+  });
+
+  it("distinguishes an unknown list from an empty one", () => {
+    const report = staleSelectionReport({
+      selected: GONE,
+      signableAddresses: undefined,
+      ready: true,
+    });
+    expect(report.signableCount).toBeNull();
+    expect(report.emptySignableList).toBe(false);
+  });
+
+  it("carries no addresses", () => {
+    // Counts answer the question; which accounts a person holds does not, so it
+    // is not collected.
+    const report = staleSelectionReport({
+      selected: GONE,
+      extensionAddress: EXT,
+      signableAddresses: [HELD],
+      ready: true,
+    });
+    const serialised = JSON.stringify(report);
+    for (const address of [GONE, HELD, EXT]) {
+      expect(serialised).not.toContain(address);
+    }
+    // But it does say whether an extension was connected, which matters:
+    // reconnecting a wallet is what the user found made it work.
+    expect(report.hasExtensionAddress).toBe(true);
   });
 });

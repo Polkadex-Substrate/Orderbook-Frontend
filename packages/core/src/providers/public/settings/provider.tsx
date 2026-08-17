@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 
 import { Provider } from "./context";
 import { settingReducer, initialState } from "./reducer";
@@ -18,8 +18,13 @@ export const SettingProvider: T.SettingComponent = ({
     []
   );
 
-  const onToogleConnectTrading = (payload?: boolean) =>
-    dispatch(A.toogleConnectTrading(payload));
+  // Was not memoised, and that mattered. A new identity on every render made
+  // any effect depending on it re-run - and this provider re-renders on every
+  // notification, theme change and panel toggle.
+  const onToogleConnectTrading = useCallback(
+    (payload?: boolean) => dispatch(A.toogleConnectTrading(payload)),
+    []
+  );
 
   const onToogleFundWallet = useCallback(
     (payload?: boolean) => setFundWallet((e) => !e || !!payload),
@@ -57,8 +62,10 @@ export const SettingProvider: T.SettingComponent = ({
     []
   );
 
-  const onChangeMarketCarousel = (value: T.MarketCarousel) =>
-    dispatch(A.setMarketCarousel(value));
+  const onChangeMarketCarousel = useCallback(
+    (value: T.MarketCarousel) => dispatch(A.setMarketCarousel(value)),
+    []
+  );
 
   // Notifications Actions
   const onPushNotification = useCallback(
@@ -117,32 +124,68 @@ export const SettingProvider: T.SettingComponent = ({
     };
   }, []);
 
-  return (
-    <Provider
-      value={{
-        ...state,
-        fundWallet,
-        onToogleFundWallet,
-        onToggleChartRebuild,
-        onToggleMarketSelector,
-        onToggleOpenOrdersPairsSwitcher,
-        onChangeTheme,
-        onChangeLanguage,
-        onChangeCurrency,
-        onPushNotification,
-        onClearNotifications,
-        onRemoveNotification,
-        onReadNotification,
-        onReadAllNotifications,
-        onHandleError: defaultToast.onError,
-        onHandleAlert: defaultToast.onSuccess,
-        onHandleInfo: defaultToast.onInfo,
-        onToogleConnectExtension,
-        onToogleConnectTrading,
-        onChangeMarketCarousel,
-      }}
-    >
-      {children}
-    </Provider>
+  /*
+   * MEMOISED, because consumers of this value feed it into dependency arrays.
+   *
+   * The websocket handlers in SubscriptionProvider depend on `onHandleError`,
+   * `onHandleInfo` and `onPushNotification`. While this object was rebuilt on
+   * every render, every notification pushed here gave those a new identity,
+   * which invalidated the handlers, which tore down and re-created the order
+   * subscription - the channel that had just delivered the notification.
+   *
+   * Three reported bugs came out of that: a filled order not appearing until you
+   * switched tabs and came back, and no fill notification. Those effects no
+   * longer depend on handler identity either (see subscription/useLatest.ts), so
+   * this is the second of two independent guards rather than the only one.
+   *
+   * `state` changes on every settings action, so the value still changes then -
+   * as it must, that is the point of the provider. What it no longer does is
+   * change when nothing has changed.
+   */
+  const value = useMemo(
+    () => ({
+      ...state,
+      fundWallet,
+      onToogleFundWallet,
+      onToggleChartRebuild,
+      onToggleMarketSelector,
+      onToggleOpenOrdersPairsSwitcher,
+      onChangeTheme,
+      onChangeLanguage,
+      onChangeCurrency,
+      onPushNotification,
+      onClearNotifications,
+      onRemoveNotification,
+      onReadNotification,
+      onReadAllNotifications,
+      onHandleError: defaultToast.onError,
+      onHandleAlert: defaultToast.onSuccess,
+      onHandleInfo: defaultToast.onInfo,
+      onToogleConnectExtension,
+      onToogleConnectTrading,
+      onChangeMarketCarousel,
+    }),
+    [
+      state,
+      fundWallet,
+      defaultToast,
+      onToogleFundWallet,
+      onToggleChartRebuild,
+      onToggleMarketSelector,
+      onToggleOpenOrdersPairsSwitcher,
+      onChangeTheme,
+      onChangeLanguage,
+      onChangeCurrency,
+      onPushNotification,
+      onClearNotifications,
+      onRemoveNotification,
+      onReadNotification,
+      onReadAllNotifications,
+      onToogleConnectExtension,
+      onToogleConnectTrading,
+      onChangeMarketCarousel,
+    ]
   );
+
+  return <Provider value={value}>{children}</Provider>;
 };

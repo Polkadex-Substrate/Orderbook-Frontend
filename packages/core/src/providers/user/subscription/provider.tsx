@@ -58,6 +58,7 @@ import { useNativeApi } from "../../public/nativeApi";
 import { orderUpdateNotice } from "./orderUpdateNotice";
 import { Provider } from "./context";
 import * as T from "./types";
+import { useLatest } from "./useLatest";
 
 export const SubscriptionProvider: T.SubscriptionComponent = ({
   children,
@@ -581,18 +582,48 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
     [isReady]
   );
 
+  /*
+   * EVERY SUBSCRIPTION BELOW READS ITS HANDLER THROUGH A REF.
+   *
+   * These effects used to list the handler in their dependency arrays, so each
+   * socket was torn down and re-created whenever the HANDLER changed identity -
+   * which says nothing about whether the subscription should exist.
+   *
+   * `onOrderUpdates` depends on `onHandleError`, `onHandleInfo` and
+   * `onPushNotification`, all of which came from SettingProvider with a fresh
+   * identity on every render. So an order update called `onPushNotification`,
+   * which changed settings state, which re-rendered that provider, which gave
+   * the handler a new identity, which unsubscribed and resubscribed the exact
+   * channel that had just delivered the event. Notifying the user destroyed the
+   * subscription, and anything arriving in the gap was lost.
+   *
+   * Reported as three separate bugs: a filled order not appearing until you
+   * switched tabs and came back (the 30s poll and the focus refetch were doing
+   * all the work), and no fill notification at all.
+   *
+   * The dependency arrays now say only what they mean: an address, a market,
+   * and whether the service is ready. See useLatest.ts.
+   */
+  const recentTradeRef = useLatest(onRecentTradeUpdates);
+  const orderbookRef = useLatest(onOrderbookUpdates);
+  const orderUpdatesRef = useLatest(onOrderUpdates);
+  const userTradeRef = useLatest(onUserTradeUpdate);
+  const transactionsRef = useLatest(onTransactionsUpdate);
+  const tickerRef = useLatest(onTickerUpdates);
+  const balanceRef = useLatest(onBalanceUpdate);
+  const accountsRef = useLatest(onAccountsUpdate);
+
   // Recent Trades subscription
   useEffect(() => {
     if (!isReady || !market) return;
 
     const subscription =
-      appsyncOrderbookService.subscriber.subscribeLatestTrades(
-        market,
-        onRecentTradeUpdates
+      appsyncOrderbookService.subscriber.subscribeLatestTrades(market, (e) =>
+        recentTradeRef.current(e)
       );
 
     return () => subscription.unsubscribe();
-  }, [isReady, market, onRecentTradeUpdates]);
+  }, [isReady, market, recentTradeRef]);
 
   // Orderbook subscription
   useEffect(() => {
@@ -600,34 +631,34 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
 
     const subscription = appsyncOrderbookService.subscriber.subscribeOrderbook(
       market,
-      onOrderbookUpdates
+      (e) => orderbookRef.current(e)
     );
     return () => subscription.unsubscribe();
-  }, [isReady, market, onOrderbookUpdates, queryClient]);
+  }, [isReady, market, orderbookRef]);
 
   // Open Orders & Order history subscription (For tradeAddress)
   useEffect(() => {
     if (tradeAddress?.length && isReady) {
       const subscription = appsyncOrderbookService.subscriber.subscribeOrders(
         tradeAddress,
-        onOrderUpdates
+        (e) => orderUpdatesRef.current(e)
       );
 
       return () => subscription.unsubscribe();
     }
-  }, [tradeAddress, onOrderUpdates, isReady]);
+  }, [tradeAddress, isReady, orderUpdatesRef]);
 
   // Open Orders & Order history subscription (For mainAddress)
   useEffect(() => {
     if (mainAddress?.length && isReady) {
       const subscription = appsyncOrderbookService.subscriber.subscribeOrders(
         mainAddress,
-        (e) => onOrderUpdates(e, true)
+        (e) => orderUpdatesRef.current(e, true)
       );
 
       return () => subscription.unsubscribe();
     }
-  }, [mainAddress, onOrderUpdates, isReady]);
+  }, [mainAddress, isReady, orderUpdatesRef]);
 
   // Trade history subscription
   useEffect(() => {
@@ -635,13 +666,13 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       const subscription =
         appsyncOrderbookService.subscriber.subscribeUserTrades(
           tradeAddress,
-          onUserTradeUpdate
+          (e) => userTradeRef.current(e)
         );
       return () => {
         subscription.unsubscribe();
       };
     }
-  }, [tradeAddress, isReady, onUserTradeUpdate]);
+  }, [tradeAddress, isReady, userTradeRef]);
 
   // Transactions subscription
   useEffect(() => {
@@ -649,14 +680,14 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       const subscription =
         appsyncOrderbookService.subscriber.subscribeTransactions(
           mainAddress,
-          onTransactionsUpdate
+          (e) => transactionsRef.current(e)
         );
 
       return () => {
         subscription.unsubscribe();
       };
     }
-  }, [mainAddress, onTransactionsUpdate, isReady]);
+  }, [mainAddress, isReady, transactionsRef]);
 
   // Tickers subscription
   useEffect(() => {
@@ -664,24 +695,24 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
 
     const subscription = appsyncOrderbookService.subscriber.subscribeTicker(
       market,
-      onTickerUpdates
+      (e) => tickerRef.current(e)
     );
 
     return () => subscription.unsubscribe();
-  }, [queryClient, markets, isReady, market, onTickerUpdates]);
+  }, [isReady, market, tickerRef]);
 
   // Balances subscription
   useEffect(() => {
     if (mainAddress && isReady) {
       const subscription = appsyncOrderbookService.subscriber.subscribeBalances(
         mainAddress,
-        onBalanceUpdate
+        (e) => balanceRef.current(e)
       );
       return () => {
         subscription.unsubscribe();
       };
     }
-  }, [mainAddress, onBalanceUpdate, isReady]);
+  }, [mainAddress, isReady, balanceRef]);
 
   // Account update subscription
   useEffect(() => {
@@ -689,13 +720,13 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
       const subscription =
         appsyncOrderbookService.subscriber.subscribeAccountUpdate(
           mainAddress,
-          onAccountsUpdate
+          (e) => accountsRef.current(e)
         );
       return () => {
         subscription.unsubscribe();
       };
     }
-  }, [isReady, mainAddress, onAccountsUpdate]);
+  }, [isReady, mainAddress, accountsRef]);
 
   return <Provider value={{ onCandleSubscribe }}>{children}</Provider>;
 };

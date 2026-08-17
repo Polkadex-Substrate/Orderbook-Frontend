@@ -130,6 +130,56 @@ const queryClient = new QueryClient({
   }),
 });
 
+/**
+ * MODULE SCOPE, NOT AN INLINE PROP. That distinction was a bug.
+ *
+ * This object used to be written inline in the JSX below, so a new one was built
+ * on every render of DynamicProviders, and `onError` / `onSuccess` / `onInfo`
+ * got new identities each time. SettingProvider passes them straight through as
+ * `onHandleError`, `onHandleAlert` and `onHandleInfo`, and the subscription
+ * provider's handlers depend on those - so every render invalidated the
+ * websocket handlers and tore down the order channel.
+ *
+ * Nothing in here reads props or state: `toast`, `toastTitle`, `isUnusableTitle`
+ * and Sentry are all module-level. So it can simply live at module scope, where
+ * its identity is fixed for the lifetime of the page and cannot be a dependency
+ * of anything.
+ */
+const defaultToast = {
+  // `.toString()` used to be called directly here. An order failed with a
+  // titleless error, so `title` was undefined and the ERROR HANDLER threw - see
+  // ORDERBOOK-TESTNET-4 and toastTitle.ts.
+  //
+  // The user saw no toast, the real failure was discarded, and Sentry reported
+  // this line instead of the order. 31 events from one person retrying in eight
+  // minutes.
+  onError: (title: unknown, description?: string) => {
+    // Report the ORIGINAL value before replacing it. Fixing only the crash
+    // would leave some upstream path quietly emitting errors with no message,
+    // and nothing would ever say so.
+    if (isUnusableTitle(title)) {
+      Sentry.captureMessage(
+        "Toast error had no usable title - upstream error lost",
+        {
+          level: "warning",
+          extra: {
+            titleType: typeof title,
+            titleValue: String(title),
+            description,
+          },
+        }
+      );
+    }
+    toast.error(toastTitle(title), { description });
+  },
+  onSuccess: (title: unknown, description?: string) => {
+    toast.success(toastTitle(title, "Done"), { description });
+  },
+  onInfo: (title: unknown, description?: string) => {
+    toast.info(toastTitle(title, "Notice"), { description });
+  },
+};
+
 export const DynamicProviders = ({ children }: { children: ReactNode }) => {
   const params = useParams();
   return (
@@ -137,44 +187,7 @@ export const DynamicProviders = ({ children }: { children: ReactNode }) => {
       <Toaster expand closeButton position="top-right" />
       <YbugProvider>
         <QueryClientProvider client={queryClient}>
-          <SettingProvider
-            defaultToast={{
-              // `.toString()` used to be called directly here. An order failed
-              // with a titleless error, so `title` was undefined and the ERROR
-              // HANDLER threw - see ORDERBOOK-TESTNET-4 and toastTitle.ts.
-              //
-              // The user saw no toast, the real failure was discarded, and
-              // Sentry reported this line instead of the order. 31 events from
-              // one person retrying in eight minutes.
-              onError: (title, description) => {
-                // Report the ORIGINAL value before replacing it. Fixing only
-                // the crash would leave some upstream path quietly emitting
-                // errors with no message, and nothing would ever say so.
-                if (isUnusableTitle(title)) {
-                  Sentry.captureMessage(
-                    "Toast error had no usable title - upstream error lost",
-                    {
-                      level: "warning",
-                      extra: {
-                        titleType: typeof title,
-                        titleValue: String(title),
-                        description,
-                      },
-                    }
-                  );
-                }
-                toast.error(toastTitle(title), { description });
-              },
-              onSuccess: (title, description) => {
-                toast.success(toastTitle(title, "Done"), {
-                  description,
-                });
-              },
-              onInfo: (title, description) => {
-                toast.info(toastTitle(title, "Notice"), { description });
-              },
-            }}
-          >
+          <SettingProvider defaultToast={defaultToast}>
             <ExtensionsProvider>
               <ExtensionAccountsProvider
                 network={"polkadex"}

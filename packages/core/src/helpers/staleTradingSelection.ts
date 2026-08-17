@@ -68,3 +68,39 @@ export const isStaleTradingSelection = ({
 /** What to tell the user when the remembered account is dropped. */
 export const staleSelectionMessage = (): string =>
   "Your trading account was deselected because its key is not in this browser. Select or import a trading account to place orders.";
+
+/**
+ * Facts to report when a selection is dropped, so we can tell a correct drop
+ * from a spurious one.
+ *
+ * THE OPEN REPORT THIS IS FOR
+ * "Now also keeps asking for connect to trading account. Have to disconnect the
+ * wallet and connect it back." Repeatedly, in one session. That is the shape of
+ * a spurious drop, not a genuinely missing key: a missing key does not come back
+ * when you reconnect a wallet.
+ *
+ * The likeliest mechanism is a transient empty signable list while `ready` is
+ * already true - the keyring finishing, re-initialising, or the provider
+ * remounting. `isStaleTradingSelection` cannot distinguish that from a real
+ * absence, because from inside one render they look identical. Only the sequence
+ * over time tells them apart, so the sequence is what gets reported.
+ *
+ * NO ADDRESSES. Counts and booleans only. Which accounts a person holds is not
+ * needed to answer this question, so it is not collected.
+ */
+export const staleSelectionReport = ({
+  extensionAddress,
+  signableAddresses,
+  ready,
+}: StaleSelectionInput): Record<string, unknown> => ({
+  ready,
+  signableCount: Array.isArray(signableAddresses)
+    ? signableAddresses.length
+    : null,
+  hasExtensionAddress: !!extensionAddress,
+  // The telling case: ready, a selection held, and NOTHING signable. A real
+  // stale selection usually coexists with other signable accounts; an empty
+  // list right after ready is much more likely to be a timing artefact.
+  emptySignableList:
+    Array.isArray(signableAddresses) && signableAddresses.length === 0,
+});

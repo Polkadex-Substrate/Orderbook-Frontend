@@ -15,8 +15,10 @@ import {
   createContext,
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { UseMutationResult } from "@tanstack/react-query";
 import {
   GDriveExternalAccountStore,
@@ -32,6 +34,7 @@ import {
 import {
   isStaleTradingSelection,
   staleSelectionMessage,
+  staleSelectionReport,
 } from "@orderbook/core/helpers/staleTradingSelection";
 
 import { POLKADEX_ASSET } from "../../../constants";
@@ -200,6 +203,11 @@ export const ConnectWalletProvider = ({
   // TODO: rename to useBrowserAccounts
   const { wallet, isReady, localAddresses } = useUserAccounts();
   const onSetTempMnemonic = (value: string) => setTempMnemonic(value);
+
+  // One report per session for the stale-selection drop below. The user in the
+  // report hit it repeatedly, so without this guard a spurious loop would also
+  // be a Sentry flood.
+  const staleDropReported = useRef(false);
 
   const {
     onChainBalances,
@@ -466,14 +474,41 @@ export const ConnectWalletProvider = ({
   // deselect every user's trading account on every page load - much worse than
   // the bug being fixed. isStaleTradingSelection returns false for every
   // uncertain case; see its tests.
+  //
+  // REPORTED, BECAUSE THERE IS AN OPEN BUG HERE. "Keeps asking for connect to
+  // trading account. Have to disconnect the wallet and connect it back",
+  // repeatedly in one session. A genuinely missing key does not come back when
+  // you reconnect a wallet, so that is the shape of a SPURIOUS drop - most
+  // likely a transient empty signable list while `isReady` is already true.
+  //
+  // One render cannot tell that apart from a real absence; only the sequence
+  // can. So the drop reports the counts that would distinguish them. Note this
+  // effect also used to re-run on EVERY render, because `onHandleAlert` was
+  // rebuilt each time by SettingProvider - so this decision was being
+  // re-evaluated constantly rather than when its inputs changed. That is fixed
+  // separately.
   useEffect(() => {
-    const stale = isStaleTradingSelection({
+    const input = {
       selected: selectedAddresses?.tradeAddress,
       extensionAddress: selectedWallet?.address,
       signableAddresses: localTradingAccounts.map((pair) => pair.address),
       ready: isReady,
-    });
+    };
+    const stale = isStaleTradingSelection(input);
     if (!stale) return;
+
+    if (!staleDropReported.current) {
+      staleDropReported.current = true;
+      try {
+        Sentry.captureMessage("Trading account selection dropped as stale", {
+          level: "info",
+          tags: { area: "trading-account" },
+          extra: staleSelectionReport(input),
+        });
+      } catch {
+        // Never let telemetry break wallet connection.
+      }
+    }
 
     onUserResetTradingAddress();
     onHandleAlert?.(staleSelectionMessage());
