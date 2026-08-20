@@ -30,14 +30,32 @@ describe("isStaleTradingSelection - the case it exists for", () => {
     expect(isStaleTradingSelection({ ...base, selected: HELD })).toBe(false);
   });
 
-  it("drops it even when the keyring is genuinely empty, once ready", () => {
+  it("does NOT drop it when the list is empty, even once ready", () => {
+    /*
+     * THIS TEST USED TO ASSERT `true`, AND PRODUCTION PROVED IT WRONG.
+     *
+     * ORDERBOOK-TESTNET-G, three events across two users on /bridge:
+     *
+     *     ready: true, signableCount: 0, emptySignableList: true,
+     *     hasExtensionAddress: false
+     *
+     * The extension address was missing at the same instant as the keyring.
+     * Both empty at once is not a user with no accounts, it is a provider that
+     * reported `isReady` before either had populated. The symptom was "keeps
+     * asking for connect to trading account, have to disconnect and reconnect
+     * the wallet" - and a key that is genuinely gone does not come back when
+     * you reconnect a wallet.
+     *
+     * So an empty list is now treated as "cannot tell", like a missing one.
+     * Dropping requires seeing keys and not finding this one among them.
+     */
     expect(
       isStaleTradingSelection({
         selected: GONE,
         signableAddresses: [],
         ready: true,
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 

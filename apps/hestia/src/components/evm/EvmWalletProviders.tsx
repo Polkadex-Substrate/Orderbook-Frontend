@@ -1,62 +1,56 @@
 "use client";
 
 import { ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import type { State } from "wagmi";
 
-import { needsEvmWallet } from "@/config/evmRoutes";
+import { useEvmInitialState } from "./evmInitialState";
 
 /**
- * Mounts the EVM wallet stack only on the routes that use it.
+ * Mounts the EVM wallet stack for one route subtree.
  *
- * WHAT THIS REMOVES FROM EVERY OTHER PAGE
+ * RENDER THIS INSIDE A ROUTE, NEVER IN THE ROOT LAYOUT. That distinction is the
+ * whole point of this file, and getting it wrong caused a worse bug than the one
+ * it was fixing.
+ *
+ * WHAT IT REMOVES FROM EVERY OTHER PAGE
  * WalletConnect core, the `verify.walletconnect.org` iframe, the injected
- * connector and its MetaMask handshake, EIP-6963 discovery and the Coinbase
- * SDK. All of that used to start on load for every route, because
- * `Web3ModalProvider` wrapped the app from the root layout. Only bridge and
- * faucet ever call a wagmi hook. See config/evmRoutes.ts.
+ * connector and its MetaMask handshake, EIP-6963 discovery and the Coinbase SDK.
+ * All of it used to start on load for every route, because `Web3ModalProvider`
+ * wrapped the app from the root layout. Only bridge and faucet call a wagmi
+ * hook. See config/evmRoutes.ts.
  *
- * WHY next/dynamic AND NOT A PLAIN CONDITIONAL
- * A static import would put the module in the shared client bundle regardless
- * of whether the component renders, so every page would still download and
- * evaluate it - and `@/context` calls `createWeb3Modal` at module scope, which
- * boots WalletConnect the moment the module is evaluated. `dynamic` puts it in
- * its own chunk that is fetched only when this component decides to render it,
- * so on the trading page the code is never fetched, never parsed, never run.
+ * THE FIRST ATTEMPT, AND WHY IT WAS WRONG
+ * This component originally lived in the root layout and chose per route:
  *
- * `ssr: false` because the whole stack is browser-only; the same reason the
- * root layout guarded `createWeb3Modal` and `enableWalletConnect` on
- * `typeof window`.
+ *     if (!needsEvmWallet(pathname)) return <>{children}</>;
+ *     return <Web3ModalProvider ...>{children}</Web3ModalProvider>;
  *
- * WHY THE PROVIDER IS NOT SIMPLY MOVED INTO THE ROUTE LAYOUTS
- * That was the first plan and it is worse. The root layout calls `headers()`,
- * which forces dynamic rendering for the whole app; removing it would let other
- * routes render statically, and a client component calling `useSearchParams`
- * without a Suspense boundary fails the BUILD under static rendering. Three
- * components do exactly that. Restructuring the route tree to fix the freeze
- * would have introduced a build-time failure mode in pages unrelated to it.
+ * That does remove the stack from other pages. It also means the children sit at
+ * a DIFFERENT POSITION in the element tree depending on the route, so navigating
+ * from /trading to /bridge unmounted and remounted every provider beneath it -
+ * the keyring, the profile, the whole of DynamicProviders. The keyring reloaded,
+ * announced `isReady` before its addresses arrived, and the stale-selection guard
+ * deselected the user's trading account. Moving to the bridge logged you out of
+ * trading, and coming back required reconnecting the wallet.
+ *
+ * Mounted inside the route instead, the toggle costs nothing: leaving the route
+ * unmounts that subtree anyway, and everything that must survive navigation
+ * lives above it, untouched.
+ *
+ * WHY next/dynamic AND NOT A PLAIN IMPORT
+ * A static import lands in the shared client bundle whether or not the component
+ * renders, and `@/context` calls `createWeb3Modal` at module scope - so
+ * evaluating the module is what boots WalletConnect. As a `dynamic` chunk it is
+ * fetched only when this component renders, which is only on these routes.
+ *
+ * `ssr: false` because the whole stack is browser-only.
  */
 const Web3ModalProvider = dynamic(() => import("@/context"), { ssr: false });
 
-export const EvmWalletProviders = ({
-  children,
-  initialState,
-}: {
-  children: ReactNode;
-  /**
-   * Cookie-derived wagmi state, computed in the root layout on the server.
-   *
-   * Still computed for every route: it is a cheap synchronous read of a cookie
-   * on the SERVER, it never reaches the client bundle, and passing it down
-   * keeps a returning user's connection restored on the routes that mount the
-   * provider.
-   */
-  initialState?: State;
-}) => {
-  const pathname = usePathname();
-
-  if (!needsEvmWallet(pathname)) return <>{children}</>;
+export const EvmWalletProviders = ({ children }: { children: ReactNode }) => {
+  // From context, not a prop: the root layout must not wrap children in
+  // anything route-dependent. See evmInitialState.tsx.
+  const initialState = useEvmInitialState();
 
   return (
     <Web3ModalProvider initialState={initialState}>

@@ -28,6 +28,8 @@ import {
   FeeAssetReserve,
   OTHER_ASSET_EXISTENTIAL,
   TransactionFeeProps,
+  depositBlockMessage,
+  depositBlockReason,
   enabledFeatures,
   useFunds,
   useTransactionFee,
@@ -101,22 +103,46 @@ export const ConfirmTransaction = ({
     [tokenFee?.id, balances]
   );
 
+  /*
+   * Why the deposit is blocked, decided by the shared rule in depositCapacity.
+   *
+   * The check here used to be `walletBalance < fee + existential`, rendered as
+   * "Your balance is not enough to pay the fee." - which was FALSE for the case
+   * that hit it hardest. A new user whose entire balance is one 1 PDEX faucet
+   * drip covers a 0.0128 fee easily; what they cannot do is keep the 1 PDEX the
+   * chain requires an account to hold. They were told a lie about fees at the
+   * most valuable moment in the funnel (Ybug #3, iOS).
+   *
+   * The reason is computed here and the MESSAGE comes from the same module, so
+   * the constraint that actually bound is the one that gets named.
+   */
+  const pdexBlock = useMemo(
+    () =>
+      isPDEX
+        ? depositBlockReason(0, {
+            balance: walletBalance,
+            fee,
+            existential,
+            isFeeAsset: true,
+          })
+        : null,
+    [isPDEX, walletBalance, fee, existential]
+  );
+
   const error = useMemo(
     () =>
       tokenFee?.id && isPDEX
-        ? walletBalance < fee + existential
+        ? pdexBlock?.kind === "below-existential-floor"
         : // null = no on-chain pool for this token, so the fee cannot be
           // quoted (let alone paid) in it - that blocks, it isn't "free".
           swapPrice === null ||
           Number(selectedAssetBalance?.onChainBalance) < swapPrice,
     [
       tokenFee?.id,
-      fee,
+      pdexBlock,
       selectedAssetBalance?.onChainBalance,
       swapPrice,
       isPDEX,
-      walletBalance,
-      existential,
     ]
   );
 
@@ -347,7 +373,14 @@ export const ConfirmTransaction = ({
                 </Dropdown>
                 {!actionLoading && error && (
                   <ErrorMessage className="p-3">
-                    Your balance is not enough to pay the fee.
+                    {/* Name the constraint that actually bound. "Not enough to
+                        pay the fee" was false for the faucet-drip case, which
+                        is the case that hits every new user. */}
+                    {isPDEX && pdexBlock
+                      ? depositBlockMessage(pdexBlock, "PDEX")
+                      : swapPrice === null
+                        ? "This asset has no on-chain pool to pay the fee with. Pay the fee in PDEX instead."
+                        : `Your ${tokenFee?.name} balance cannot cover the fee. Pay the fee in PDEX instead.`}
                   </ErrorMessage>
                 )}
               </div>

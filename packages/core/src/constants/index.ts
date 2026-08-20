@@ -68,9 +68,12 @@ export const ErrorMessages = (existential = "0", minAmount = "0") => ({
 
   CHECK_VALID_AMOUNT: "Use a valid amount instead",
   CHECK_BALANCE: "The amount you entered exceeds your balance",
+  // "at least", and say what to DO, not just what the rule is. This message
+  // greets every new user whose whole balance is one faucet drip (Ybug #3).
   REMAINING_BALANCE:
-    "You need atleast 1 PDEX in your funding account to keep it alive",
-  REMAINING_BALANCE_IF_NOT_PDEX: `You need atleast units of ${existential} an asset in your funding account to keep it alive.`,
+    "Your funding account must keep at least 1 PDEX (plus the network fee) to stay alive. Lower the amount, or add more PDEX first.",
+  // The old string here was garbled: "You need atleast units of X an asset...".
+  REMAINING_BALANCE_IF_NOT_PDEX: `Your funding account must keep at least ${existential} of this asset to stay alive. Lower the amount to leave that behind.`,
   MAX_DIGIT_AFTER_DECIMAL: "Maximum 8 digits are allowed after decimal",
   WHITESPACE_NOT_ALLOWED: "Whitespace not allowed",
   MUST_BE_A_NUMBER: "Must be a number",

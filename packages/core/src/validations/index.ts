@@ -128,6 +128,16 @@ export const depositValidations = (
         ErrorMessages().REMAINING_BALANCE,
         ErrorMessages().REMAINING_BALANCE,
         (value) => {
+          /*
+           * ESTIMATED_FEE (0.02) here versus the REAL quoted fee in the confirm
+           * modal: the form validates before any extrinsic exists to quote, so
+           * it uses the constant. That is safe ONLY while the constant is >= the
+           * real fee (currently ~0.0128) - if fees ever rise past it, this test
+           * will approve amounts the modal then blocks with the existential
+           * message. The shared rule both screens must agree with lives in
+           * helpers/depositCapacity.ts; if you touch this arithmetic, change it
+           * there and use it here.
+           */
           const balanceAfterDeposit =
             chainBalance - Number(value) - ESTIMATED_FEE;
           return !(isPolkadexToken && balanceAfterDeposit < 1);

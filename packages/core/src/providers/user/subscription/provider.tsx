@@ -84,72 +84,84 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
   const onOrderUpdates = useCallback(
     (payload: Order, fromMainAddress?: boolean) => {
       try {
-        // Update OpenOrders Realtime
-        queryClient.setQueryData(
-          fromMainAddress
-            ? QUERY_KEYS.openOrders(mainAddress, true)
-            : QUERY_KEYS.openOrders(tradeAddress),
-          (oldOpenOrders?: Order[]) => {
-            const prevOpenOrders = [...(oldOpenOrders || [])];
+        const openOrdersKey = fromMainAddress
+          ? QUERY_KEYS.openOrders(mainAddress, true)
+          : QUERY_KEYS.openOrders(tradeAddress);
 
-            let updatedOpenOrders: Order[] = [];
+        /*
+         * THE NOTICE IS DECIDED AND DELIVERED OUTSIDE THE CACHE UPDATER.
+         *
+         * It used to live INSIDE the `setQueryData` updater below, which is a
+         * pure function by contract: react-query may call it more than once, may
+         * call it during a render pass, and may discard its result if it decides
+         * the data has not changed. Telling the user something from in there is
+         * a side effect in a place that guarantees none of those things - so a
+         * fill notification could simply never be delivered, and the second
+         * report of "no confirmation once the order completes" survived a fix
+         * that assumed the notice logic was the problem.
+         *
+         * `orderUpdateNotice` itself was already correct and tested. Reading the
+         * previous row with `getQueryData` and emitting the notice here changes
+         * nothing about WHAT is said, only that saying it no longer depends on
+         * react-query choosing to run an updater.
+         */
+        const previousOrder = (
+          queryClient.getQueryData<Order[]>(openOrdersKey) ?? []
+        ).find((order) => order.orderId === payload.orderId);
 
-            const findOrder = prevOpenOrders.find(
-              (order) => order.orderId === payload.orderId
-            );
+        // What to TELL the user is decided in orderUpdateNotice, away from the
+        // cache bookkeeping. The old code gated both fill notices on the order
+        // already being in Open Orders, and an order that fills INSTANTLY never
+        // gets into it. One CLOSED update arrived, found nothing, said nothing,
+        // and the order was absent from Open Orders as well, so every signal on
+        // screen said it had vanished. That was the first report.
+        //
+        // The notification is built from the PAYLOAD, which carries side, type,
+        // quantity and market - everything the message needs. The previous row
+        // is used only to tell a fresh partial fill from a repeat of one already
+        // announced.
+        const notice = orderUpdateNotice(payload, previousOrder);
 
-            // What to TELL the user is decided in orderUpdateNotice, away from
-            // the cache bookkeeping. The old code gated both fill notices on
-            // `findOrder` - the order already being in this list - and an order
-            // that fills INSTANTLY never gets into it. One CLOSED update
-            // arrived, found nothing, said nothing, and the order was absent
-            // from Open Orders as well, so every signal on screen said it had
-            // vanished. That was the report.
-            //
-            // The notification is built from the PAYLOAD, which carries side,
-            // type, quantity and market - everything the message needs.
-            // `findOrder` is now only used to tell a fresh partial fill from a
-            // repeat of one already announced.
-            const notice = orderUpdateNotice(payload, findOrder);
-            if (notice.kind === "cancelled") {
-              onPushNotification(NOTIFICATIONS.cancelOrder(payload));
-            } else if (notice.kind !== "none") {
-              const notf =
-                notice.kind === "filled"
-                  ? NOTIFICATIONS.filledOrder(payload)
-                  : NOTIFICATIONS.partialFilledOrder(payload);
-              onPushNotification(notf);
-              onHandleInfo?.(notf.message, notf.description);
-            }
+        if (notice.kind === "cancelled") {
+          onPushNotification(NOTIFICATIONS.cancelOrder(payload));
+        } else if (notice.kind !== "none") {
+          const notf =
+            notice.kind === "filled"
+              ? NOTIFICATIONS.filledOrder(payload)
+              : NOTIFICATIONS.partialFilledOrder(payload);
+          onPushNotification(notf);
+          onHandleInfo?.(notf.message, notf.description);
+        }
 
-            // The optional fill chime, requested because a trader watching the
-            // order book can miss a toast in the corner. Off unless the user
-            // turned it on; silent in a background tab. Deliberately placed
-            // AFTER the toast so the sound never arrives without the message
-            // that explains it, and it reads the setting on every fill rather
-            // than caching it so a change in another tab takes effect at once.
-            if (
-              shouldPlayFillSound({
-                kind: notice.kind,
-                enabled: isFillSoundEnabled(
-                  getFromStorage(LOCAL_STORAGE_ID.FILL_SOUND)
-                ),
-                documentHidden:
-                  typeof document !== "undefined" && document.hidden,
-              })
-            ) {
-              playFillSound();
-            }
+        // The optional fill chime, requested because a trader watching the order
+        // book can miss a toast in the corner. Off unless the user turned it on;
+        // silent in a background tab. Deliberately placed AFTER the toast so the
+        // sound never arrives without the message that explains it, and it reads
+        // the setting on every fill rather than caching it so a change in another
+        // tab takes effect at once.
+        if (
+          shouldPlayFillSound({
+            kind: notice.kind,
+            enabled: isFillSoundEnabled(
+              getFromStorage(LOCAL_STORAGE_ID.FILL_SOUND)
+            ),
+            documentHidden: typeof document !== "undefined" && document.hidden,
+          })
+        ) {
+          playFillSound();
+        }
 
-            if (payload.status === "OPEN") {
-              updatedOpenOrders = replaceOrPushOrder(prevOpenOrders, payload);
-            } else {
-              // Remove from Open Orders if it is closed
-              updatedOpenOrders = removeOrderFromList(prevOpenOrders, payload);
-            }
-            return updatedOpenOrders;
+        // Update OpenOrders Realtime. PURE from here on: this updater only
+        // rearranges the list.
+        queryClient.setQueryData(openOrdersKey, (oldOpenOrders?: Order[]) => {
+          const prevOpenOrders = [...(oldOpenOrders || [])];
+
+          if (payload.status === "OPEN") {
+            return replaceOrPushOrder(prevOpenOrders, payload);
           }
-        );
+          // Remove from Open Orders if it is closed.
+          return removeOrderFromList(prevOpenOrders, payload);
+        });
 
         // Update OrderHistory Realtime
         queryClient.setQueryData(

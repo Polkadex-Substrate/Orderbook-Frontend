@@ -58,9 +58,45 @@ export const isStaleTradingSelection = ({
 
   const held = signableAddresses ?? [];
 
-  // A null/undefined list is "unknown", not "empty". Only an actual array -
-  // even an empty one - is evidence, and only once `ready`.
+  // A null/undefined list is "unknown", not "empty".
   if (!Array.isArray(signableAddresses)) return false;
+
+  /*
+   * AN EMPTY ARRAY IS NOT EVIDENCE EITHER. This line is here because production
+   * disproved the assumption the rest of this function was built on.
+   *
+   * The original reasoning was: `ready` guarantees the keyring has finished
+   * loading, so an empty list once ready means the user genuinely holds no keys.
+   * A test asserted exactly that. ORDERBOOK-TESTNET-G says otherwise:
+   *
+   *     ready: true
+   *     signableCount: 0
+   *     emptySignableList: true
+   *     hasExtensionAddress: false
+   *
+   * Three events, two users, on /bridge. Note that the EXTENSION address was
+   * missing at the same moment. Both the keyring and the extension being empty
+   * at once is not a user with no accounts - it is a provider that has reported
+   * `isReady` before either finished populating. So `ready` does not mean what
+   * this function needed it to mean, and no amount of care inside this function
+   * could have known that from one render.
+   *
+   * The matching symptom: "keeps asking for connect to trading account, have to
+   * disconnect the wallet and connect it back". A genuinely absent key does not
+   * come back when you reconnect a wallet. A prematurely empty list does.
+   *
+   * So a selection is now dropped only on POSITIVE evidence: we can see keys,
+   * and the remembered one is not among them. With no keys visible we cannot
+   * tell "none" from "not yet", so we leave it alone.
+   *
+   * WHAT THIS COSTS. A user who genuinely holds zero keys keeps a dangling
+   * selection and meets the keyring error at submit instead. That trade was
+   * already stated in this file's original reasoning and it still holds: "a
+   * wrong `true` signs the user out; a wrong `false` costs one clear error
+   * message at submit, which now exists". This makes wrong `true` much rarer at
+   * the price of a slightly more common wrong `false`.
+   */
+  if (held.length === 0) return false;
 
   return !held.includes(selected);
 };
