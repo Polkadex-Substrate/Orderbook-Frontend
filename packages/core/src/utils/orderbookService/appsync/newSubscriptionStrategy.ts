@@ -39,10 +39,10 @@ import {
   SubscriptionCallBack,
 } from "./../interfaces";
 import { convertBookUpdatesToPriceLevels, toNullableNumber } from "./helpers";
+import { parseOrderEvent } from "./orderEventPayload";
 import {
   BalanceUpdateEvent,
   BookUpdateEvent,
-  OrderUpdateEvent,
   CandleStickUpdateEvent,
   TradeEvent,
   TransactionUpdateEvent,
@@ -294,13 +294,37 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((data: any) =>
         this.filterUserEventType(data.data, USER_EVENTS.Order)
       ),
-      map((data: any): Order => {
-        const item = JSON.parse(
-          data.data.websocket_streams.data
-        ) as OrderUpdateEvent;
-        const marketId =
-          item?.pair?.base?.asset + "-" + item?.pair?.quote?.asset;
-        const market = this._marketList.find((item) => item.id === marketId);
+      map((data: any): Order | null => {
+        /*
+         * PARSED BY SHAPE, NOT BY ASSUMPTION. This mapper used to read the
+         * LONG field names (item.status, item.filled_quantity, item.side)
+         * from a payload the engine serialises with ABBREVIATED ones (st, fq,
+         * s - see OrderEvent in Orderbook-Backend appsync_client.rs). Every
+         * field that matters came back undefined.
+         *
+         * Nobody noticed, because the failure's visible half worked: an
+         * undefined status is not "OPEN", so the provider's else-branch
+         * REMOVED filled orders from Open Orders - the right outcome by
+         * accident. Meanwhile orderUpdateNotice matched no branch on
+         * undefined, so no fill toast, no notification and no sound ever
+         * fired. Reported three times as "order completion message is not
+         * coming", and it survived two earlier fixes because the notice logic
+         * and its delivery were both genuinely broken too - just not the root.
+         *
+         * parseOrderEvent accepts both serialisations, because the engine has
+         * already switched once and a parser pinned to the new shape does to
+         * a rollback what the old code did to the upgrade.
+         */
+        const item = parseOrderEvent(
+          JSON.parse(data.data.websocket_streams.data)
+        );
+        if (!item) {
+          console.warn(
+            "[subscribeOrders] dropped an Order event in an unknown shape"
+          );
+          return null;
+        }
+        const market = this._marketList.find((m) => m.id === item.marketId);
         return {
           tradeAddress: item.user,
           // `{} as MarketBase` was a LIE to the compiler: that object has no
@@ -308,20 +332,21 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           // Orders panel threw (ORDERBOOK-TESTNET-6). A structurally complete
           // placeholder is safe to read at any depth and shows a dash rather than
           // inventing a pair. See helpers/placeholderMarket.ts.
-          market: market || (placeholderMarket(marketId) as MarketBase),
-          orderId: item.id?.toString(),
-          price: Number(item.price),
-          averagePrice: item.avg_filled_price,
-          type: item.order_type as OrderType,
-          status: item.status as OrderStatus,
+          market: market || (placeholderMarket(item.marketId) as MarketBase),
+          orderId: item.orderId,
+          price: item.price,
+          averagePrice: item.averagePrice,
+          type: item.type,
+          status: item.status,
           isReverted: false,
-          fee: Number(item.fee),
+          fee: item.fee,
           timestamp: parseTimestampOrEpoch(item.timestamp),
-          side: item.side as OrderSide,
-          filledQuantity: String(item.filled_quantity),
-          quantity: String(item.qty),
+          side: item.side,
+          filledQuantity: item.filledQuantity,
+          quantity: item.quantity,
         };
-      })
+      }),
+      filter((order): order is Order => order !== null)
     );
 
     return observable.subscribe(onUpdate);

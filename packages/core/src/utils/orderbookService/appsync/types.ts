@@ -31,6 +31,14 @@ export type TransactionUpdateEvent = {
   snapshot_id?: number;
   isReverted: boolean | null;
 };
+/**
+ * @deprecated UNUSED, KEPT AS DOCUMENTATION OF A BUG. This is the LONG-name
+ * shape the mapper used to assume, while the engine actually sends the
+ * abbreviated OrderEvent (st, fq, s, ot...). Reading this shape from that
+ * payload made every field undefined, which silently killed all order fill
+ * notifications. Parsing now lives in orderEventPayload.ts, which accepts both
+ * shapes. Do not resume reading this type from the wire.
+ */
 export type OrderUpdateEvent = {
   stid: number;
   client_order_id: string;
