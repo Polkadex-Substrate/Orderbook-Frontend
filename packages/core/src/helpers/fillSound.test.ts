@@ -27,25 +27,33 @@ describe("shouldPlayFillSound - the default", () => {
     }
   });
 
-  it("treats an absent stored setting as off", () => {
-    expect(isFillSoundEnabled(null)).toBe(false);
-    expect(isFillSoundEnabled(undefined)).toBe(false);
-    expect(isFillSoundEnabled("")).toBe(false);
+  it("treats an absent stored setting as ON - the flipped default", () => {
+    /*
+     * THESE ASSERTIONS USED TO SAY false. The feature shipped opt-in, and the
+     * tester who had asked for the sound reported "the ding is still not being
+     * heard": nobody discovers a toggle for a sound they have never heard. The
+     * default is now on, and the person who must find the switch is the one who
+     * wants silence. Background tabs stay silent via documentHidden regardless.
+     */
+    expect(isFillSoundEnabled(null)).toBe(true);
+    expect(isFillSoundEnabled(undefined)).toBe(true);
+    expect(isFillSoundEnabled("")).toBe(true);
   });
 
-  it("treats any value other than the exact string 'true' as off", () => {
-    // Fails closed on a corrupted or half-migrated value, rather than treating
-    // "anything truthy" as consent.
-    for (const stored of ["1", "yes", "TRUE", "on", "false", "{}", " true "]) {
+  it("is off only for an explicit stored 'false'", () => {
+    expect(isFillSoundEnabled("false")).toBe(false);
+  });
+
+  it("stays on for corrupted or half-migrated values", () => {
+    // Failing OPEN now: a garbled value means the user never explicitly said
+    // no, and the cost of a wrong "on" is one chime plus an easy toggle, while
+    // a wrong "off" silently re-creates the reported bug.
+    for (const stored of ["1", "yes", "TRUE", "on", "{}", " true ", "true"]) {
       expect({ stored, on: isFillSoundEnabled(stored) }).toEqual({
         stored,
-        on: false,
+        on: true,
       });
     }
-  });
-
-  it("is on only for the exact string 'true'", () => {
-    expect(isFillSoundEnabled("true")).toBe(true);
   });
 });
 

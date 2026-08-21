@@ -40,9 +40,10 @@ export const FillSoundToggle = () => {
   const onToggle = () => {
     const next = !enabled;
     setEnabled(next);
-    // Stored as the literal string "true"/"false"; the reader only accepts
-    // "true", so anything else - including a value written by an older build -
-    // means off.
+    // Stored as the literal string "true"/"false". The reader now defaults ON
+    // and switches off only for an explicit "false" - the sound shipped opt-in
+    // and the tester who requested it never heard it, because nobody discovers
+    // a toggle for a sound that has never played.
     setToStorage(LOCAL_STORAGE_ID.FILL_SOUND, String(next));
     if (next) playFillSound();
   };

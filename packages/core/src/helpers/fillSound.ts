@@ -66,10 +66,25 @@ export const shouldPlayFillSound = ({
   return kind === "filled" || kind === "partial";
 };
 
-/** Read the setting. Anything other than a stored "true" counts as off. */
+/**
+ * Read the setting. ON unless the user stored an explicit "false".
+ *
+ * THIS DEFAULT WAS FLIPPED, deliberately. It shipped opt-in (`=== "true"`),
+ * and the tester who asked for the sound in the first place reported "the ding
+ * is still not being heard" - because a default-off feature answering a
+ * request for feedback is not an answer. Nobody discovers a toggle for a sound
+ * they have never heard.
+ *
+ * The concerns that argued for opt-in are handled elsewhere and stay handled:
+ * background tabs are silenced by the `documentHidden` rule in
+ * shouldPlayFillSound, cancellations never chime, and the toggle still turns it
+ * off permanently for anyone who dislikes it. What changes is only who has to
+ * find the switch: the person who wants silence, rather than the person who
+ * asked for the sound.
+ */
 export const isFillSoundEnabled = (
   stored: string | null | undefined
-): boolean => stored === "true";
+): boolean => stored !== "false";
 
 /**
  * Play a short two-note chime.
