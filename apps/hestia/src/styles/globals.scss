@@ -78,3 +78,49 @@ body {
     font-size: clamp(16px, calc(12.11px + 0.2315vw), 21px);
   }
 }
+
+/*
+ * Staged reveal for the testnet consent notice.
+ *
+ * CSS, NOT setTimeout, AND THAT IS THE POINT. The reveal was suggested to make
+ * the notice readable one line at a time. Implemented with JS timers it would
+ * make the modal's known failure worse: on a blocked main thread the timers
+ * never fire, so the checkbox and button would never appear at all - where
+ * today they at least exist. Two earlier attempts at this modal failed exactly
+ * that way.
+ *
+ * Every element is rendered on first paint and only its opacity is animated.
+ * Compositor-driven animations keep running while the main thread is blocked,
+ * so a frozen tab now shows the sequence completing and then not responding,
+ * instead of looking identical to a slow reader. Timing lives in
+ * components/ui/revealSchedule.ts.
+ *
+ * `backwards` fill so the element is invisible during its delay rather than
+ * flashing in and out.
+ */
+@keyframes testnet-notice-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.testnet-reveal {
+  animation: testnet-notice-reveal var(--reveal-duration, 320ms) ease-out both;
+}
+
+/*
+ * Anyone who has asked for less motion gets the whole notice at once. A consent
+ * gate must never be gated on an animation the user has opted out of.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .testnet-reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

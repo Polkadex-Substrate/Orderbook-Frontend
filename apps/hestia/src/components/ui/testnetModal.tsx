@@ -10,6 +10,10 @@ import {
   TESTNET_ACK_KEY,
 } from "@/config/network";
 import {
+  consentRevealDelayMs,
+  revealDelayMs,
+} from "@/components/ui/revealSchedule";
+import {
   blockedMessage,
   canProceed,
   shouldShowTestnetNotice,
@@ -179,8 +183,17 @@ export const TestnetModal = () => {
 
         <hr className="border-primary" />
 
+        {/* Each bullet is RENDERED NOW and revealed by CSS animation-delay. No
+            JS timer gates any of this: on a blocked main thread timers never
+            fire, and a reveal driven by them would withhold the checkbox and
+            button entirely. Compositor animations keep running regardless, so
+            a frozen tab shows the sequence finish and then stop responding
+            instead of looking like a slow reader. See revealSchedule.ts. */}
         <ul className="flex flex-col gap-2 text-sm text-primary">
-          <li className="flex gap-2">
+          <li
+            className="testnet-reveal flex gap-2"
+            style={{ animationDelay: `${revealDelayMs(0)}ms` }}
+          >
             <span className="shrink-0">⚠️</span>
             <span>
               All assets and transactions on this network are{" "}
@@ -190,11 +203,17 @@ export const TestnetModal = () => {
               and have no real monetary value.
             </span>
           </li>
-          <li className="flex gap-2">
+          <li
+            className="testnet-reveal flex gap-2"
+            style={{ animationDelay: `${revealDelayMs(1)}ms` }}
+          >
             <span className="shrink-0">🚫</span>
             <span>Do not send real funds to any testnet address.</span>
           </li>
-          <li className="flex gap-2">
+          <li
+            className="testnet-reveal flex gap-2"
+            style={{ animationDelay: `${revealDelayMs(2)}ms` }}
+          >
             <span className="shrink-0">👛</span>
             <span>
               Create a <strong className="text-current">new wallet</strong>{" "}
@@ -203,7 +222,10 @@ export const TestnetModal = () => {
               funds.
             </span>
           </li>
-          <li className="flex gap-2">
+          <li
+            className="testnet-reveal flex gap-2"
+            style={{ animationDelay: `${revealDelayMs(3)}ms` }}
+          >
             <span className="shrink-0">🔬</span>
             <span>Testnet data may be reset at any time without notice.</span>
           </li>
@@ -211,7 +233,10 @@ export const TestnetModal = () => {
 
         <hr className="border-primary" />
 
-        <div className="flex flex-col gap-4">
+        <div
+          className="testnet-reveal flex flex-col gap-4"
+          style={{ animationDelay: `${consentRevealDelayMs()}ms` }}
+        >
           {/* A plain input, not the Radix checkbox. This component's whole
               purpose is to depend on nothing that participates in the layer
               system that broke it. */}
