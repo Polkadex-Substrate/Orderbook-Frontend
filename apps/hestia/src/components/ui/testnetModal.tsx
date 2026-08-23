@@ -109,14 +109,26 @@ export const TestnetModal = () => {
 
   const state = { checked, openedForMs, attempted };
 
-  // Make an unclickable gate visible in Sentry. Being unable to click is not an
-  // exception, so nothing here would ever have been reported otherwise.
+  /*
+   * Make a genuinely BLOCKED gate visible in Sentry. Being unable to click is
+   * not an exception, so nothing here would be reported otherwise.
+   *
+   * `bodyPointerEvents` is now read BEFORE the decision and passed in, because
+   * it IS the decision. It used to be gathered only after `stallReport` had
+   * already said yes on elapsed time alone - which reported six people for
+   * reading carefully, one of them on a demonstrably interactive page. The
+   * field that identifies the bug was being collected as a footnote to a
+   * conclusion already reached. See ORDERBOOK-TESTNET-D and testnetGate.ts.
+   */
   useEffect(() => {
     if (!open) return;
     const report = stallReport(
       state,
       typeof document === "undefined" ? "unknown" : document.readyState,
-      stallReported.current
+      stallReported.current,
+      typeof document === "undefined"
+        ? "unknown"
+        : getComputedStyle(document.body).pointerEvents
     );
     if (!report) return;
     stallReported.current = true;
@@ -125,13 +137,7 @@ export const TestnetModal = () => {
       extra: {
         documentReadyState: report.documentReadyState,
         openedForMs: report.openedForMs,
-        // The field that would have identified this in a day rather than three:
-        // if body pointer-events is "none" while the gate is unacknowledged,
-        // a Radix layer is holding it and this is the freeze, not a slow reader.
-        bodyPointerEvents:
-          typeof document === "undefined"
-            ? "unknown"
-            : getComputedStyle(document.body).pointerEvents,
+        bodyPointerEvents: report.bodyPointerEvents,
       },
     });
   }, [open, checked, openedForMs, attempted]); // eslint-disable-line react-hooks/exhaustive-deps

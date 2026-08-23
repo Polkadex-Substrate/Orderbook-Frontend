@@ -42,6 +42,28 @@
 export const STALL_AFTER_MS = 20_000;
 
 /**
+ * How long before an unacknowledged notice is worth REPORTING.
+ *
+ * Separate from STALL_AFTER_MS, because offering help and filing telemetry are
+ * different decisions and the evidence for them differs.
+ *
+ * WHY THIS EXISTS: ORDERBOOK-TESTNET-D, six events across five users in a week,
+ * every one of them a false positive. Two sampled events settled it:
+ *
+ *     Android, New Delhi   openedForMs 20001   bodyPointerEvents "none"
+ *     Windows, Ukraine     openedForMs 20451   bodyPointerEvents "auto"
+ *
+ * Both fired within half a second of the threshold, and the second had a fully
+ * interactive page. The reporter was measuring READING SPEED. Four warnings and
+ * a checkbox take more than twenty seconds if you actually read them, which is
+ * what we ask people to do.
+ *
+ * Forty-five seconds is past any plausible careful read, and it is a secondary
+ * gate anyway: the report now also requires positive evidence of being blocked.
+ */
+export const REPORT_STALL_AFTER_MS = 45_000;
+
+/**
  * Should the notice be shown at all?
  *
  * @param isTestnet     Whether this deployment is a testnet.
@@ -151,30 +173,58 @@ export const isStalled = (state: GateState): boolean =>
 export const showEscapeHatch = (state: GateState): boolean => isStalled(state);
 
 /**
- * A one-shot diagnostic for a stall, or null if there is nothing to report.
+ * Is something holding pointer events off the page?
  *
- * Reported ONCE per stall, not per render, and only when the notice is genuinely
- * blocking someone. The point is to make an unclickable checkbox visible in
- * Sentry, since it produces no exception of its own.
+ * `document.body` carrying `pointer-events: none` while a consent gate is open
+ * is the fingerprint of the original bug: a Radix dismissable layer switches it
+ * off and only the layer it considers topmost gets it back. That is EVIDENCE of
+ * a blocked gate. Elapsed time is not - it is evidence of reading.
+ */
+export const isBlockedByLayer = (
+  bodyPointerEvents: string | null | undefined
+): boolean => bodyPointerEvents === "none";
+
+/**
+ * A one-shot diagnostic for a gate that is genuinely blocked, or null.
  *
- * Carries no user identifiers - only whether the page had finished loading, which
- * is the single most useful fact for distinguishing "main thread was busy" from
- * "something is covering the modal".
+ * REWRITTEN AFTER ORDERBOOK-TESTNET-D TURNED OUT TO BE ALL FALSE POSITIVES.
+ * The old version fired on elapsed time alone, so it reported six people for
+ * reading carefully - including one whose page was demonstrably interactive
+ * (`bodyPointerEvents: "auto"`). An instrument that cries wolf teaches everyone
+ * to skim the issue list, which is the same harm the Sentry ignore-list exists
+ * to prevent. It was worse than no instrument.
+ *
+ * Two conditions now, and BOTH are required:
+ *   - past REPORT_STALL_AFTER_MS, well beyond a careful read;
+ *   - positive evidence of being blocked, not merely an absence of clicks.
+ *
+ * THE MESSAGE TEXT CHANGED DELIBERATELY. Sentry groups by message, so this
+ * opens a new issue rather than adding to a group full of noise - and anything
+ * arriving in the new one is real. Resolve TESTNET-D; do not reuse it.
+ *
+ * Still carries no user identifiers: how long, whether the document had
+ * finished loading, and what body's pointer-events said.
  */
 export const stallReport = (
   state: GateState,
   documentReadyState: string,
-  alreadyReported: boolean
+  alreadyReported: boolean,
+  bodyPointerEvents: string | null | undefined
 ): {
   message: string;
   documentReadyState: string;
   openedForMs: number;
+  bodyPointerEvents: string;
 } | null => {
   if (alreadyReported) return null;
-  if (!isStalled(state)) return null;
+  if (state.checked) return null;
+  if (state.openedForMs < REPORT_STALL_AFTER_MS) return null;
+  // The load-bearing line. Without it this reports readers.
+  if (!isBlockedByLayer(bodyPointerEvents)) return null;
   return {
-    message: "Testnet notice unacknowledged after the stall threshold",
+    message: "Testnet notice blocked: body pointer-events is none",
     documentReadyState,
     openedForMs: state.openedForMs,
+    bodyPointerEvents: String(bodyPointerEvents),
   };
 };

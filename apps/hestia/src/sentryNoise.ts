@@ -25,6 +25,11 @@ export const SENTRY_IGNORED_ERRORS: (string | RegExp)[] = [
   // ── User declined, in the various wordings the wallet stack produces ──
   // polkadot-js / Talisman / SubWallet surface a bare "Rejected".
   /^Rejected$/,
+  // ORDERBOOK-TESTNET-J. `/^Rejected$/` is ANCHORED, so it never matched this
+  // longer wording and the issue accrued for days looking like a defect. A
+  // lesson about anchored patterns: they are correct and they are narrow, so
+  // each new phrasing has to be added deliberately.
+  "Rejected by user",
   // wagmi/viem + WalletConnect wordings.
   "User rejected the request",
   "User rejected request",
@@ -47,6 +52,18 @@ export const SENTRY_IGNORED_ERRORS: (string | RegExp)[] = [
   "MetaMask extension not found",
   "Failed to connect to MetaMask",
 
+  // ── Wallet installed but not set up ──
+  // ORDERBOOK-TESTNET-M, 6 events across / and /trading. Talisman is installed
+  // and has never been through its own onboarding, so it refuses to answer. The
+  // same category as "not installed": a state of the user's wallet, which no
+  // change to this app can alter.
+  //
+  // What SHOULD change is the UI - offering a wallet that cannot respond, then
+  // saying nothing useful, is a UX gap. A Sentry issue does not fix it, and
+  // leaving it in the error stream buries the events that are ours.
+  "has not been configured yet",
+  "Please continue with onboarding",
+
   // ── Browser/extension noise no app change can fix ──
   // Chrome extensions tearing down a port during navigation.
   "Extension context invalidated",
@@ -55,6 +72,16 @@ export const SENTRY_IGNORED_ERRORS: (string | RegExp)[] = [
   "Non-Error promise rejection captured",
   // ResizeObserver's benign loop warning, reported as an error by some browsers.
   /ResizeObserver loop/,
+  // ORDERBOOK-TESTNET-K: "Cannot assign to read only property 'tron' of object
+  // '#<Window>'". Two crypto extensions both claiming `window.tron`; the second
+  // one loses because the first defined it non-writable. Entirely between the
+  // two extensions - this app never touches `window.tron` - and it fires on
+  // every page load for anyone with that pair installed.
+  //
+  // Scoped to the property collision on Window rather than a blanket
+  // "read only property", so a genuine frozen-object bug in our own code would
+  // still be reported.
+  /Cannot assign to read only property '\w+' of object '#<Window>'/,
 ];
 
 /**

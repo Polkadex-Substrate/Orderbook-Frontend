@@ -106,6 +106,58 @@ describe("KEEPS real defects - the over-match guard", () => {
   });
 });
 
+describe("the three classes added 2026-08-22", () => {
+  it("drops 'Rejected by user' - which the anchored pattern missed", () => {
+    // ORDERBOOK-TESTNET-J accrued for days because /^Rejected$/ is anchored and
+    // this wording is longer. Anchored patterns are correct AND narrow.
+    expect(isIgnoredSentryMessage("Error: Rejected by user")).toBe(true);
+    expect(isIgnoredSentryMessage("Rejected by user")).toBe(true);
+  });
+
+  it("drops a wallet that exists but was never set up", () => {
+    // ORDERBOOK-TESTNET-M, 6 events. The user's Talisman has not completed its
+    // own onboarding; nothing in this app can change that.
+    expect(
+      isIgnoredSentryMessage(
+        "Error: Talisman extension has not been configured yet. Please continue with onboarding."
+      )
+    ).toBe(true);
+  });
+
+  it("drops two extensions fighting over the same window property", () => {
+    // ORDERBOOK-TESTNET-K. This app never touches window.tron.
+    expect(
+      isIgnoredSentryMessage(
+        "TypeError: Cannot assign to read only property 'tron' of object '#<Window>'"
+      )
+    ).toBe(true);
+    // Any injected global, same collision.
+    expect(
+      isIgnoredSentryMessage(
+        "TypeError: Cannot assign to read only property 'ethereum' of object '#<Window>'"
+      )
+    ).toBe(true);
+  });
+
+  it("still reports a read-only assignment in OUR objects", () => {
+    // The pattern is scoped to Window on purpose: a frozen-object bug in app
+    // code is a real defect and must stay visible.
+    expect(
+      isIgnoredSentryMessage(
+        "TypeError: Cannot assign to read only property 'status' of object '#<Order>'"
+      )
+    ).toBe(false);
+  });
+
+  it("does not drop a configuration failure of OURS that mentions configured", () => {
+    // "has not been configured yet" is broad enough to be worth a guard: an
+    // app-side config error must not be swallowed by a wallet-shaped pattern.
+    expect(isIgnoredSentryMessage("The RPC endpoint is not configured")).toBe(
+      false
+    );
+  });
+});
+
 describe("input handling", () => {
   it("treats absent messages as not-ignored", () => {
     // An event with no message still deserves to be seen.

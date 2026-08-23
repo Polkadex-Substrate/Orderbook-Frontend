@@ -1,8 +1,10 @@
 import {
   GateState,
+  REPORT_STALL_AFTER_MS,
   STALL_AFTER_MS,
   blockedMessage,
   canProceed,
+  isBlockedByLayer,
   isStalled,
   shouldDisableResizeHandles,
   shouldShowTestnetNotice,
@@ -95,64 +97,153 @@ describe("the reported dead end: no feedback, no way out", () => {
   });
 });
 
-describe("stallReport: making a non-error visible to Sentry", () => {
-  it("reports once a stall is reached", () => {
+describe("stallReport: only a gate that is genuinely blocked", () => {
+  /*
+   * REWRITTEN. ORDERBOOK-TESTNET-D collected six events across five users and
+   * every one was a false positive: the report fired on elapsed time alone, so
+   * it reported people for reading. Two sampled events proved it -
+   *
+   *     Android  openedForMs 20001  bodyPointerEvents "none"
+   *     Windows  openedForMs 20451  bodyPointerEvents "auto"
+   *
+   * - the second on a demonstrably interactive page. An instrument that cries
+   * wolf is worse than no instrument, because it teaches everyone to skim.
+   *
+   * Two conditions are now required, and the tests below are organised around
+   * proving that NEITHER alone is enough.
+   */
+  const BLOCKED = "none";
+  const FINE = "auto";
+  const LONG = REPORT_STALL_AFTER_MS;
+
+  it("reports when time AND evidence both say blocked", () => {
     const r = stallReport(
-      state({ openedForMs: STALL_AFTER_MS }),
-      "loading",
-      false
+      state({ openedForMs: LONG }),
+      "complete",
+      false,
+      BLOCKED
     );
     expect(r).not.toBeNull();
-    expect(r?.documentReadyState).toBe("loading");
-    expect(r?.openedForMs).toBe(STALL_AFTER_MS);
+    expect(r?.openedForMs).toBe(LONG);
+    expect(r?.bodyPointerEvents).toBe(BLOCKED);
   });
 
-  it("reports at most once per stall, not once per render", () => {
-    // A modal open for a minute re-renders many times. Without this, one stuck
-    // user becomes dozens of events, which is how a real signal gets ignored.
+  it("stays silent for a slow READER - the entire false-positive class", () => {
+    // The Windows event from the issue: past the old threshold, page fine.
     expect(
-      stallReport(state({ openedForMs: STALL_AFTER_MS }), "loading", true)
+      stallReport(state({ openedForMs: LONG }), "complete", false, FINE)
+    ).toBeNull();
+    // And far past it. Time alone never triggers a report, at any duration.
+    expect(
+      stallReport(state({ openedForMs: LONG * 100 }), "complete", false, FINE)
     ).toBeNull();
   });
 
-  it("stays silent when nobody is stuck", () => {
-    expect(stallReport(state(), "complete", false)).toBeNull();
+  it("stays silent on evidence alone, before the threshold", () => {
+    // Body pointer-events is legitimately "none" for a moment while any Radix
+    // layer opens. Reporting immediately would swap one false positive for
+    // another.
+    expect(
+      stallReport(state({ openedForMs: 500 }), "complete", false, BLOCKED)
+    ).toBeNull();
+  });
+
+  it("does not fire at the OLD threshold, which is now only for the escape hatch", () => {
+    // The two thresholds are deliberately different. Help arrives at 20s; a
+    // report needs much longer, because help is cheap and a false report is not.
+    expect(STALL_AFTER_MS).toBeLessThan(REPORT_STALL_AFTER_MS);
     expect(
       stallReport(
-        state({ checked: true, openedForMs: STALL_AFTER_MS }),
+        state({ openedForMs: STALL_AFTER_MS }),
         "complete",
-        false
+        false,
+        BLOCKED
       )
     ).toBeNull();
   });
 
-  it("carries readyState, which is the fact that discriminates the causes", () => {
-    // "loading" points at a busy main thread; "complete" points at something
-    // covering the modal. Without this the report says only "someone was stuck".
+  it("reports at most once, not once per render", () => {
+    // A modal open for a minute re-renders many times. One stuck user must not
+    // become dozens of events.
+    expect(
+      stallReport(state({ openedForMs: LONG }), "complete", true, BLOCKED)
+    ).toBeNull();
+  });
+
+  it("stays silent once the user has ticked", () => {
+    expect(
+      stallReport(
+        state({ checked: true, openedForMs: LONG }),
+        "complete",
+        false,
+        BLOCKED
+      )
+    ).toBeNull();
+  });
+
+  it("survives a missing pointer-events value without reporting", () => {
+    // Server render, or a browser that gives nothing back. Absence of evidence
+    // is not evidence.
+    for (const value of [null, undefined, "", "unknown"]) {
+      expect(
+        stallReport(state({ openedForMs: LONG }), "complete", false, value)
+      ).toBeNull();
+    }
+  });
+
+  it("carries readyState, which discriminates the remaining causes", () => {
     const busy = stallReport(
-      state({ openedForMs: STALL_AFTER_MS }),
+      state({ openedForMs: LONG }),
       "loading",
-      false
+      false,
+      BLOCKED
     );
     const idle = stallReport(
-      state({ openedForMs: STALL_AFTER_MS }),
+      state({ openedForMs: LONG }),
       "complete",
-      false
+      false,
+      BLOCKED
     );
     expect(busy?.documentReadyState).not.toBe(idle?.documentReadyState);
   });
 
   it("carries no user identifiers", () => {
     const r = stallReport(
-      state({ openedForMs: STALL_AFTER_MS }),
+      state({ openedForMs: LONG }),
       "loading",
-      false
+      false,
+      BLOCKED
     );
     expect(Object.keys(r ?? {}).sort()).toEqual([
+      "bodyPointerEvents",
       "documentReadyState",
       "message",
       "openedForMs",
     ]);
+  });
+
+  it("uses a NEW message, so the noisy issue is not reopened", () => {
+    // Sentry groups by message. Reusing the old text would drop real events
+    // into a group full of false positives that everyone has learned to ignore.
+    const r = stallReport(
+      state({ openedForMs: LONG }),
+      "complete",
+      false,
+      BLOCKED
+    );
+    expect(r?.message).not.toContain(
+      "unacknowledged after the stall threshold"
+    );
+    expect(r?.message).toContain("pointer-events");
+  });
+});
+
+describe("isBlockedByLayer", () => {
+  it("is true only for an explicit none", () => {
+    expect(isBlockedByLayer("none")).toBe(true);
+    for (const v of ["auto", "all", "", null, undefined, "NONE"]) {
+      expect(isBlockedByLayer(v)).toBe(false);
+    }
   });
 });
 
