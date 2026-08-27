@@ -58,6 +58,10 @@ import { useNativeApi } from "../../public/nativeApi";
 import { orderUpdateNotice } from "./orderUpdateNotice";
 import { Provider } from "./context";
 import * as T from "./types";
+import {
+  createNoticeDedupeStore,
+  shouldAnnounceOrderState,
+} from "./noticeDedupe";
 import { useLatest } from "./useLatest";
 
 export const SubscriptionProvider: T.SubscriptionComponent = ({
@@ -65,6 +69,14 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
   marketId,
 }) => {
   const queryClient = useQueryClient();
+  /*
+   * One announcement per order STATE. The engine publishes every order event to
+   * both the trade-address and main-address channels, and both subscriptions
+   * call onOrderUpdates - so without this, every fill produced two identical
+   * toasts (Bug 9). A ref, not state: identity must survive re-renders and its
+   * mutation must not cause them.
+   */
+  const noticeDedupe = useRef(createNoticeDedupeStore());
   const path = usePathname();
   const { onHandleError, onHandleInfo, onPushNotification } =
     useSettingsProvider();
@@ -120,7 +132,9 @@ export const SubscriptionProvider: T.SubscriptionComponent = ({
         // quantity and market - everything the message needs. The previous row
         // is used only to tell a fresh partial fill from a repeat of one already
         // announced.
-        const notice = orderUpdateNotice(payload, previousOrder);
+        const notice = shouldAnnounceOrderState(noticeDedupe.current, payload)
+          ? orderUpdateNotice(payload, previousOrder)
+          : ({ kind: "none", reason: "duplicate delivery" } as const);
 
         if (notice.kind === "cancelled") {
           onPushNotification(NOTIFICATIONS.cancelOrder(payload));

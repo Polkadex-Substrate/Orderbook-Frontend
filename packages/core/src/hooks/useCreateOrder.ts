@@ -1,3 +1,4 @@
+import { signRawOrThrow } from "@orderbook/core/helpers/rawSigningPayload";
 import { useMutation } from "@tanstack/react-query";
 import { useUserAccounts } from "@aksumite/react-providers";
 import {
@@ -71,10 +72,14 @@ export const useCreateOrder = () => {
       if (isSignedByExtension) {
         const signer = getSigner(mainAddress);
         if (!signer) throw new Error("No signer for main account found");
-        const result = await signer.signRaw({
-          address: mainAddress,
-          data: JSON.stringify(signingPayload),
-        });
+        // rawSignerPayload, not a literal: the `type: "bytes"` field is
+        // required and was missing here, which made EVERY order fail on
+        // Enkrypt with "type is not bytes: signer_signRaw".
+        const result = await signRawOrThrow(
+          signer,
+          mainAddress,
+          JSON.stringify(signingPayload)
+        );
         signature = { Sr25519: result.signature.slice(2) };
       } else {
         // `wallet.getPair` THROWS when the pair is absent - polkadot's keyring

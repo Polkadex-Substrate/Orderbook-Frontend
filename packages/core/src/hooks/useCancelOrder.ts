@@ -1,3 +1,4 @@
+import { signRawOrThrow } from "@orderbook/core/helpers/rawSigningPayload";
 import { useMutation } from "@tanstack/react-query";
 import { useUserAccounts } from "@aksumite/react-providers";
 import {
@@ -46,10 +47,11 @@ export const useCancelOrder = () => {
       if (isSignedByExtension) {
         const signer = getSigner(mainAddress);
         if (!signer) throw new Error("No signer for main account found");
-        const result = await signer.signRaw({
-          address: mainAddress,
-          data: orderId.slice(2),
-        });
+        const result = await signRawOrThrow(
+          signer,
+          mainAddress,
+          orderId.slice(2)
+        );
         signature = { Sr25519: result?.signature.slice(2) };
       } else {
         if (!isValidAddress(tradeAddress))

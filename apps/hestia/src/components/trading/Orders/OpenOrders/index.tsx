@@ -20,6 +20,7 @@ import { useWindowSize } from "usehooks-ts";
 import { Ifilters } from "@orderbook/core/providers/types";
 import { tryUnlockTradeAccount } from "@orderbook/core/helpers";
 import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
+import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { Order } from "@orderbook/core/utils/orderbookService/types";
 
 import { Loading } from "../loading";
@@ -43,6 +44,7 @@ export const OpenOrdersTable = ({
   height: number;
 }) => {
   const { mutateAsync: cancelOrder } = useCancelOrder();
+  const { onHandleInfo } = useSettingsProvider();
   const { selectedTradingAccount } = useConnectWalletProvider();
   const { isLoading, openOrders, isError } = useOpenOrders(filters);
   const { mutateAsync: onCancelAllOrders } = useCancelAllOrders();
@@ -56,11 +58,36 @@ export const OpenOrdersTable = ({
   const [responsiveData, setResponsiveData] = useState<Order | null>(null);
   const responsiveView = useMemo(() => width < 500 || width <= 715, [width]);
   const markets = useMemo(() => openOrders.map((e) => e.market), [openOrders]);
+  /*
+   * BUG 10: "cancel does nothing - no toast, no error, no wallet popup,
+   * indefinitely". Two defects in this function, and both had to hold at once:
+   *
+   * 1. THE LOCKED BRANCH WAS SILENT. A keyring pair reloads LOCKED whenever the
+   *    accounts provider re-initialises mid-session, and the empty-password
+   *    auto-unlock only works for pairs that were never password-protected. So
+   *    a passworded account flips to locked at some point in the session -
+   *    "cancel worked earlier, then stopped" - and every cancel after that
+   *    routed here, said nothing, and requested nothing.
+   *
+   * 2. THE UNLOCK MODAL OPENED INSIDE A CLOSING RADIX LAYER. "Yes cancel" lives
+   *    in a PopConfirm; its dismissal tears down a dismissable layer in the
+   *    same gesture that setShowPassword(true) opens a Radix Modal. When that
+   *    race is lost the modal never appears, and the user sees exactly the
+   *    report: confirm closes, nothing happens. Hence the toast FIRST - the
+   *    user is told what is needed even if the modal loses - and the open
+   *    deferred one macrotask so the teardown completes before the modal
+   *    mounts. Same layer bookkeeping that broke the testnet notice; see
+   *    UX-LEARNINGS 7.4.
+   */
   const onCancelOrder = async (payload: CancelOrderArgs | null) => {
     if (!payload) return;
     if (selectedTradingAccount?.account?.isLocked) {
-      setShowPassword(true);
+      onHandleInfo?.(
+        "Your trading account is locked",
+        "Enter your password to cancel the order."
+      );
       setOrderPayload(payload);
+      setTimeout(() => setShowPassword(true), 0);
     } else {
       await cancelOrder(payload);
       setOrderPayload(null);

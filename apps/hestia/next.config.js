@@ -28,6 +28,79 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   // App Router treats "_offline" as a private folder and never routes it, so the
   // documented default name silently produces nothing. See src/app/~offline.
   fallbacks: { document: "/~offline" },
+
+  /*
+   * DOCUMENTS ARE NEVER SERVED FROM CACHE WHILE ONLINE. This overrides the
+   * plugin's three document caches, and it is the fix for the recurring
+   * "Page Unresponsive" freeze.
+   *
+   * THE MECHANISM, FINALLY. The default caches documents with NetworkFirst,
+   * networkTimeoutSeconds: 10 and a 24-HOUR expiry. So on any load where the
+   * server takes more than ten seconds - and the freezes always correlated with
+   * slow loads - the service worker silently serves YESTERDAY'S HTML from
+   * cache. That HTML references its own build's chunks, which are cached
+   * immutably, so AN ENTIRE OLD BUILD EXECUTES: including builds that still
+   * contained the genuine main-thread bugs fixed since (the error-boundary
+   * render loop, the decimal formatter's unbounded loop, the unscoped wallet
+   * stack). Every "fixed, then returned" cycle of the freeze was this - the fix
+   * was live, and the service worker occasionally time-travelled the user back
+   * to a build from before it.
+   *
+   * The observation that cracked it: a bookmarked shortcut froze while
+   * incognito was always fine. Incognito runs no service worker, so it always
+   * gets the current build. It also explains Sentry still receiving events
+   * from PRE-HYPHEN URLs (/trading/PDEXUSDT) days after that build was
+   * replaced, which otherwise made no sense.
+   *
+   * NetworkOnly means: online users always get the deployed build, however
+   * slow the server is - ten seconds of spinner is strictly better than
+   * yesterday's bugs - and OFFLINE users get the ~offline fallback page, which
+   * still works because fallbacks apply when the handler fails. Assets keep
+   * their default caching: chunk filenames are content-hashed, so a cached
+   * chunk can never be wrong, only orphaned.
+   *
+   * `extendDefaultRuntimeCaching` keeps every other default entry; entries
+   * here REPLACE defaults that share a cacheName.
+   */
+  extendDefaultRuntimeCaching: true,
+  workboxOptions: {
+    runtimeCaching: [
+      {
+        urlPattern: ({ request, url: { pathname }, sameOrigin }) =>
+          request.headers.get("RSC") === "1" &&
+          request.headers.get("Next-Router-Prefetch") === "1" &&
+          sameOrigin &&
+          !pathname.startsWith("/api/"),
+        handler: "NetworkOnly",
+        options: { cacheName: "pages-rsc-prefetch" },
+      },
+      {
+        urlPattern: ({ request, url: { pathname }, sameOrigin }) =>
+          request.headers.get("RSC") === "1" &&
+          sameOrigin &&
+          !pathname.startsWith("/api/"),
+        handler: "NetworkOnly",
+        options: { cacheName: "pages-rsc" },
+      },
+      {
+        /*
+         * NAVIGATIONS ONLY, deliberately narrower than the default 'pages'
+         * pattern (which was any same-origin non-API request). Custom entries
+         * are placed BEFORE the default asset caches by
+         * extendDefaultRuntimeCaching, so a broad pattern here would swallow
+         * script/style/image requests before the asset entries could cache
+         * them. `mode === "navigate"` is exactly "the browser is loading a
+         * document", which is the only thing that must never come from cache.
+         */
+        urlPattern: ({ request, url: { pathname }, sameOrigin }) =>
+          request.mode === "navigate" &&
+          sameOrigin &&
+          !pathname.startsWith("/api/"),
+        handler: "NetworkOnly",
+        options: { cacheName: "pages" },
+      },
+    ],
+  },
 });
 
 const nextConfig = {

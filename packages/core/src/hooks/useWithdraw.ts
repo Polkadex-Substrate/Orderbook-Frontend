@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { signRawOrThrow } from "@orderbook/core/helpers/rawSigningPayload";
 import { useNativeApi } from "@orderbook/core/providers/public//nativeApi";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
 import { useProfile } from "@orderbook/core/providers/user/profile";
@@ -52,10 +53,11 @@ export const useWithdraw = () => {
         const signer = getSigner(mainAddress);
         if (!signer) throw new Error("No signer for main account found");
 
-        const result = await signer.signRaw({
-          data: JSON.stringify(signingPayload),
-          address: mainAddress,
-        });
+        const result = await signRawOrThrow(
+          signer,
+          mainAddress,
+          JSON.stringify(signingPayload)
+        );
         signature = { Sr25519: result.signature.slice(2) };
       } else {
         if (!isValidAddress(tradeAddress))

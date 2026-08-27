@@ -57,7 +57,18 @@ import { FilteredAssetProps, SwitchType } from "@/hooks";
 import { UnlockAccount } from "@/components/ui/ReadyToUse/unlockAccount";
 import { ConfirmTransaction } from "@/components/ui/ConnectWallet/confirmTransaction";
 import { getChainFromTicker } from "@/config/assetChain";
-const initialValues = { amount: 0.0 };
+/*
+ * EMPTY, not 0.
+ *
+ * `amount: 0.0` renders a literal "0" in the field, so typing "60" produces
+ * "060" - the value is appended to the zero rather than replacing it, and the
+ * only workaround is to select-all first. Reported from the testnet.
+ *
+ * An empty string is also the honest initial state: the user has not entered an
+ * amount, and 0 is a value they did not choose. The validation schema already
+ * treats empty as required-and-missing, so nothing downstream needs to change.
+ */
+const initialValues = { amount: "" };
 export const Form = ({
   isBalanceFetching,
   refetch,
@@ -128,7 +139,7 @@ export const Form = ({
       const trimmedBalance = +trimFloat({ value: balance });
       const formattedBalance = parseScientific(trimmedBalance.toString());
       setFieldValue("amount", formattedBalance);
-    } else setFieldValue("amount", 0);
+    } else setFieldValue("amount", "");
   };
 
   const onChangeTradingMax = () => {
@@ -171,27 +182,36 @@ export const Form = ({
     ]
   );
 
-  const onSubmitWithdraw = async ({ amount }: { amount: number }) => {
+  /*
+   * `amount` arrives as a STRING now that the field starts empty rather than at
+   * 0 - see initialValues. Coerced once, at the boundary, rather than letting a
+   * string reach an API that expects a number.
+   */
+  const onSubmitWithdraw = async ({ amount }: { amount: string | number }) => {
     if (selectedTradingAccount?.account?.isLocked) setShowPassword(true);
     else {
       const asset = isAssetPDEX(selectedAsset?.id) ? "PDEX" : selectedAsset?.id;
       if (!asset) return;
       try {
-        await onFetchWithdraws({ asset, amount });
+        // The typed STRING, not Number(amount): the withdraw payload's amount
+        // is signed and verified as a string byte-for-byte, and a Number round
+        // trip turns small amounts into scientific notation the backend
+        // rejects. See createWithdrawHelpers.ts.
+        await onFetchWithdraws({ asset, amount: String(amount).trim() });
       } finally {
         resetForm({ values: initialValues });
       }
     }
   };
 
-  const onSubmitDeposit = async ({ amount }: { amount: number }) => {
+  const onSubmitDeposit = async ({ amount }: { amount: string | number }) => {
     if (!hasTokenFee || (hasTokenFee && !openFeeModal)) onOpenFeeModal();
     else {
       if (!selectedWallet) return;
       try {
         await onFetchDeposit({
           asset,
-          amount,
+          amount: Number(amount),
           account: selectedWallet,
           tokenFeeId: tokenFee?.id,
         });
@@ -202,7 +222,7 @@ export const Form = ({
     }
   };
 
-  const onSubmitTransfer = async ({ amount }: { amount: number }) => {
+  const onSubmitTransfer = async ({ amount }: { amount: string | number }) => {
     if (!selectedWallet || !selectedExtensionAccount?.address) return;
     try {
       const destAddress = selectedExtensionAccount?.address;
@@ -214,7 +234,7 @@ export const Form = ({
       await mutateAsync({
         asset,
         dest: destAddress,
-        amount: amount.toString(),
+        amount: String(amount),
         account: selectedWallet,
         ticker: selectedAsset?.ticker,
       });

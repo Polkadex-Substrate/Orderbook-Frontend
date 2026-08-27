@@ -53,8 +53,16 @@ export const PlaceOrder = ({ market, isBuy, isResponsive }: Props) => {
         <Tabs.List className="px-2 py-2.5">
           <Tabs.Trigger value="limit">Limit</Tabs.Trigger>
           <Tabs.Trigger value="market">Market</Tabs.Trigger>
+          {/* Deliberately labelled, not hidden. Stop Limit does not exist
+              anywhere in the stack yet - not in the chain's OrderType enum, not
+              in the engine's matching, not in the API - so this tab cannot be
+              enabled by frontend work. A normal-looking but dead tab was
+              reported as a bug (Bug 5); a labelled one is a roadmap item. */}
           <Tabs.Trigger value="stopLimit" disabled>
             Stop Limit
+            <span className="ml-1 rounded-full border border-primary px-1.5 py-0.5 text-[10px] leading-none text-primary">
+              Soon
+            </span>
           </Tabs.Trigger>
         </Tabs.List>
       </div>

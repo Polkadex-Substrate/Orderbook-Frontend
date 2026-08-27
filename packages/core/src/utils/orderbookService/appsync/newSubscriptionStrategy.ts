@@ -142,18 +142,42 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
         const eventData = JSON.parse(
           data.data.websocket_streams.data
         ) as BalanceUpdateEvent;
-        const asset = this._assetList.find(
-          (item) => item.id === eventData.asset.asset
-        );
+        const assetId = eventData?.asset?.asset;
+        const asset = this._assetList.find((item) => item.id === assetId);
         if (!asset) {
-          throw new Error(`Asset ${eventData.asset.asset} not found`);
+          /*
+           * THIS USED TO `throw`, AND A THROW HERE IS FATAL TO THE STREAM.
+           *
+           * Inside an RxJS `map`, an exception terminates the observable. So one
+           * balance event for an asset missing from the list did not merely skip
+           * that update - it KILLED THE BALANCE SUBSCRIPTION for the rest of the
+           * session. Every later balance change for every asset was lost, and
+           * the only cure was a page reload.
+           *
+           * That is the exact shape of "balances did not live-update until I
+           * reloaded", and it is a defect whether or not it explains the report:
+           * an unknown asset is a reason to skip one event, never to stop
+           * listening. Same rule as the order stream - drop the payload, say so
+           * once, keep the socket.
+           *
+           * The producer's own serialiser sends `{"asset":"PDEX"}` for the
+           * native token and `{"asset":"<numeric id>"}` otherwise (see
+           * AssetId's custom Serialize impl in polkadex-node), so a miss here
+           * means the asset list is incomplete rather than the shape being
+           * wrong.
+           */
+          console.warn(
+            `[subscribeBalances] no asset "${assetId}" in the asset list; dropping this balance update`
+          );
+          return null;
         }
         return {
           asset,
           free: Number(eventData.free),
           reserved: Number(eventData.reserved),
         };
-      })
+      }),
+      filter((balance): balance is NonNullable<typeof balance> => !!balance)
     );
 
     return observable.subscribe(cb);
@@ -195,15 +219,19 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((data: any) =>
         this.filterUserEventType(data.data, USER_EVENTS.TradeFormat)
       ),
-      map((data: any): Trade => {
+      map((data: any): Trade | null => {
         const eventData = JSON.parse(
           data.data.websocket_streams.data
         ) as UserTradeEvent;
         const market = this._marketList.find((x) => x.id === eventData?.m);
         if (!market) {
-          throw new Error(
-            `[${this.constructor.name}:subscribeUserTrades] cannot find market`
+          // A throw inside `map` terminates the observable, so an unknown
+          // market would end the user's trade-history stream for the session.
+          // One event is not worth the socket. See subscribeBalances.
+          console.warn(
+            `[subscribeUserTrades] no market "${eventData?.m}"; dropping this trade`
           );
+          return null;
         }
         return {
           market,
@@ -216,7 +244,8 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           timestamp: parseTimestampOrEpoch(eventData.t),
           side: eventData.s,
         };
-      })
+      }),
+      filter((trade): trade is NonNullable<typeof trade> => !!trade)
     );
 
     return observable.subscribe(cb);
@@ -398,7 +427,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((data: any) =>
         this.filterUserEventType(data.data, USER_EVENTS.SetTransaction)
       ),
-      map((data: any): Transaction => {
+      map((data: any): Transaction | null => {
         const item = JSON.parse(
           data.data.websocket_streams.data
         ) as TransactionUpdateEvent;
@@ -408,7 +437,12 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
 
         const asset = this._assetList.find((a) => a.id === itemAssetId);
         if (!asset) {
-          throw new Error(`Asset ${itemAssetId} not found`);
+          // Same rule: skip the event, keep the stream. A throw here ended the
+          // deposit/withdraw transaction feed until the page was reloaded.
+          console.warn(
+            `[subscribeTransactions] no asset "${itemAssetId}"; dropping this transaction`
+          );
+          return null;
         }
         return {
           stid: Number(item.stid),
@@ -421,7 +455,8 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
           txType: item.txn_type === "DEPOSIT" ? "DEPOSIT" : "WITHDRAW",
           asset,
         };
-      })
+      }),
+      filter((tx): tx is NonNullable<typeof tx> => !!tx)
     );
 
     return observable.subscribe(onUpdate);
