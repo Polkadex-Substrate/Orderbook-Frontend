@@ -1,4 +1,5 @@
 import { signRawOrThrow } from "@orderbook/core/helpers/rawSigningPayload";
+import { errorMessage } from "@orderbook/core/helpers/errorMessage";
 import { useMutation } from "@tanstack/react-query";
 import { useUserAccounts } from "@aksumite/react-providers";
 import {
@@ -103,7 +104,12 @@ export const useCreateOrder = () => {
 
       return args;
     },
-    onError: (error: Error) => onHandleError?.(error.message),
+    onError: (error: unknown) =>
+      // `unknown`, not `Error`: react-query hands over whatever was thrown, and
+      // an injected wallet signer throws plain objects. The old `error.message`
+      // was undefined for those, so the real cause reached Sentry and the user
+      // got "Something went wrong" (ORDERBOOK-TESTNET-N).
+      onHandleError?.(errorMessage(error) || "Something went wrong"),
     onSuccess: (order: CreateOrderArgs) => {
       const { side, orderType, amount, market } = order;
       onHandleAlert("Order placed");

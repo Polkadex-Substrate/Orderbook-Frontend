@@ -41,6 +41,14 @@ export type FeeInputs = {
   balanceTicker: string | null | undefined;
   /** Minimum that must remain (existential deposit on substrate chains). */
   existential?: number | null;
+  /**
+   * How much is being bridged, and in what.
+   *
+   * Only affects the sum when `transferTicker === feeTicker` - bridging native
+   * ETH out of the account that also pays ETH gas. See the header note.
+   */
+  transferAmount?: number | null;
+  transferTicker?: string | null;
   /** The estimate is in flight. */
   estimating?: boolean;
   /** The estimate failed, with this message. */
@@ -56,6 +64,8 @@ export type FeeVerdict =
       fee: number;
       ticker: string;
       balance: number;
+      /** The bridged amount, when it leaves this same balance. Else 0. */
+      spend: number;
       remaining: number;
     }
   | {
@@ -63,6 +73,7 @@ export type FeeVerdict =
       fee: number;
       ticker: string;
       balance: number;
+      spend: number;
       shortfall: number;
     };
 
@@ -78,6 +89,8 @@ export const feeVerdict = ({
   balanceAmount,
   balanceTicker,
   existential,
+  transferAmount,
+  transferTicker,
   estimating,
   estimateError,
 }: FeeInputs): FeeVerdict => {
@@ -87,6 +100,32 @@ export const feeVerdict = ({
   const fee = num(feeAmount);
   const balance = num(balanceAmount);
   const reserve = num(existential) ?? 0;
+
+  /*
+   * THE SECOND BUG, reported on two separate transfers: "left after" was wrong.
+   *
+   * It read `balance - fee - reserve`, which is wrong twice over.
+   *
+   *   1. The BRIDGED AMOUNT was never subtracted. Bridging 0.01 native ETH on
+   *      Sepolia moves 0.01 ETH out of the very balance that pays the gas, so
+   *      "left after" overstated the remainder by the whole transfer. It only
+   *      happened to look right for USDC, where the asset and the fee currency
+   *      differ - which is the case the original fix was written against.
+   *   2. The EXISTENTIAL RESERVE was subtracted. The reserve is not spent; it
+   *      is the floor that must stay behind. Deducting it understated what the
+   *      user would still hold.
+   *
+   * The two errors point opposite ways, so on a substrate source they partly
+   * cancelled - which is why this survived review.
+   *
+   * The reserve still belongs in the SUFFICIENCY test (you may not spend below
+   * it), just not in the remainder. Those are different questions and the old
+   * code answered both with one subtraction.
+   */
+  const spend =
+    feeTicker && transferTicker && transferTicker === feeTicker
+      ? Math.max(0, num(transferAmount) ?? 0)
+      : 0;
 
   // Refusing to guess is the whole point. Each of these used to become a
   // confident "insufficient balance".
@@ -109,13 +148,14 @@ export const feeVerdict = ({
   if (balanceTicker && balanceTicker !== feeTicker)
     return { status: "mismatch", feeTicker, balanceTicker };
 
-  const required = fee + reserve;
+  const required = fee + spend + reserve;
   if (balance < required)
     return {
       status: "insufficient",
       fee,
       ticker: feeTicker,
       balance,
+      spend,
       shortfall: required - balance,
     };
 
@@ -124,7 +164,9 @@ export const feeVerdict = ({
     fee,
     ticker: feeTicker,
     balance,
-    remaining: balance - required,
+    spend,
+    // Reserve deliberately NOT subtracted: it stays in the account.
+    remaining: balance - fee - spend,
   };
 };
 
@@ -181,8 +223,15 @@ export const describeFeeSource = (
     case "mismatch":
       return `The fee is charged in ${v.feeTicker} but the balance being checked is ${v.balanceTicker}. This is a configuration error - do not submit.`;
     case "insufficient":
-      return `Needs ${fmt(v.shortfall)} more ${v.ticker}${from}. You have ${fmt(v.balance)} ${v.ticker}; the fee is charged in ${v.ticker}, not in the asset being bridged.`;
+      // When the bridged asset IS the fee currency, saying "the fee is charged
+      // in X, not in the asset being bridged" is false and confusing. Both come
+      // out of the same balance, and the shortfall already covers both.
+      return v.spend > 0
+        ? `Needs ${fmt(v.shortfall)} more ${v.ticker}${from}. You have ${fmt(v.balance)} ${v.ticker}, and this transfer costs ${fmt(v.spend)} ${v.ticker} plus ${fmt(v.fee)} ${v.ticker} in fees.`
+        : `Needs ${fmt(v.shortfall)} more ${v.ticker}${from}. You have ${fmt(v.balance)} ${v.ticker}; the fee is charged in ${v.ticker}, not in the asset being bridged.`;
     default:
-      return `Paid from your ${v.ticker} balance${from} (${fmt(v.balance)} ${v.ticker} available, ${fmt(v.remaining)} left after).`;
+      return v.spend > 0
+        ? `Paid from your ${v.ticker} balance${from} (${fmt(v.balance)} ${v.ticker} available, less ${fmt(v.spend)} bridged and ${fmt(v.fee)} in fees, leaves ${fmt(v.remaining)} ${v.ticker}).`
+        : `Paid from your ${v.ticker} balance${from} (${fmt(v.balance)} ${v.ticker} available, ${fmt(v.remaining)} left after).`;
   }
 };

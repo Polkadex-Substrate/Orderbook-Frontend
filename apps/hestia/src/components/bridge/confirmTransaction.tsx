@@ -25,7 +25,12 @@ import {
   parseScientific,
 } from "@orderbook/core/index";
 import { useSettingsProvider } from "@orderbook/core/providers/public/settings";
+import { useConnectWalletProvider } from "@orderbook/core/providers/user/connectWalletProvider";
 import { formatDisplay } from "@orderbook/format";
+// Same import as ethereumToSubstrate's transferTokens, deliberately: the check
+// must decode the address exactly the way the transfer does.
+import { decodeAddress } from "@polkadot/keyring";
+import { u8aToHex } from "@polkadot/util";
 
 import { useBridgeProvider } from "./BridgeProvider";
 import {
@@ -34,6 +39,7 @@ import {
   describeFeeSource,
   feeVerdict,
 } from "./feeVerdict";
+import { checkDestination, describeDestination } from "./destinationCheck";
 
 import { transferTokens } from "@/lib/hyperbridge/ethereumToSubstrate";
 import { describeRpcError } from "@/lib/hyperbridge/rpcTransport";
@@ -86,6 +92,7 @@ export const ConfirmTransaction = ({
     transferConfig ?? {};
 
   const { onHandleAlert, onHandleError } = useSettingsProvider();
+  const { selectedWallet } = useConnectWalletProvider();
   const { switchChainAsync } = useSwitchChain();
 
   const showAutoSwap = useMemo(
@@ -134,6 +141,11 @@ export const ConfirmTransaction = ({
         balanceAmount: sourceFeeBalance?.amount,
         balanceTicker: sourceFeeBalance?.ticker,
         existential: sourceFeeExistential?.amount,
+        // Bridging native ETH spends the same balance that pays the gas, so
+        // the amount has to be part of the sum. Passing the ticker lets
+        // feeVerdict decide - it is a no-op on the USDC/WETH routes.
+        transferAmount: amount,
+        transferTicker: selectedAsset?.ticker,
         estimating: transferConfigLoading,
       }),
     [
@@ -142,6 +154,8 @@ export const ConfirmTransaction = ({
       sourceFeeBalance?.amount,
       sourceFeeBalance?.ticker,
       sourceFeeExistential?.amount,
+      amount,
+      selectedAsset?.ticker,
       transferConfigLoading,
     ]
   );
@@ -151,6 +165,39 @@ export const ConfirmTransaction = ({
     sourceFee?.ticker ?? sourceFeeBalance?.ticker
   );
   const feeSourceLine = describeFeeSource(verdict, sourceWalletLabel);
+
+  /*
+   * The bridge keeps its own substrate account, chosen from the raw extension
+   * list, with no link to the account the rest of the app is signed in as. A
+   * tester bridged 0.01 ETH to "Substrate Account 1" while signed in as "test
+   * account" and spent fifteen hours believing the funds were lost - the app
+   * only ever displays the signed-in account, so a transfer to a sibling
+   * account in the same wallet is indistinguishable from one that vanished.
+   *
+   * Only warns when the destination is a genuinely different KEY. Comparing
+   * printed addresses would fire on every transfer, because Polkadex renders
+   * SS58 prefix 88 and extensions commonly hand back 42 or 0.
+   */
+  const destinationWarning = useMemo(() => {
+    // Only meaningful in the evm-to-substrate direction; the substrate-to-evm
+    // destination is a MetaMask address with no signed-in counterpart.
+    if (!isEvmSource) return null;
+    return describeDestination(
+      checkDestination({
+        destinationAddress: destinationAccount?.address,
+        destinationName: destinationAccount?.name,
+        signedInAddress: selectedWallet?.address,
+        signedInName: selectedWallet?.name,
+        toPublicKey: (address) => u8aToHex(decodeAddress(address, false)),
+      })
+    );
+  }, [
+    isEvmSource,
+    destinationAccount?.address,
+    destinationAccount?.name,
+    selectedWallet?.address,
+    selectedWallet?.name,
+  ]);
 
   const error = useMemo(() => {
     const swapPrice = Number(swapPriceRaw);
@@ -338,6 +385,18 @@ export const ConfirmTransaction = ({
                     className="px-3 pb-3"
                   >
                     {feeSourceLine}
+                  </Typography.Text>
+                )}
+                {/* Sending somewhere other than the signed-in account is
+                    legitimate, so this warns rather than blocks - but it has to
+                    be readable BEFORE signing, which is the whole failure. */}
+                {destinationWarning && (
+                  <Typography.Text
+                    appearance="primary"
+                    size="xs"
+                    className="px-3 pb-3"
+                  >
+                    {destinationWarning}
                   </Typography.Text>
                 )}
                 {error && <ErrorMessage className="p-3">{error}</ErrorMessage>}

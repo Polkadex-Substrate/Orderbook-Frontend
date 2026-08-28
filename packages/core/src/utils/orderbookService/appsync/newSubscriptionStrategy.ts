@@ -7,6 +7,7 @@
 
 import { READ_ONLY_TOKEN, USER_EVENTS } from "@orderbook/core/constants";
 import { Observable } from "rxjs";
+import * as Sentry from "@sentry/nextjs";
 import { filter, map } from "rxjs/operators";
 import gql from "graphql-tag";
 
@@ -40,6 +41,11 @@ import {
 } from "./../interfaces";
 import { convertBookUpdatesToPriceLevels, toNullableNumber } from "./helpers";
 import { parseOrderEvent } from "./orderEventPayload";
+import {
+  createStreamErrorLog,
+  describeStreamError,
+  shouldReportStreamError,
+} from "./streamError";
 import {
   BalanceUpdateEvent,
   BookUpdateEvent,
@@ -124,6 +130,44 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
     }
   }
 
+  /** Streams already reported this session; see streamError.ts. */
+  private _streamErrors = createStreamErrorLog();
+
+  /**
+   * Subscribe with an ERROR HANDLER. Never call `.subscribe(cb)` directly.
+   *
+   * ORDERBOOK-TESTNET-B: every subscription here passed only a `next`
+   * callback, so when the socket dropped, RxJS found no error handler and
+   * rethrew asynchronously - surfacing as an unhandled promise rejection
+   * carrying a raw WebSocket error Event. Sentry cannot title a DOM Event, so
+   * the issue read `<unknown>` and went unread for two weeks while nine users
+   * hit it.
+   *
+   * A dropped socket is ordinary on a testnet with one RPC and no fallback.
+   * What is NOT ordinary is the UI continuing to show stale data with nothing
+   * saying the feed died - so it is logged every time and reported once per
+   * stream per session.
+   */
+  private subscribeWithErrors<T>(
+    observable: Observable<T>,
+    cb: SubscriptionCallBack<T>,
+    label: string
+  ): Subscription {
+    return observable.subscribe({
+      next: cb,
+      error: (error: unknown) => {
+        const description = describeStreamError(label, error);
+        console.error(description);
+        if (shouldReportStreamError(this._streamErrors, label)) {
+          Sentry.captureMessage(description, {
+            level: "warning",
+            tags: { stream: label },
+          });
+        }
+      },
+    });
+  }
+
   subscribeBalances(
     address: string,
     cb: SubscriptionCallBack<Balance>
@@ -180,7 +224,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((balance): balance is NonNullable<typeof balance> => !!balance)
     );
 
-    return observable.subscribe(cb);
+    return this.subscribeWithErrors(observable, cb, "balances");
   }
 
   subscribeOrderbook(
@@ -202,7 +246,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       })
     );
 
-    return observable.subscribe(cb);
+    return this.subscribeWithErrors(observable, cb, "orderbook");
   }
 
   subscribeUserTrades(
@@ -248,7 +292,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((trade): trade is NonNullable<typeof trade> => !!trade)
     );
 
-    return observable.subscribe(cb);
+    return this.subscribeWithErrors(observable, cb, "user-trades");
   }
 
   subscribeKLines(
@@ -284,7 +328,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       })
     );
 
-    return observable.subscribe(onUpdate);
+    return this.subscribeWithErrors(observable, onUpdate, "klines");
   }
 
   subscribeLatestTrades(
@@ -306,7 +350,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       })
     );
 
-    return observable.subscribe(onUpdate);
+    return this.subscribeWithErrors(observable, onUpdate, "recent-trades");
   }
 
   subscribeOrders(
@@ -378,7 +422,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((order): order is Order => order !== null)
     );
 
-    return observable.subscribe(onUpdate);
+    return this.subscribeWithErrors(observable, onUpdate, "orders");
   }
 
   subscribeTicker(
@@ -410,7 +454,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       })
     );
 
-    return observable.subscribe(onUpdate);
+    return this.subscribeWithErrors(observable, onUpdate, "ticker");
   }
 
   subscribeTransactions(
@@ -459,7 +503,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       filter((tx): tx is NonNullable<typeof tx> => !!tx)
     );
 
-    return observable.subscribe(onUpdate);
+    return this.subscribeWithErrors(observable, onUpdate, "transactions");
   }
 
   subscribeAccountUpdate(
@@ -496,7 +540,7 @@ class GraphQLWebSocketSubscriptions implements OrderbookSubscriptionStrategy {
       })
     );
 
-    return observable.subscribe(onUpdate);
+    return this.subscribeWithErrors(observable, onUpdate, "account-update");
   }
 }
 

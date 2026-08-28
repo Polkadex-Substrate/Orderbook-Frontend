@@ -73,7 +73,9 @@ describe("feeVerdict - the arithmetic", () => {
     });
     expect(v.status).toBe("ok");
     if (v.status !== "ok") throw new Error("unreachable");
-    expect(v.remaining).toBeCloseTo(0.007, 10);
+    // 0.01 balance less the 0.002 fee. The 0.001 reserve is NOT subtracted -
+    // it stays in the account, so it is still money the user holds.
+    expect(v.remaining).toBeCloseTo(0.008, 10);
     expect(blocksSubmission(v)).toBe(false);
   });
 
@@ -103,7 +105,92 @@ describe("feeVerdict - the arithmetic", () => {
     expect(v.status).toBe("insufficient");
   });
 
+  /*
+   * REPORTED SEPARATELY, on two different transfers: the "left after" figure on
+   * the confirm dialog did not match what the wallet showed afterwards.
+   *
+   * Bridging NATIVE ETH is the case that breaks: the 0.01 ETH being bridged
+   * leaves the same balance that pays the gas. The original code only ever
+   * subtracted the fee, because it was written for the USDC route where the
+   * bridged asset and the fee currency are different.
+   */
+  it("subtracts the bridged amount when it leaves the fee balance", () => {
+    const v = feeVerdict({
+      ...base,
+      feeAmount: 0.0002,
+      balanceAmount: 0.5,
+      transferAmount: 0.01,
+      transferTicker: "ETH",
+    });
+    expect(v.status).toBe("ok");
+    if (v.status !== "ok") throw new Error("unreachable");
+    expect(v.spend).toBeCloseTo(0.01, 10);
+    // Not 0.4998. The old answer was out by the entire transfer.
+    expect(v.remaining).toBeCloseTo(0.4898, 10);
+  });
+
+  it("leaves the balance alone when the bridged asset is not the fee currency", () => {
+    // The USDC route: 20 USDC bridged, gas paid in ETH. Nothing changes.
+    const v = feeVerdict({
+      ...base,
+      feeAmount: 0.0002,
+      balanceAmount: 0.5,
+      transferAmount: 20,
+      transferTicker: "USDC",
+    });
+    expect(v.status).toBe("ok");
+    if (v.status !== "ok") throw new Error("unreachable");
+    expect(v.spend).toBe(0);
+    expect(v.remaining).toBeCloseTo(0.4998, 10);
+  });
+
+  it("blocks a native transfer the balance cannot actually cover", () => {
+    // 0.01 ETH balance, bridging 0.01 ETH: the fee has nowhere to come from.
+    // The old sum compared 0.01 against the fee alone and said OK, so the user
+    // was waved through into an on-chain failure.
+    const v = feeVerdict({
+      ...base,
+      feeAmount: 0.0002,
+      balanceAmount: 0.01,
+      transferAmount: 0.01,
+      transferTicker: "ETH",
+    });
+    expect(v.status).toBe("insufficient");
+    if (v.status !== "insufficient") throw new Error("unreachable");
+    expect(v.shortfall).toBeCloseTo(0.0002, 10);
+    expect(blocksSubmission(v)).toBe(true);
+  });
+
+  it("never lets the remainder be inflated by a negative transfer amount", () => {
+    const v = feeVerdict({
+      ...base,
+      feeAmount: 0.0002,
+      balanceAmount: 0.5,
+      transferAmount: -1,
+      transferTicker: "ETH",
+    });
+    expect(v.status).toBe("ok");
+    if (v.status !== "ok") throw new Error("unreachable");
+    expect(v.spend).toBe(0);
+  });
+
+  it("does not claim the fee is in a different asset when it is not", () => {
+    // The old wording - "the fee is charged in ETH, not in the asset being
+    // bridged" - is a false statement when the asset being bridged IS ETH.
+    const v = feeVerdict({
+      ...base,
+      feeAmount: 0.0002,
+      balanceAmount: 0.005,
+      transferAmount: 0.01,
+      transferTicker: "ETH",
+    });
+    const line = describeFeeSource(v, "MetaMask 0xab..cd") ?? "";
+    expect(line).not.toContain("not in the asset being bridged");
+    expect(line).toContain("0.01");
+  });
+
   it("catches a fee quoted in a different currency from the balance", () => {
+
     const v = feeVerdict({
       feeAmount: 1,
       feeTicker: "DAI",

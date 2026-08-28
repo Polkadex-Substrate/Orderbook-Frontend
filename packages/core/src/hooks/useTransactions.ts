@@ -41,6 +41,17 @@ export function useTransactions() {
       });
     },
     enabled: Boolean(mainAddress?.length > 0),
+    /*
+     * Withdrawals polled every 30s; deposits did not poll at all. So a deposit
+     * that settled while the Transactions page was open never appeared, and the
+     * page had to be remounted to show it - which is exactly the shape of the
+     * report "my transfer is missing from Transaction history".
+     *
+     * (Bridge transfers are a separate matter: this list is OCEX deposits and
+     * withdrawals between funding and trading accounts, and a Hyperbridge
+     * transfer is neither, so it will not show here however often we poll.)
+     */
+    refetchInterval: 30 * 1000,
   });
 
   const { data: withdrawTransactions, isLoading: isWithdrawLoading } = useQuery(

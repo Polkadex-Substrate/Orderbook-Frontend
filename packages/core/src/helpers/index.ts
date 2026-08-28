@@ -52,3 +52,4 @@ export * from "./keystoreBackup";
 export * from "./balanceVisibility";
 export * from "./depositCapacity";
 export * from "./rawSigningPayload";
+export * from "./errorMessage";
