@@ -53,3 +53,5 @@ export * from "./balanceVisibility";
 export * from "./depositCapacity";
 export * from "./rawSigningPayload";
 export * from "./errorMessage";
+export * from "./tickerBatch";
+export * from "./graphqlFailure";

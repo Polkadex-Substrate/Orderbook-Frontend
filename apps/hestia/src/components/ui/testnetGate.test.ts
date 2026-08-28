@@ -316,8 +316,18 @@ const covered = {
   ran: true,
   insideDialog: false,
   topElement: "div.overlay-backdrop",
+  topElementFound: true,
+  pointInViewport: true,
+  viewportSized: true,
 };
-const clear = { ran: true, insideDialog: true, topElement: "button" };
+const clear = {
+  ran: true,
+  insideDialog: true,
+  topElement: "button",
+  topElementFound: true,
+  pointInViewport: true,
+  viewportSized: true,
+};
 
 describe("interceptionReport: something is physically covering the button", () => {
   it("reports what is on top, by name, in the title", () => {
@@ -347,10 +357,78 @@ describe("interceptionReport: something is physically covering the button", () =
     expect(
       interceptionReport(
         state({ openedForMs: LONG_ENOUGH }),
-        { ran: false, insideDialog: false, topElement: "unknown" },
+        { ...covered, ran: false, topElement: "unknown" },
         false
       )
     ).toBeNull();
+  });
+
+  it("never reports from a zero-sized viewport", () => {
+    // ORDERBOOK-TESTNET-Q, the first event this reporter ever produced: a
+    // hidden browser pane during testing. elementFromPoint returns null for
+    // EVERY point when the viewport is 0x0, and the old code read that as
+    // "covered", emitting the sentence "Testnet notice covered by nothing".
+    // An instrument whose first output is an artifact of the instrument needs
+    // a guard, not an explanation.
+    expect(
+      interceptionReport(
+        state({ openedForMs: LONG_ENOUGH }),
+        {
+          ...covered,
+          viewportSized: false,
+          topElement: "nothing",
+          topElementFound: false,
+        },
+        false
+      )
+    ).toBeNull();
+  });
+
+  it("reports an off-screen button as its own distinct failure", () => {
+    // A native <dialog> in the top layer does not scroll the page behind it, so
+    // on a short viewport the consent controls can sit below the fold. To the
+    // user that is indistinguishable from a dead button - the exact report we
+    // have been chasing - but the fix is different, so the message must be too.
+    const r = interceptionReport(
+      state({ openedForMs: LONG_ENOUGH }),
+      {
+        ...covered,
+        pointInViewport: false,
+        topElement: "nothing",
+        topElementFound: false,
+      },
+      false
+    );
+    expect(r).not.toBeNull();
+    expect(r?.message).toMatch(/outside the viewport/i);
+    expect(r?.message).not.toContain("covered by");
+  });
+
+  it("never emits the phrase 'covered by nothing'", () => {
+    // The sentence that proved the premise was wrong. Guarding it directly so
+    // it cannot come back by a different route.
+    for (const ht of [
+      {
+        ...covered,
+        pointInViewport: false,
+        topElement: "nothing",
+        topElementFound: false,
+      },
+      {
+        ...covered,
+        viewportSized: false,
+        topElement: "nothing",
+        topElementFound: false,
+      },
+      { ...covered, topElement: "nothing", topElementFound: false },
+    ]) {
+      const r = interceptionReport(
+        state({ openedForMs: LONG_ENOUGH }),
+        ht,
+        false
+      );
+      expect(r?.message ?? "").not.toContain("covered by nothing");
+    }
   });
 
   it("does not report a reader who has not got there yet", () => {

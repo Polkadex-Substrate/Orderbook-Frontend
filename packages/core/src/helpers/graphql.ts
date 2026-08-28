@@ -26,8 +26,23 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createClient } from "graphql-ws";
 import { onError } from "@apollo/client/link/error";
+import * as Sentry from "@sentry/nextjs";
 
 import { getGraphQLConfig, getAuthToken } from "../config/graphql";
+
+import {
+  classifyEmptyFailure,
+  createFailureLog,
+  shouldReportFailure,
+} from "./graphqlFailure";
+
+/**
+ * Session-scoped record of which (operation, cause) pairs have been reported.
+ *
+ * Module level on purpose: the point is once per SESSION, and a per-client log
+ * would reset every time `getApolloClient` builds a client for a new token.
+ */
+const failureLog = createFailureLog();
 
 /**
  * Create HTTP link for queries and mutations
@@ -97,7 +112,7 @@ const createWsLink = (token?: string): GraphQLWsLink | null => {
  * away and yields a bare "Response not successful: Received status code 400",
  * which is indistinguishable from a dozen different server-side causes.
  */
-const createErrorLink = (): ApolloLink => {
+const createErrorLink = (hasWsLink: boolean): ApolloLink => {
   return onError(({ graphQLErrors, networkError, operation }: any) => {
     const op = operation?.operationName ?? "unknown operation";
 
@@ -126,13 +141,50 @@ const createErrorLink = (): ApolloLink => {
       );
     }
 
-    // Neither bucket populated means the failure is in the link chain itself
-    // (bad URL, CORS preflight, no transport) - worth saying so explicitly
-    // rather than logging a bare operation name and leaving it a mystery.
+    /*
+     * Neither bucket populated is not ONE failure, it is three, and the old
+     * message listed all three without choosing between them:
+     *
+     *   "check the endpoint URL, CORS, and that a transport exists"
+     *
+     * That is where the GetMarketTickers investigation dead-ended, twenty
+     * events deep, with every market on the trading page showing zero volume.
+     * The HTTP status separates the cases and Apollo puts it on the operation
+     * context, where nothing was reading it. See graphqlFailure.ts.
+     */
     if (!graphQLErrors?.length && !networkError) {
-      console.error(
-        `[GraphQL] ${op} failed with no graphQLErrors and no networkError - check the endpoint URL, CORS, and that a transport exists for this operation type.`
-      );
+      const context = operation?.getContext?.() ?? {};
+      const definition = operation?.query
+        ? getMainDefinition(operation.query)
+        : null;
+      const verdict = classifyEmptyFailure({
+        operationName: op,
+        httpStatus: context?.response?.status ?? null,
+        hadData: !!context?.response?.data,
+        operationType:
+          definition && definition.kind === "OperationDefinition"
+            ? definition.operation
+            : null,
+        hasWsLink,
+      });
+
+      console.error(verdict.message);
+
+      // Cancellations are lifecycle, not defects, and they arrive in bursts on
+      // every navigation. Reporting them would bury the two causes that matter.
+      if (
+        verdict.worthReporting &&
+        shouldReportFailure(failureLog, op, verdict.cause)
+      ) {
+        Sentry.captureMessage(verdict.message, {
+          level: "error",
+          extra: {
+            operationName: op,
+            cause: verdict.cause,
+            httpStatus: context?.response?.status ?? null,
+          },
+        });
+      }
     }
   });
 };
@@ -143,7 +195,7 @@ const createErrorLink = (): ApolloLink => {
 const createSplitLink = (token?: string): ApolloLink => {
   const httpLink = createHttpLink(token);
   const wsLink = createWsLink(token);
-  const errorLink = createErrorLink();
+  const errorLink = createErrorLink(!!wsLink);
 
   // No WebSocket link means no wsEndpoint was resolvable. Queries and
   // mutations still work over HTTP; subscriptions will simply never fire.

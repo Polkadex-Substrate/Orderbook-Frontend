@@ -235,6 +235,9 @@ export const TestnetModal = () => {
       ran: false,
       insideDialog: false,
       topElement: "unknown",
+      topElementFound: false,
+      pointInViewport: false,
+      viewportSized: false,
     };
     try {
       if (btn && dlg) {
@@ -243,14 +246,22 @@ export const TestnetModal = () => {
         // elementFromPoint at (0,0) would name the page's top-left corner - a
         // confident answer to a question we did not ask.
         if (r.width > 0 && r.height > 0) {
-          const top = document.elementFromPoint(
-            r.left + r.width / 2,
-            r.top + r.height / 2
-          );
+          const x = r.left + r.width / 2;
+          const y = r.top + r.height / 2;
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const top = document.elementFromPoint(x, y);
           hitTest = {
             ran: true,
             insideDialog: !!top && dlg.contains(top),
             topElement: describeElement(top),
+            topElementFound: !!top,
+            // elementFromPoint returns null for a point OUTSIDE the viewport,
+            // which means "off-screen", not "something is on top". Recording
+            // both facts lets the reporter tell those apart instead of
+            // emitting "covered by nothing". See ORDERBOOK-TESTNET-Q.
+            pointInViewport: x >= 0 && y >= 0 && x <= vw && y <= vh,
+            viewportSized: vw > 0 && vh > 0,
           };
         }
       }

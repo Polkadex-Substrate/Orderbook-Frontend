@@ -242,6 +242,25 @@ export type HitTest = {
   insideDialog: boolean;
   /** Short descriptor of whatever IS on top - tag, id, first class. */
   topElement: string;
+  /** Did elementFromPoint return an element at all? Null is not "nothing on top". */
+  topElementFound: boolean;
+  /**
+   * Was the tested point inside the viewport?
+   *
+   * `elementFromPoint` returns null for a point OUTSIDE the viewport, which is
+   * not the same as "something opaque is on top". Conflating the two produced
+   * ORDERBOOK-TESTNET-Q, "Testnet notice covered by nothing" - a sentence that
+   * means nothing because the premise was wrong.
+   */
+  pointInViewport: boolean;
+  /**
+   * Did the viewport have a real size at all?
+   *
+   * A 0x0 viewport is a hidden or headless pane, where every hit test returns
+   * null. That is a property of the harness, not of the user's page, and it
+   * must never reach Sentry.
+   */
+  viewportSized: boolean;
 };
 
 /**
@@ -285,6 +304,51 @@ export const interceptionReport = (
   // whether the button is reachable, and guessing here is what produced six
   // false positives last time.
   if (!hitTest.ran) return null;
+
+  /*
+   * A 0x0 viewport makes EVERY hit test return null. That is the harness, not
+   * the user. Caught the hard way: the first event this reporter ever produced
+   * was ORDERBOOK-TESTNET-Q, "Testnet notice covered by nothing", from a hidden
+   * browser pane during testing. An instrument's first output being an artifact
+   * of the instrument is worth a guard.
+   */
+  if (!hitTest.viewportSized) return null;
+
+  /*
+   * The button is off the bottom of the screen.
+   *
+   * A DIFFERENT BUG WITH THE SAME SYMPTOM, and one worth catching: a native
+   * <dialog> in the top layer does not scroll the page behind it, so on a short
+   * viewport the consent controls can sit below the fold with no way to reach
+   * them. To the user that is indistinguishable from a dead button, which is
+   * exactly the report we have been chasing. It needs its own message because
+   * it needs its own fix - make the dialog scroll - not a hunt for an overlay.
+   */
+  if (!hitTest.pointInViewport)
+    return {
+      message: "Testnet notice: Continue button is outside the viewport",
+      openedForMs: state.openedForMs,
+      topElement: "off-screen",
+    };
+
+  /*
+   * The hit test found NOTHING at a point that is inside a real viewport.
+   *
+   * There is no "covered by nothing": either an element is on top or none is.
+   * This branch is the leftover case - a null result the two guards above do
+   * not explain - and it is genuinely odd (a detached or `display:none` dialog
+   * would do it). It gets its own wording because the honest report is "the
+   * button is unreachable and we cannot say why", not a claim about a
+   * non-existent element. A test asserts the phrase can never be emitted.
+   */
+  if (!hitTest.topElementFound)
+    return {
+      message:
+        "Testnet notice: Continue button is unreachable, nothing hit-tested at it",
+      openedForMs: state.openedForMs,
+      topElement: "none",
+    };
+
   if (hitTest.insideDialog) return null;
   return {
     // Names the interceptor in the title, so the issue is actionable from the

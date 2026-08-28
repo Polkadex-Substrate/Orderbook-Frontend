@@ -6,6 +6,12 @@ import { QUERY_KEYS, defaultTicker } from "../constants";
 import { useOrderbookService } from "../providers/public/orderbookServiceProvider/useOrderbookService";
 import { appsyncOrderbookService } from "../utils/orderbookService";
 import { decimalPlaces, getCurrentMarket } from "../helpers";
+import {
+  TICKERS_REFETCH_MS,
+  collectSettled,
+  describeBatch,
+  isTotalFailure,
+} from "../helpers/tickerBatch";
 import { percentChange } from "../utils/orderbookService/appsync/tickerEnvelope";
 
 import { useRecentTrades } from "./useRecentTrades";
@@ -21,12 +27,29 @@ export function useTickers(defaultMarket?: string) {
     queryKey: QUERY_KEYS.tickers(),
     enabled: shouldFetchTickers,
     queryFn: async () => {
-      const tickersPromises = markets.map(({ id }) =>
-        appsyncOrderbookService.query.getTicker(id)
+      /*
+       * allSettled, NOT all.
+       *
+       * `Promise.all` rejects on the first rejection, so one market failing
+       * discarded the tickers of every market that had succeeded. That is why
+       * the whole table rendered as volume 0 and change "-" while the orderbook
+       * beside it had live prices. A failure should cost one row, not all of
+       * them. See helpers/tickerBatch.ts for the measurements.
+       */
+      const settled = await Promise.allSettled(
+        markets.map(({ id }) => appsyncOrderbookService.query.getTicker(id))
       );
-      const tickersData = await Promise.all(tickersPromises);
+      const batch = collectSettled(settled);
+      const partial = describeBatch(batch);
+      if (partial) console.warn(partial);
+      // Only a total failure is an error. Partial data beats none: the user can
+      // trade the markets that did load, and the rest honestly show "-".
+      if (isTotalFailure(batch))
+        throw new Error(
+          `[tickers] all ${batch.attempted} markets failed to return ticker data`
+        );
 
-      return tickersData.map((item) => {
+      return batch.fulfilled.map((item) => {
         const market = markets?.find((market) => market.id === item.market);
         const pricePrecision = decimalPlaces(market?.price_tick_size || 0);
 
@@ -57,6 +80,14 @@ export function useTickers(defaultMarket?: string) {
       });
     },
     refetchOnMount: false,
+    /*
+     * The query had no refetch of any kind, so once react-query exhausted its
+     * retries nothing ever asked again: measured eleven minutes of complete API
+     * silence after the initial failures, with the ticker columns blank for the
+     * whole session. A transient failure at load should cost half a minute of
+     * empty cells, not the entire visit.
+     */
+    refetchInterval: TICKERS_REFETCH_MS,
   });
 
   const currentTicker = useMemo(() => {
