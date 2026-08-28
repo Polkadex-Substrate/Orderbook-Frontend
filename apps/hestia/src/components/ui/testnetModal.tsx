@@ -22,11 +22,7 @@ import {
   stallReport,
   type HitTest,
 } from "@/components/ui/testnetGate";
-import {
-  FREEZE_TICK_MS,
-  freezeMessage,
-  freezeVerdict,
-} from "@/components/ui/freezeWatch";
+import { FREEZE_TICK_MS } from "@/components/ui/freezeWatch";
 
 /** Short, identifiable descriptor for whatever is covering our button. */
 const describeElement = (el: Element | null): string => {
@@ -85,7 +81,6 @@ export const TestnetModal = () => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const continueRef = useRef<HTMLButtonElement>(null);
   const stallReported = useRef(false);
-  const freezeReported = useRef(false);
   const interceptionReported = useRef(false);
 
   useEffect(() => {
@@ -120,65 +115,21 @@ export const TestnetModal = () => {
   }, []);
 
   /*
-   * The tick that measures elapsed time ALSO measures how late it is.
-   *
-   * THE BLIND SPOT THIS CLOSES. `stallReport` derives elapsed time from this
-   * interval, so during a real freeze the callback does not run, openedForMs
-   * does not advance, and the reporter can never reach its threshold. The
-   * instrument needed a healthy thread in order to report an unhealthy one,
-   * which is why six weeks of "Sentry shows nothing" meant nothing.
-   *
-   * A tick scheduled for 1s that arrives 12s late proves the thread was blocked
-   * for 11 of them. The evidence is late but complete, and it survives the
-   * event that produced it. See freezeWatch.ts.
+   * Elapsed time only. Freeze detection moved to <FreezeWatcher /> in the root
+   * layout, because this interval only runs while the notice is OPEN and this
+   * component is `dynamic(..., { ssr: false })`. A freeze during load - the
+   * reported symptom, and the moment the most JavaScript runs - happened before
+   * this ever mounted. Keeping a second detector here would only double-report
+   * the window the root one already covers.
    */
   useEffect(() => {
     if (!open) return;
     const startedAt = Date.now();
-    let lastTickAt = startedAt;
-    // Visibility is checked per tick rather than once: a background tab has its
-    // timers throttled to roughly once a minute, which is indistinguishable
-    // from a freeze. Any hidden moment during the gap disqualifies it.
-    let stayedVisible = document.visibilityState === "visible";
-    const onVisibility = () => {
-      if (document.visibilityState !== "visible") stayedVisible = false;
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    const id = setInterval(() => {
-      const now = Date.now();
-      const gapMs = now - lastTickAt;
-      lastTickAt = now;
-      setOpenedForMs(now - startedAt);
-
-      const verdict = freezeVerdict({
-        gapMs,
-        tickMs: FREEZE_TICK_MS,
-        wasVisibleThroughout: stayedVisible,
-        alreadyReported: freezeReported.current,
-      });
-      // Reset for the next window regardless of the verdict, so one background
-      // excursion does not disqualify every later tick.
-      stayedVisible = document.visibilityState === "visible";
-
-      if (verdict.frozen) {
-        freezeReported.current = true;
-        Sentry.captureMessage(freezeMessage(verdict.blockedForMs), {
-          level: "error",
-          extra: {
-            blockedForMs: verdict.blockedForMs,
-            clamped: verdict.clamped,
-            openedForMs: now - startedAt,
-            documentReadyState: document.readyState,
-          },
-        });
-      }
-    }, FREEZE_TICK_MS);
-
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
+    const id = setInterval(
+      () => setOpenedForMs(Date.now() - startedAt),
+      FREEZE_TICK_MS
+    );
+    return () => clearInterval(id);
   }, [open]);
 
   const state = { checked, openedForMs, attempted };

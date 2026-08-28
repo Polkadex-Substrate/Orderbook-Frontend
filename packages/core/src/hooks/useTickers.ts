@@ -42,11 +42,29 @@ export function useTickers(defaultMarket?: string) {
       const batch = collectSettled(settled);
       const partial = describeBatch(batch);
       if (partial) console.warn(partial);
-      // Only a total failure is an error. Partial data beats none: the user can
-      // trade the markets that did load, and the rest honestly show "-".
+
+      /*
+       * A TOTAL FAILURE IS LOGGED, NOT THROWN. This threw for about an hour and
+       * it was a mistake worth recording.
+       *
+       * The QueryClient has a global `QueryCache.onError` that turns every query
+       * error into `toast.error(message)`. Combined with the `refetchInterval`
+       * added alongside this, a throw here produced an error toast every thirty
+       * seconds, for every user, for as long as the backend stayed broken - and
+       * the backend IS currently broken (ORDERBOOK-TESTNET-R: the server returns
+       * HTTP 200 with an empty body for GetMarketTickers, so all ten markets
+       * fail every time). A permanent toast loop is worse than the blank cells
+       * it was announcing.
+       *
+       * Returning empty is also the more honest render: the table shows "-",
+       * which is true, rather than a toast implying the user can act on it.
+       * Nothing is lost diagnostically, because the Apollo error link now
+       * reports the real cause to Sentry once per session with the HTTP status
+       * attached. See helpers/graphqlFailure.ts.
+       */
       if (isTotalFailure(batch))
-        throw new Error(
-          `[tickers] all ${batch.attempted} markets failed to return ticker data`
+        console.warn(
+          `[tickers] all ${batch.attempted} markets returned no ticker data`
         );
 
       return batch.fulfilled.map((item) => {

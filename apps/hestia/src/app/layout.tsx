@@ -12,6 +12,7 @@ import { config } from "@/config/wagmi";
 import { EvmInitialStateProvider } from "@/components/evm/evmInitialState";
 import { DynamicProviders } from "@/components/ui/DynamicProviders";
 import { TestnetModal } from "@/components/ui/testnetModal.lazy";
+import { FreezeWatcher } from "@/components/ui/freezeWatcher";
 /**
  * Work Sans, per the brand guidelines (polkadex.ee/mediaKit → BrandGuidelines.md),
  * which name it as the primary typeface at weights 300 / 400 / 600. The app was
@@ -110,6 +111,11 @@ export default async function RootLayout({
           font.className
         )}
       >
+        {/* Starts at hydration, before the testnet notice mounts. The notice is
+            ssr:false, so a freeze during load - the reported symptom, and the
+            moment the most JavaScript runs - happened before the modal's own
+            watcher existed. Renders nothing. See ui/freezeWatcher.tsx. */}
+        <FreezeWatcher />
         <TestnetModal />
         {/* CARRIES A VALUE ONLY. This must never become a wrapper that varies by
             route: the EVM provider used to be mounted here conditionally, and
