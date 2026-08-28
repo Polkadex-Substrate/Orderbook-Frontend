@@ -190,7 +190,6 @@ describe("feeVerdict - the arithmetic", () => {
   });
 
   it("catches a fee quoted in a different currency from the balance", () => {
-
     const v = feeVerdict({
       feeAmount: 1,
       feeTicker: "DAI",

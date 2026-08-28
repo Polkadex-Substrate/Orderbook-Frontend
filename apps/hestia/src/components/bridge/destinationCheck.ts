@@ -82,7 +82,8 @@ export const checkDestination = ({
   }
   if (!destKey || !signedKey) return { status: "unknown" };
 
-  if (destKey.toLowerCase() === signedKey.toLowerCase()) return { status: "match" };
+  if (destKey.toLowerCase() === signedKey.toLowerCase())
+    return { status: "match" };
 
   return {
     status: "mismatch",
