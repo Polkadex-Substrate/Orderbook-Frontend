@@ -4,6 +4,7 @@ import {
   STALL_AFTER_MS,
   blockedMessage,
   canProceed,
+  interceptionReport,
   isBlockedByLayer,
   isStalled,
   shouldDisableResizeHandles,
@@ -297,5 +298,95 @@ describe("shouldDisableResizeHandles - the checkbox that would not tick", () => 
     // take a feature away.
     expect(shouldDisableResizeHandles(false, false)).toBe(false);
     expect(shouldDisableResizeHandles(false, true)).toBe(false);
+  });
+});
+
+/*
+ * `stallReport` above only fires when body carries `pointer-events: none`. That
+ * gate is correct for the Radix layer bug, and it is why the reporter stopped
+ * accusing people of being stuck when they were reading. But it made the
+ * instrument specific to one cause, and users kept reporting a dead Continue
+ * button while Sentry stayed silent.
+ *
+ * A hit test asks the browser what is actually on top of the button, whatever
+ * the reason.
+ */
+const LONG_ENOUGH = REPORT_STALL_AFTER_MS + 1;
+const covered = {
+  ran: true,
+  insideDialog: false,
+  topElement: "div.overlay-backdrop",
+};
+const clear = { ran: true, insideDialog: true, topElement: "button" };
+
+describe("interceptionReport: something is physically covering the button", () => {
+  it("reports what is on top, by name, in the title", () => {
+    // The name in the TITLE is the point. An issue called "notice covered by
+    // div.overlay-backdrop" is actionable from the issue list; one called
+    // "<unknown>" sat unread for two weeks.
+    const r = interceptionReport(
+      state({ openedForMs: LONG_ENOUGH }),
+      covered,
+      false
+    );
+    expect(r).not.toBeNull();
+    expect(r?.message).toContain("div.overlay-backdrop");
+    expect(r?.topElement).toBe("div.overlay-backdrop");
+  });
+
+  it("says nothing when the button is reachable", () => {
+    expect(
+      interceptionReport(state({ openedForMs: LONG_ENOUGH }), clear, false)
+    ).toBeNull();
+  });
+
+  it("says nothing when the hit test could not run", () => {
+    // A test we could not run is not evidence of a clear path OR a blocked one.
+    // Treating "unknown" as "blocked" is exactly how the old reporter produced
+    // six false positives.
+    expect(
+      interceptionReport(
+        state({ openedForMs: LONG_ENOUGH }),
+        { ran: false, insideDialog: false, topElement: "unknown" },
+        false
+      )
+    ).toBeNull();
+  });
+
+  it("does not report a reader who has not got there yet", () => {
+    expect(
+      interceptionReport(state({ openedForMs: 500 }), covered, false)
+    ).toBeNull();
+  });
+
+  it("does not report once the user has ticked the box", () => {
+    // Having ticked it proves the click landed, so whatever is on top is not
+    // stopping them.
+    expect(
+      interceptionReport(
+        state({ openedForMs: LONG_ENOUGH, checked: true }),
+        covered,
+        false
+      )
+    ).toBeNull();
+  });
+
+  it("reports once, not once per second thereafter", () => {
+    expect(
+      interceptionReport(state({ openedForMs: LONG_ENOUGH }), covered, true)
+    ).toBeNull();
+  });
+
+  it("carries no user identifiers", () => {
+    const r = interceptionReport(
+      state({ openedForMs: LONG_ENOUGH }),
+      covered,
+      false
+    );
+    expect(Object.keys(r ?? {}).sort()).toEqual([
+      "message",
+      "openedForMs",
+      "topElement",
+    ]);
   });
 });

@@ -228,3 +228,69 @@ export const stallReport = (
     bodyPointerEvents: String(bodyPointerEvents),
   };
 };
+
+/**
+ * The result of asking the browser what is actually on top of our button.
+ *
+ * `document.elementFromPoint(x, y)` at the centre of "Continue to Testnet".
+ * If the answer is not inside our dialog, something is physically covering it.
+ */
+export type HitTest = {
+  /** False when the button was not in the DOM, or the call threw. */
+  ran: boolean;
+  /** Is the topmost element at that point inside our `<dialog>`? */
+  insideDialog: boolean;
+  /** Short descriptor of whatever IS on top - tag, id, first class. */
+  topElement: string;
+};
+
+/**
+ * Is something covering the notice's own Continue button?
+ *
+ * WHY THIS EXISTS ALONGSIDE `stallReport`
+ * `stallReport` requires `document.body` to be carrying `pointer-events: none`.
+ * That was the right gate for the Radix layer bug it was written for, and it
+ * correctly stopped us reporting people who read slowly. But it made the
+ * instrument specific to ONE cause: any other reason the button is dead - an
+ * overlay, a transparent full-screen element, a stray backdrop from a component
+ * that unmounted badly - produces no signal at all.
+ *
+ * A hit test is cause-agnostic. It does not ask WHY the click will not land, it
+ * asks whether anything is between the pointer and the button, and names it.
+ * That is positive evidence of interception whatever the mechanism, and the
+ * name is usually enough to identify the culprit without a reproduction.
+ *
+ * A SEPARATE REPORT, NOT A WIDER `stallReport`. The two describe different
+ * failures needing different fixes, and Sentry groups by message, so folding
+ * them together would produce one issue that means two things. That is how
+ * TESTNET-D became unreadable.
+ *
+ * Note what this deliberately CANNOT see: a frozen main thread. If the thread
+ * is blocked, this function never runs, because nothing runs. That case belongs
+ * to freezeWatch.ts, which detects it retroactively through timer drift.
+ */
+export const interceptionReport = (
+  state: GateState,
+  hitTest: HitTest,
+  alreadyReported: boolean
+): {
+  message: string;
+  openedForMs: number;
+  topElement: string;
+} | null => {
+  if (alreadyReported) return null;
+  if (state.checked) return null;
+  if (state.openedForMs < REPORT_STALL_AFTER_MS) return null;
+  // No evidence is not evidence. A test we could not run says nothing about
+  // whether the button is reachable, and guessing here is what produced six
+  // false positives last time.
+  if (!hitTest.ran) return null;
+  if (hitTest.insideDialog) return null;
+  return {
+    // Names the interceptor in the title, so the issue is actionable from the
+    // list without opening an event.
+    message: `Testnet notice covered by ${hitTest.topElement}`,
+    openedForMs: state.openedForMs,
+    topElement: hitTest.topElement,
+  };
+};

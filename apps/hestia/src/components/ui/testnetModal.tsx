@@ -16,10 +16,26 @@ import {
 import {
   blockedMessage,
   canProceed,
+  interceptionReport,
   shouldShowTestnetNotice,
   showEscapeHatch,
   stallReport,
+  type HitTest,
 } from "@/components/ui/testnetGate";
+import {
+  FREEZE_TICK_MS,
+  freezeMessage,
+  freezeVerdict,
+} from "@/components/ui/freezeWatch";
+
+/** Short, identifiable descriptor for whatever is covering our button. */
+const describeElement = (el: Element | null): string => {
+  if (!el) return "nothing";
+  const tag = el.tagName.toLowerCase();
+  if (el.id) return `${tag}#${el.id}`;
+  const cls = (el.getAttribute("class") ?? "").trim().split(/\s+/)[0];
+  return cls ? `${tag}.${cls}` : tag;
+};
 
 /*
  * WHY THIS DOES NOT USE THE SHARED <Modal> COMPONENT
@@ -67,7 +83,10 @@ export const TestnetModal = () => {
   const [attempted, setAttempted] = useState(false);
   const [openedForMs, setOpenedForMs] = useState(0);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const continueRef = useRef<HTMLButtonElement>(null);
   const stallReported = useRef(false);
+  const freezeReported = useRef(false);
+  const interceptionReported = useRef(false);
 
   useEffect(() => {
     let acked = false;
@@ -100,11 +119,66 @@ export const TestnetModal = () => {
     return () => el.removeEventListener("cancel", onCancel);
   }, []);
 
+  /*
+   * The tick that measures elapsed time ALSO measures how late it is.
+   *
+   * THE BLIND SPOT THIS CLOSES. `stallReport` derives elapsed time from this
+   * interval, so during a real freeze the callback does not run, openedForMs
+   * does not advance, and the reporter can never reach its threshold. The
+   * instrument needed a healthy thread in order to report an unhealthy one,
+   * which is why six weeks of "Sentry shows nothing" meant nothing.
+   *
+   * A tick scheduled for 1s that arrives 12s late proves the thread was blocked
+   * for 11 of them. The evidence is late but complete, and it survives the
+   * event that produced it. See freezeWatch.ts.
+   */
   useEffect(() => {
     if (!open) return;
     const startedAt = Date.now();
-    const id = setInterval(() => setOpenedForMs(Date.now() - startedAt), 1_000);
-    return () => clearInterval(id);
+    let lastTickAt = startedAt;
+    // Visibility is checked per tick rather than once: a background tab has its
+    // timers throttled to roughly once a minute, which is indistinguishable
+    // from a freeze. Any hidden moment during the gap disqualifies it.
+    let stayedVisible = document.visibilityState === "visible";
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") stayedVisible = false;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const id = setInterval(() => {
+      const now = Date.now();
+      const gapMs = now - lastTickAt;
+      lastTickAt = now;
+      setOpenedForMs(now - startedAt);
+
+      const verdict = freezeVerdict({
+        gapMs,
+        tickMs: FREEZE_TICK_MS,
+        wasVisibleThroughout: stayedVisible,
+        alreadyReported: freezeReported.current,
+      });
+      // Reset for the next window regardless of the verdict, so one background
+      // excursion does not disqualify every later tick.
+      stayedVisible = document.visibilityState === "visible";
+
+      if (verdict.frozen) {
+        freezeReported.current = true;
+        Sentry.captureMessage(freezeMessage(verdict.blockedForMs), {
+          level: "error",
+          extra: {
+            blockedForMs: verdict.blockedForMs,
+            clamped: verdict.clamped,
+            openedForMs: now - startedAt,
+            documentReadyState: document.readyState,
+          },
+        });
+      }
+    }, FREEZE_TICK_MS);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [open]);
 
   const state = { checked, openedForMs, attempted };
@@ -141,6 +215,66 @@ export const TestnetModal = () => {
       },
     });
   }, [open, checked, openedForMs, attempted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /*
+   * Ask the browser what is actually on top of our own Continue button.
+   *
+   * The reporter above only fires when `body` carries `pointer-events: none`,
+   * which is the Radix layer bug and nothing else. Users kept reporting a dead
+   * button while that stayed silent, so it was reporting one cause and calling
+   * the silence proof. A hit test does not care WHY the click will not land: if
+   * the topmost element at the button's centre is not inside our dialog, some
+   * thing is covering it, and this names it.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const btn = continueRef.current;
+    const dlg = dialogRef.current;
+
+    let hitTest: HitTest = {
+      ran: false,
+      insideDialog: false,
+      topElement: "unknown",
+    };
+    try {
+      if (btn && dlg) {
+        const r = btn.getBoundingClientRect();
+        // A zero-sized rect means the button has not been laid out yet, and
+        // elementFromPoint at (0,0) would name the page's top-left corner - a
+        // confident answer to a question we did not ask.
+        if (r.width > 0 && r.height > 0) {
+          const top = document.elementFromPoint(
+            r.left + r.width / 2,
+            r.top + r.height / 2
+          );
+          hitTest = {
+            ran: true,
+            insideDialog: !!top && dlg.contains(top),
+            topElement: describeElement(top),
+          };
+        }
+      }
+    } catch {
+      // Leave hitTest.ran false. A test we could not run is not evidence.
+    }
+
+    const report = interceptionReport(
+      { checked, openedForMs, attempted },
+      hitTest,
+      interceptionReported.current
+    );
+    if (!report) return;
+    interceptionReported.current = true;
+    Sentry.captureMessage(report.message, {
+      level: "error",
+      extra: {
+        openedForMs: report.openedForMs,
+        topElement: report.topElement,
+        documentReadyState: document.readyState,
+        bodyPointerEvents: getComputedStyle(document.body).pointerEvents,
+      },
+    });
+  }, [open, checked, openedForMs, attempted]);
 
   const handleContinue = useCallback(() => {
     if (!canProceed({ checked, openedForMs, attempted })) {
@@ -267,6 +401,7 @@ export const TestnetModal = () => {
           {/* Not disabled. A disabled button cannot explain itself, so a click
               that fails to register produced silence. */}
           <button
+            ref={continueRef}
             type="button"
             onClick={handleContinue}
             className="w-full rounded-sm bg-primary-hover px-4 py-3 font-medium text-white transition-opacity hover:opacity-90"
