@@ -227,6 +227,19 @@ const nextConfig = {
     // "unspecified". Only a read of THIS list explains it. Anything read as
     // `process.env.X` in client code and absent from this block is dead.
     SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
+    // Added 2026-08-30, and it is the SENTRY_ENVIRONMENT bug one step later.
+    //
+    // `release.name` below feeds the Sentry PLUGIN, which creates the release
+    // and attaches source maps at build time. The runtime SDK gets its release
+    // separately, and both instrumentation files declined to set one on the
+    // assumption the plugin injects it into the bundle. It mostly did not:
+    // eight of ten sampled ORDERBOOK-TESTNET-R events carried no release at
+    // all, and the two that did carried values from elsewhere entirely.
+    //
+    // Inlining it here is what gives client code a route to the value. See the
+    // rule three entries up: read as process.env.X in client code and absent
+    // from this block means dead. src/sentryRelease.ts owns the precedence.
+    NEXT_BUILD_ID: process.env.NEXT_BUILD_ID,
     SENTRY_TRACES_SAMPLE_RATE: process.env.SENTRY_TRACES_SAMPLE_RATE,
     SENTRY_REPLAY_SESSION_SAMPLE_RATE:
       process.env.SENTRY_REPLAY_SESSION_SAMPLE_RATE,

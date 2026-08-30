@@ -17,6 +17,8 @@
  * Imported inside the guard now, so nothing is loaded unless a DSN is set.
  */
 
+import { resolveRelease } from "./sentryRelease";
+
 const SENTRY_DSN = process.env.SENTRY_DSN;
 
 // A DSN check as well as NODE_ENV: without one the SDK can report nothing, so
@@ -45,8 +47,13 @@ const commonOptions = {
     (process.env.NODE_ENV === "production"
       ? "unspecified"
       : process.env.NODE_ENV),
-  // Note: don't set `release` here - use the SENTRY_RELEASE env var so the
-  // value also gets attached to uploaded source maps.
+  // Set explicitly, for the same reason as the client: the plugin's
+  // release.name governs the build-time upload, not the runtime SDK, and
+  // relying on injection left events untagged. See src/sentryRelease.ts.
+  release: resolveRelease(
+    process.env.NEXT_BUILD_ID,
+    process.env.SENTRY_RELEASE
+  ),
 };
 
 export async function register() {

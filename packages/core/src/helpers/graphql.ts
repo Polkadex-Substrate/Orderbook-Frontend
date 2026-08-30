@@ -113,80 +113,104 @@ const createWsLink = (token?: string): GraphQLWsLink | null => {
  * which is indistinguishable from a dozen different server-side causes.
  */
 const createErrorLink = (hasWsLink: boolean): ApolloLink => {
-  return onError(({ graphQLErrors, networkError, operation }: any) => {
-    const op = operation?.operationName ?? "unknown operation";
+  return onError(
+    ({ graphQLErrors, networkError, operation, response }: any) => {
+      const op = operation?.operationName ?? "unknown operation";
 
-    if (graphQLErrors?.length) {
-      graphQLErrors.forEach(({ message, path }: any) => {
-        console.error(
-          `[GraphQL] ${op} failed: ${message}${
-            path
-              ? ` (path: ${Array.isArray(path) ? path.join(".") : path})`
-              : ""
-          }`
-        );
-      });
-    }
-
-    if (networkError) {
-      const status = (networkError as any).statusCode;
-      // ServerError.result holds the parsed body, which is where a GraphQL
-      // server puts the actual reason for a 400/500.
-      const body = (networkError as any).result;
-      console.error(
-        `[GraphQL] ${op} network error${status ? ` (HTTP ${status})` : ""}: ${
-          networkError.message
-        }`,
-        body ?? networkError
-      );
-    }
-
-    /*
-     * Neither bucket populated is not ONE failure, it is three, and the old
-     * message listed all three without choosing between them:
-     *
-     *   "check the endpoint URL, CORS, and that a transport exists"
-     *
-     * That is where the GetMarketTickers investigation dead-ended, twenty
-     * events deep, with every market on the trading page showing zero volume.
-     * The HTTP status separates the cases and Apollo puts it on the operation
-     * context, where nothing was reading it. See graphqlFailure.ts.
-     */
-    if (!graphQLErrors?.length && !networkError) {
-      const context = operation?.getContext?.() ?? {};
-      const definition = operation?.query
-        ? getMainDefinition(operation.query)
-        : null;
-      const verdict = classifyEmptyFailure({
-        operationName: op,
-        httpStatus: context?.response?.status ?? null,
-        hadData: !!context?.response?.data,
-        operationType:
-          definition && definition.kind === "OperationDefinition"
-            ? definition.operation
-            : null,
-        hasWsLink,
-      });
-
-      console.error(verdict.message);
-
-      // Cancellations are lifecycle, not defects, and they arrive in bursts on
-      // every navigation. Reporting them would bury the two causes that matter.
-      if (
-        verdict.worthReporting &&
-        shouldReportFailure(failureLog, op, verdict.cause)
-      ) {
-        Sentry.captureMessage(verdict.message, {
-          level: "error",
-          extra: {
-            operationName: op,
-            cause: verdict.cause,
-            httpStatus: context?.response?.status ?? null,
-          },
+      if (graphQLErrors?.length) {
+        graphQLErrors.forEach(({ message, path }: any) => {
+          console.error(
+            `[GraphQL] ${op} failed: ${message}${
+              path
+                ? ` (path: ${Array.isArray(path) ? path.join(".") : path})`
+                : ""
+            }`
+          );
         });
       }
+
+      if (networkError) {
+        const status = (networkError as any).statusCode;
+        // ServerError.result holds the parsed body, which is where a GraphQL
+        // server puts the actual reason for a 400/500.
+        const body = (networkError as any).result;
+        console.error(
+          `[GraphQL] ${op} network error${status ? ` (HTTP ${status})` : ""}: ${
+            networkError.message
+          }`,
+          body ?? networkError
+        );
+      }
+
+      /*
+       * Neither bucket populated is not ONE failure, it is three, and the old
+       * message listed all three without choosing between them:
+       *
+       *   "check the endpoint URL, CORS, and that a transport exists"
+       *
+       * That is where the GetMarketTickers investigation dead-ended, twenty
+       * events deep, with every market on the trading page showing zero volume.
+       * The HTTP status separates the cases and Apollo puts it on the operation
+       * context, where nothing was reading it. See graphqlFailure.ts.
+       */
+      if (!graphQLErrors?.length && !networkError) {
+        const context = operation?.getContext?.() ?? {};
+        const definition = operation?.query
+          ? getMainDefinition(operation.query)
+          : null;
+        /*
+         * TWO DIFFERENT THINGS ARE BOTH CALLED `response`, AND I USED THE WRONG
+         * ONE. This produced three Sentry issues asserting "the server answered
+         * with an empty body" on evidence that did not exist.
+         *
+         *   operation.getContext().response  - the raw fetch Response, set by
+         *                                      BaseHttpLink via setContext({ response }).
+         *                                      Has `status`. Has NO `data`, and its
+         *                                      body stream is already consumed.
+         *   the `response` callback argument - the GraphQL ExecutionResult.
+         *                                      This is the one with `data` and `errors`.
+         *
+         * `!!context.response.data` was therefore ALWAYS false, so every empty-bucket
+         * failure at a 2xx was labelled "empty response" whether or not any data
+         * came back. The HTTP status was real; the claim about the body was not.
+         */
+        const verdict = classifyEmptyFailure({
+          operationName: op,
+          httpStatus: context?.response?.status ?? null,
+          hadData: response?.data !== undefined && response?.data !== null,
+          operationType:
+            definition && definition.kind === "OperationDefinition"
+              ? definition.operation
+              : null,
+          hasWsLink,
+        });
+
+        console.error(verdict.message);
+
+        // Cancellations are lifecycle, not defects, and they arrive in bursts on
+        // every navigation. Reporting them would bury the two causes that matter.
+        if (
+          verdict.worthReporting &&
+          shouldReportFailure(failureLog, op, verdict.cause)
+        ) {
+          Sentry.captureMessage(verdict.message, {
+            level: "error",
+            extra: {
+              operationName: op,
+              cause: verdict.cause,
+              httpStatus: context?.response?.status ?? null,
+              // The facts the verdict was built from, so a future reader can
+              // check the conclusion rather than trust it.
+              hadData: response?.data !== undefined && response?.data !== null,
+              graphQLErrorCount: Array.isArray(response?.errors)
+                ? response.errors.length
+                : null,
+            },
+          });
+        }
+      }
     }
-  });
+  );
 };
 
 /**

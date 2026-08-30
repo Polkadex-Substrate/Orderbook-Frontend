@@ -30,6 +30,8 @@
 // patterns), so it does not drag in the SDK. The rule exists to keep
 // @sentry/nextjs out of the eager graph, not to ban all imports.
 import { SENTRY_IGNORED_ERRORS } from "./sentryNoise";
+// Import-free like sentryNoise, so it does not drag the SDK into the eager graph.
+import { resolveRelease } from "./sentryRelease";
 
 // Gate on the DSN too, not just NODE_ENV: with no DSN the SDK cannot report
 // anything, so loading it is pure cost.
@@ -110,8 +112,22 @@ if (enabled) {
         // consider replayIntegration({ maskAllText, blockAllMedia }).
         replaysSessionSampleRate: REPLAY_SESSION_SAMPLE_RATE,
         replaysOnErrorSampleRate: 1.0,
-        // Note: don't set `release` here - use the SENTRY_RELEASE env var so the
-        // value also gets attached to uploaded source maps.
+        /*
+         * SET EXPLICITLY. The previous note here said not to, and to rely on
+         * SENTRY_RELEASE so the value would also reach uploaded source maps.
+         * That assumed the build plugin injects the release into this bundle.
+         * Sampled events say otherwise: eight of ten carried no release at all,
+         * and the two that did carried a raw git SHA and a foreign
+         * "3.8.0-production-..." string. None matched the deploy stamp.
+         *
+         * The plugin still sets its own release.name in next.config.js for the
+         * source-map upload, from the same NEXT_BUILD_ID, so the two agree by
+         * construction rather than by assumption.
+         */
+        release: resolveRelease(
+          process.env.NEXT_BUILD_ID,
+          process.env.SENTRY_RELEASE
+        ),
       });
     })
     .catch((e) => console.error("[sentry] failed to initialise:", e));

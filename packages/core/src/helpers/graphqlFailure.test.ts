@@ -45,7 +45,11 @@ describe("classifyEmptyFailure - three causes that used to look identical", () =
     expect(v.cause).toBe("empty-response");
     expect(v.worthReporting).toBe(true);
     expect(v.message).toContain("200");
-    expect(v.message).toMatch(/empty body/i);
+    expect(v.message).toMatch(/no data and no errors/i);
+    // Must NOT claim the body was empty. That wording shipped once, built from
+    // `context.response.data` - a field that does not exist on a fetch Response,
+    // so it was always undefined. Three issues asserted it on no evidence.
+    expect(v.message).not.toMatch(/empty body/i);
   });
 
   it("does not call it empty when data actually arrived", () => {

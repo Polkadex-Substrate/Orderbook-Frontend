@@ -100,7 +100,20 @@ export const classifyEmptyFailure = ({
    */
   if (httpStatus >= 200 && httpStatus < 300 && !hadData)
     return {
-      message: `[GraphQL] ${operationName} returned HTTP ${httpStatus} with no data and no errors - the server answered with an empty body`,
+      /*
+       * WORDING MATTERS HERE, AND THE FIRST VERSION OVERSTATED THE CASE.
+       *
+       * It said "the server answered with an empty body", which was read off
+       * `operation.getContext().response.data` - a field that does not exist on
+       * a fetch Response, so it was always undefined. Three Sentry issues went
+       * out asserting an empty body on evidence that had never been collected,
+       * and a note nearly went to the backend team on that basis.
+       *
+       * `hadData` is now read from the GraphQL ExecutionResult, so the claim is
+       * supported. The message still says only what is measured: a 2xx, no data,
+       * and neither error bucket. It does NOT speculate about the body bytes.
+       */
+      message: `[GraphQL] ${operationName} returned HTTP ${httpStatus} with no data and no errors`,
       cause: "empty-response",
       worthReporting: true,
     };
