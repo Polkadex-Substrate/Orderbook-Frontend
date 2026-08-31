@@ -6,17 +6,17 @@ of findings. Anything here needs an explicit decision before a mainnet build.
 
 ## Status, 2026-08-14
 
-| # | Status |
-| --- | --- |
-| B1 unencrypted keystore upload | **FIXED**, two independent guards |
-| B2 passphrase strength | **PARTLY FIXED** - validator built and tested, input not yet swapped |
-| B3 `enableAnalytics` | **FIXED** |
-| B4 `SENTRY_RELEASE` mismatch | **FIXED** |
+| #                              | Status                                                               |
+| ------------------------------ | -------------------------------------------------------------------- |
+| B1 unencrypted keystore upload | **FIXED**, two independent guards                                    |
+| B2 passphrase strength         | **PARTLY FIXED** - validator built and tested, input not yet swapped |
+| B3 `enableAnalytics`           | **FIXED**                                                            |
+| B4 `SENTRY_RELEASE` mismatch   | **FIXED**                                                            |
 
 ### Two corrections to my own reporting, recorded because both were wrong in ways that mattered
 
 **I wrote that "no call site passes a password". That was false.**
-`connectTradingInteraction.tsx:162` routes a *locked* account through
+`connectTradingInteraction.tsx:162` routes a _locked_ account through
 `UnlockAccount`, which does call `onBackupGoogleDrive({ account, password })`. The
 plaintext path was the `isLocked === false` branch only. Still the common case,
 since a `KeyringPair` stays unlocked once unlocked and a freshly created account
@@ -104,7 +104,7 @@ always took it.
 export function encodePair({ publicKey, secretKey }, passphrase) {
   const encoded = u8aConcat(PAIR_HDR, secretKey, PAIR_DIV, publicKey);
   if (!passphrase) {
-    return encoded;        // no encryption, raw secretKey
+    return encoded; // no encryption, raw secretKey
   }
   const { params, password, salt } = scryptEncode(passphrase);
   const { encrypted, nonce } = naclEncrypt(encoded, password.subarray(0, 32));
@@ -154,14 +154,14 @@ fails too. Tested, including the boundary and the exact 5-digit PIN case.
 `UnlockAccount`, which renders a `Passcode.Outline` widget validated by
 `unLockAccountValidations` - 5 digits. So the validator exists but nothing calls
 it yet, and a backup encrypted with a 5-digit PIN will pass `assertUploadable`
-because it *is* encrypted, just weakly.
+because it _is_ encrypted, just weakly.
 
 **The remaining work is a dedicated backup-passphrase step**, separate from
 unlock, because these are two different secrets:
 
-- *unlock* proves you may use a key that never leaves this browser, so a short
+- _unlock_ proves you may use a key that never leaves this browser, so a short
   PIN is defensible - an attacker needs the browser first
-- *backup passphrase* protects a file in someone else's cloud, attackable
+- _backup passphrase_ protects a file in someone else's cloud, attackable
   offline, in parallel, with no rate limit and no way for us to notice
 
 Conflating them is what let a 5-digit PIN become the only thing protecting an
@@ -174,8 +174,14 @@ password UI is a poor trade against a validator that is ready to wire in.
 ```ts
 password: Yup.string()
   .required("Required")
-  .test("", "Must be only digits", (v) => /^[0-9]+$/.test(v.replace(/\s+/g, "")))
-  .test("", "Must be exactly 5 digits", (v) => v?.replace(/\s+/g, "")?.length === 5)
+  .test("", "Must be only digits", (v) =>
+    /^[0-9]+$/.test(v.replace(/\s+/g, ""))
+  )
+  .test(
+    "",
+    "Must be exactly 5 digits",
+    (v) => v?.replace(/\s+/g, "")?.length === 5
+  );
 ```
 
 Digits only, exactly 5. **100,000 possible values.** `createAccountValidations`
@@ -237,3 +243,62 @@ This matters more than it looks: release tagging is the mechanism that answers
 "did the fixed build produce this error", and without it that question cannot be
 settled from Sentry. It caused repeated wrong conclusions about
 ORDERBOOK-TESTNET-2.
+
+---
+
+## B5. Dependency advisories: two fixed, two with no fix available
+
+Raised by GitHub on push (2 high, 2 moderate, 1 low on the default branch).
+A local `yarn audit` against the tracked lockfile found 2 high, 11 moderate,
+5 low; GitHub dedupes and reports fewer. The two highs match exactly.
+
+### Fixed
+
+**`sharp` (2 x high)** - inherits libvips CVE-2026-33327 and CVE-2026-3xxxx.
+Was `^0.34.3`, patched in `>=0.35.0`, now `^0.35.0` in `apps/hestia/package.json`.
+sharp 0.35 requires Node `>=20.9.0`; this repo pins `>=22 <23`, so compatible.
+
+Exposure was low: sharp is Next's build-time image optimiser and is never
+shipped to a browser, so the risk was to the build host rather than to users.
+
+### Deliberately NOT changed
+
+**`@metamask/sdk` and `@metamask/sdk-communication-layer` (moderate)** -
+"indirectly exposed via malicious `debug@4.4.2` dependency". Patched
+`>=0.33.1`; the lockfile pins `0.27.0`.
+
+Left alone on purpose, for two reasons:
+
+1. **The attack vector is already closed.** The `resolutions` block pins
+   `debug: ^4.4.3`, and the lockfile carries only 4.4.3. The malicious 4.4.2 is
+   not in the tree. The advisory matches on version range, not on presence of
+   the compromised package.
+2. **Forcing the bump is riskier than the advisory.** `wagmi@2.12.7` requires
+   `@metamask/sdk-communication-layer` at EXACTLY `0.27.0`. A `resolutions`
+   override to `>=0.33.1` would put an unvetted version under a connector that
+   asked for a specific one, in the wallet connection path of an exchange.
+
+The correct fix is a wagmi upgrade, which changes wallet connection and needs
+its own retest cycle. Not to be done alongside unrelated work.
+
+### No fix available (`patched: <0.0.0`)
+
+- **`@stablelib/ed25519` 1.0.3** - Ed25519 signature malleability via a missing
+  `S < L` check. This sits in a signing path, so it is worth a decision before
+  mainnet rather than after: either accept it explicitly, or find a maintained
+  replacement. There is nothing to upgrade to today.
+- **`elliptic`** - uses a cryptographic primitive with a risky implementation.
+  Long-standing, pulled in transitively by the polkadot stack.
+
+Neither is actionable by version bump. Both belong in the mainnet risk review.
+
+### Applying the sharp fix
+
+`yarn.lock` still needs regenerating. This must run on a Mac, NOT in a Linux
+container: `node_modules` here holds macOS arm64 native binaries (sharp itself,
+SWC, rollup), and installing from Linux would replace them with Linux builds and
+break local development.
+
+    yarn install
+    yarn lint && yarn test
+    git add package.json apps/hestia/package.json yarn.lock
