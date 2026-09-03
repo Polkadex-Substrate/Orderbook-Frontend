@@ -5,6 +5,7 @@ import {
   Transaction,
 } from "@orderbook/core/utils/orderbookService";
 import { NotificationPayload } from "@orderbook/core/providers/public/settings";
+import { describeFill, fillTitle } from "@orderbook/core/helpers/fillReport";
 export const NOTIFICATIONS = {
   placeOrder: (
     _side: OrderSide,
@@ -36,26 +37,60 @@ export const NOTIFICATIONS = {
       href: "/history?tab=orderHistory",
     };
   },
+  /*
+   * QUANTITY COMES FROM `filledQuantity`, NOT `quantity`. Both of these used to
+   * interpolate `order.quantity` - the size the order was PLACED at - so a
+   * partial fill was reported as a complete one. Reported 1 Sep 2026: a Sell of
+   * 3 PDEX that filled 2.5 announced "Filled ... for 3 PDEX". See
+   * helpers/fillReport.ts for the reconciliation that proved it.
+   */
   partialFilledOrder: (order: Order): NotificationPayload => {
     const isSell = order.side === "Ask";
     const type = order.type.charAt(0) + order.type.toLowerCase().slice(1);
     const side = isSell ? "Sell" : "Buy";
     return {
       category: "General",
-      message: `${type} ${side} Order Partially Filled`,
-      description: `Partial filled exchange ${type.toLowerCase()} ${side.toLowerCase()} order for ${order.quantity} ${order.market.baseAsset.ticker} by using ${order.market.quoteAsset.ticker}.`,
+      message: fillTitle({
+        order,
+        typeLabel: type,
+        sideLabel: side,
+        closed: false,
+      }),
+      description: describeFill({
+        order,
+        baseTicker: order.market.baseAsset.ticker,
+        quoteTicker: order.market.quoteAsset.ticker,
+        closed: false,
+      }),
       type: "Information",
       href: "/history?tab=openOrders",
     };
   },
+  /*
+   * `closed: true` - this notice is only built for a CLOSED order, so any
+   * shortfall between filled and ordered is a remainder the engine cancelled
+   * (typically for falling below the minimum order value). That cancellation
+   * used to happen with no message at all, hidden inside a notice claiming full
+   * execution.
+   */
   filledOrder: (order: Order): NotificationPayload => {
     const isSell = order.side === "Ask";
     const type = order.type.charAt(0) + order.type.toLowerCase().slice(1);
     const side = isSell ? "Sell" : "Buy";
     return {
       category: "General",
-      message: `${type} ${side} Order Filled 🎉`,
-      description: `Filled exchange ${type.toLowerCase()} ${side.toLowerCase()} order for ${order.quantity} ${order.market.baseAsset.ticker} by using ${order.market.quoteAsset.ticker}.`,
+      message: fillTitle({
+        order,
+        typeLabel: type,
+        sideLabel: side,
+        closed: true,
+      }),
+      description: describeFill({
+        order,
+        baseTicker: order.market.baseAsset.ticker,
+        quoteTicker: order.market.quoteAsset.ticker,
+        closed: true,
+      }),
       type: "Information",
       href: "/history?tab=orderHistory",
     };

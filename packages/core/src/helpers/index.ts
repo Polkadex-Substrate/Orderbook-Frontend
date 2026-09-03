@@ -54,4 +54,5 @@ export * from "./depositCapacity";
 export * from "./rawSigningPayload";
 export * from "./errorMessage";
 export * from "./tickerBatch";
+export * from "./fillReport";
 export * from "./graphqlFailure";

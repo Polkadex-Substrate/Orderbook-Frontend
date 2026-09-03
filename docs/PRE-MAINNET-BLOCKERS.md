@@ -261,36 +261,90 @@ sharp 0.35 requires Node `>=20.9.0`; this repo pins `>=22 <23`, so compatible.
 Exposure was low: sharp is Next's build-time image optimiser and is never
 shipped to a browser, so the risk was to the build host rather than to users.
 
-### Deliberately NOT changed
+**The direct bump alone was NOT enough, and the first attempt looked like it
+worked.** After `yarn install` the lockfile contained BOTH versions:
 
-**`@metamask/sdk` and `@metamask/sdk-communication-layer` (moderate)** -
-"indirectly exposed via malicious `debug@4.4.2` dependency". Patched
-`>=0.33.1`; the lockfile pins `0.27.0`.
+    sharp@^0.34.3:   version "0.34.5"      <- still vulnerable
+    sharp@^0.35.0:   version "0.35.4"
 
-Left alone on purpose, for two reasons:
+`next@15.5.18` declares `sharp: ^0.34.3` as an optional dependency, so yarn
+resolved a second copy for Next while our own requirement resolved to 0.35.4.
+GitHub kept reporting 2 high because the vulnerable copy was genuinely still in
+the tree.
 
-1. **The attack vector is already closed.** The `resolutions` block pins
-   `debug: ^4.4.3`, and the lockfile carries only 4.4.3. The malicious 4.4.2 is
-   not in the tree. The advisory matches on version range, not on presence of
-   the compromised package.
-2. **Forcing the bump is riskier than the advisory.** `wagmi@2.12.7` requires
-   `@metamask/sdk-communication-layer` at EXACTLY `0.27.0`. A `resolutions`
-   override to `>=0.33.1` would put an unvetted version under a connector that
-   asked for a specific one, in the wallet connection path of an exchange.
+The lesson generalises: bumping a direct dependency does not remove a
+transitive copy of the same package. Verify by grepping the LOCKFILE for every
+resolution of the package name, not by reading package.json. A `resolutions`
+entry (`"sharp": "^0.35.0"` at the root) is what collapses both requesters onto
+one version.
 
-The correct fix is a wagmi upgrade, which changes wallet connection and needs
-its own retest cycle. Not to be done alongside unrelated work.
+### The remaining four, and why none is a version bump
 
-### No fix available (`patched: <0.0.0`)
+`yarn audit` reports 11 moderate and 5 low, but those are the SAME four
+advisories counted once per dependency path. Deduplicated:
 
-- **`@stablelib/ed25519` 1.0.3** - Ed25519 signature malleability via a missing
-  `S < L` check. This sits in a signing path, so it is worth a decision before
-  mainnet rather than after: either accept it explicitly, or find a maintained
-  replacement. There is nothing to upgrade to today.
-- **`elliptic`** - uses a cryptographic primitive with a risky implementation.
-  Long-standing, pulled in transitively by the polkadot stack.
+**1 and 2. `@metamask/sdk` + `@metamask/sdk-communication-layer` (moderate)**
+Path: `hestia > wagmi > @wagmi/connectors > @metamask/sdk`.
+Vulnerable `>=0.16.0 <=0.33.0`, patched `>=0.33.1`, lockfile has `0.27.0`.
 
-Neither is actionable by version bump. Both belong in the mainnet risk review.
+"Indirectly exposed via malicious `debug@4.4.2`". **The attack vector is already
+closed**: the root `resolutions` pins `debug: ^4.4.3` and the lockfile carries
+only 4.4.3, so the compromised package is not in the tree. The advisory matches
+on version range, not on presence.
+
+Forcing the bump is riskier than the advisory it silences: `wagmi@2.12.7`
+resolves `@metamask/sdk-communication-layer` at EXACTLY `0.27.0`, so a
+resolution would put an unvetted version under a connector that asked for a
+specific one, in the wallet path of an exchange. Real fix: upgrade wagmi, with
+its own wallet-connection retest.
+
+**3. `@opentelemetry/core` (moderate)** - unbounded memory allocation in W3C
+Baggage propagation. Path: `hestia > @sentry/nextjs > @sentry/node >
+@opentelemetry/core`. Patched `>=2.8.0`; the lockfile has `1.30.1`.
+
+Not a resolution candidate. The whole OTel stack is on 1.30.1 (`core`,
+`resources`, `sdk-trace-base` all 1.30.1, several requesters pinning
+`@opentelemetry/core@1.30.1` with no caret). Forcing `core` to 2.x while its
+siblings stay at 1.x breaks the ecosystem's version-compatibility requirement.
+
+OTel 2.x only arrives with `@sentry/nextjs` 10.x; we are on 8.55.2. That is a
+**two-major migration** (8 to 9 to 10), and it lands on exactly the files that
+carry the freeze and release instrumentation. Not to be done casually.
+
+Blast radius meanwhile is small: `@sentry/node` is server-side only, so this is
+not reachable from a browser.
+
+**4 and 5. No fix exists (`patched: <0.0.0`)**
+Both arrive via `@web3modal/wagmi > @walletconnect/ethereum-provider >
+@walletconnect/sign-client`:
+
+- **`@stablelib/ed25519` (moderate, `<=2.0.2`)** - Ed25519 signature malleability
+  from a missing `S < L` check. This one deserves a decision rather than a
+  dismissal: it is in a signing path on an exchange. Malleability means a valid
+  signature can be transformed into a different valid signature for the same
+  message, so anything that treats a signature as a unique identifier is
+  unsafe. Worth confirming we never do that.
+- **`elliptic` (low, `<=6.6.1`)** - risky cryptographic primitive. Long-standing,
+  transitive through the same WalletConnect chain.
+
+Neither has a patched version to move to. Both are inherited from WalletConnect,
+so the only lever is a WalletConnect or AppKit upgrade, and there is no evidence
+yet that a newer line drops these dependencies. Note `@web3modal/wagmi` is
+itself the deprecated name for what is now `@reown/appkit`, so that upgrade is
+worth scoping on its own merits.
+
+### Recommendation
+
+Accept all four for testnet. Before mainnet, in this order:
+
+1. Confirm no code treats a signature as a unique identifier (the ed25519
+   malleability question). This is the only one with a plausible security
+   consequence for us.
+2. Scope the `@web3modal/wagmi` to `@reown/appkit` migration, which may clear
+   items 4 and 5 and would also move wagmi, clearing 1 and 2.
+3. Treat the `@sentry/nextjs` 8 to 10 upgrade as separate work, sequenced after
+   the freeze investigation closes, since it rewrites the instrumentation this
+   document depends on.
 
 ### Applying the sharp fix
 
