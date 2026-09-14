@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMarkets } from "@orderbook/core/hooks";
 import {
   canonicalMarketPath,
@@ -28,6 +28,11 @@ import { MarketNotFound } from "./marketNotFound";
 import { ConnectTradingInteraction } from "@/components/ui/ConnectWalletInteraction/connectTradingInteraction";
 import { Footer, Header } from "@/components/ui";
 import { useConsentGateOpen, useSizeObserver, useTour } from "@/hooks";
+import {
+  TOUR_QUERY_PARAM,
+  shouldStartTour,
+  strippedTourUrl,
+} from "@/config/tours/tourLaunch";
 
 export function Template({ id }: { id: string }) {
   // Height no longer needed: the footer renders in normal flow on this
@@ -65,6 +70,37 @@ export function Template({ id }: { id: string }) {
 
   const router = useRouter();
   const canonicalised = useRef(false);
+
+  /*
+   * Start the tour when another page asked us to (?tour=1).
+   *
+   * THE BUG: "Open tour" on the Balances page was `disabled` with no onClick,
+   * so it did nothing and said nothing - reported twice and still open. Wiring
+   * it up in place was not an option: every tour step targets a trading-page
+   * element, so driver.js would have highlighted empty space. Per UX-LEARNINGS
+   * 5.8, a control blocked on a prior step should PERFORM that step, and the
+   * prior step here is being on this page. See config/tours/tourLaunch.ts.
+   *
+   * The flag is stripped immediately afterwards, so a refresh or a shared link
+   * does not restart the tour and Back does not walk the user through it again.
+   * `strippedTourUrl` returns null when there is nothing left to strip, which
+   * makes the second pass a no-op by construction rather than by luck - the
+   * property the market-canonicalisation effect below was given for the same
+   * reason.
+   */
+  const searchParams = useSearchParams();
+  const tourRequested = shouldStartTour(searchParams?.get(TOUR_QUERY_PARAM));
+  const tourLaunched = useRef(false);
+  useEffect(() => {
+    if (!tourRequested || tourLaunched.current) return;
+    tourLaunched.current = true;
+    startTour();
+    if (typeof window === "undefined") return;
+    const next = strippedTourUrl(
+      `${window.location.pathname}${window.location.search}`
+    );
+    if (next) router.replace(next);
+  }, [tourRequested, startTour, router]);
 
   /**
    * Rewrite a legacy URL to the canonical one: /trading/PDEXUSDT becomes

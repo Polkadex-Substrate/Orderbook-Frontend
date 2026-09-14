@@ -356,3 +356,105 @@ break local development.
     yarn install
     yarn lint && yarn test
     git add package.json apps/hestia/package.json yarn.lock
+
+---
+
+## B6. Order cancellation is broken by a null-ref bug in `vaul` 0.9.9
+
+Tester Bug #10 ("cancel does nothing, no error anywhere, order still there
+after reload") and `ORDERBOOK-TESTNET-Y` are the same event. Nine rounds of
+theorising produced nothing; this came from the stack trace and the session
+replay.
+
+### The chain, read outermost-first from the Sentry stack
+
+```
+4692.js:15:4002 (HTMLBodyElement.r)   Sentry's wrap() trampoline - NOT our code
+87c73c54.js    (cs, cc, sn, nz, i8)   React dispatch
+4028.js:363490 (onPointerOut)         vaul
+4028.js:362352 (H)                    vaul handleOnPointerUp
+4028.js:356787 (onRelease)            vaul - THROWS HERE
+```
+
+`4692` was a red herring for a while. Sentry's `BrowserApiErrors` integration
+monkey-patches `EventTarget.prototype.addEventListener` and substitutes a
+wrapper, so EVERY body-level listener reports as `HTMLBodyElement.r` in that
+chunk. It is instrumentation standing between the body and the real handler,
+and it rethrows - so the same bug also reaches `window.onerror`.
+
+### The bug, in `node_modules/vaul/dist/index.js`
+
+```js
+onPointerOut: ((event) => {
+  rest.onPointerOut?.call(rest, event);
+  handleOnPointerUp(lastKnownPointerEventRef.current); // ref, useRef(null)
+},
+  function handleOnPointerUp(event) {
+    pointerStartRef.current = null;
+    wasBeyondThePointRef.current = false;
+    onRelease(event); // null flows straight through
+  });
+```
+
+`lastKnownPointerEventRef` is `React.useRef(null)`. A `pointerout` arriving
+before anything has populated it calls `onRelease(null)`, which reads
+`event.target` and throws `TypeError: Cannot read properties of null (reading
+'target')`. Unhandled, `mechanism: onerror`.
+
+### Why it presents as "cancel does nothing"
+
+`trading/Orders/OpenOrders/responsiveTable.tsx` renders the row actions in a
+`Drawer`, which is vaul. The handler throws before the cancel mutation is sent,
+and because nothing catches it the user gets no error toast either. Silence in
+both directions is exactly what was reported.
+
+### Confirmed upstream
+
+vaul issue #484 (opened Oct 2024, now CLOSED) is this exact bug, reported by
+another user: "if I long-press on the drawer content, `onPointerMove` won't be
+triggered, and `onContextMenu` will throw Cannot read properties of null
+(reading 'target') from `onRelease`". Note their trigger is `onContextMenu` and
+ours is `onPointerOut` - both handlers pass the same null ref into the same
+function, so it is one bug with two entry points.
+
+https://github.com/emilkowalski/vaul/issues/484
+
+### The decision
+
+This is a third-party bug and we do not control the code. Options:
+
+1. **Bump `vaul`.** Installed is 0.9.9; 1.1.2 is current. VERIFY the guard
+   exists upstream before bumping - do not assume a major bump fixed it. A
+   `resolutions` entry is needed either way, since `vaul` arrives transitively
+   through `@mitrabook/ux`, and the sharp episode showed a direct bump leaves
+   the transitive copy in place (check the LOCKFILE, not package.json).
+2. **Patch it** with patch-package, adding `if (!event) return;` at the top of
+   `handleOnPointerUp`. Smallest possible change, no version risk, but adds a
+   patch step to the build.
+
+**Taken: option 1.** `"vaul": "^1.1.2"` added to the root `resolutions`, since
+vaul arrives transitively through `@mitrabook/ux` and a direct bump would leave
+the old copy in the tree (the `sharp` episode: `package.json` looked right while
+the lockfile still carried the vulnerable version).
+
+**VERIFY AFTER INSTALL - do not assume the bump fixed it.** The issue being
+closed is not proof the guard shipped. Run:
+
+    grep -A1 '^vaul@' yarn.lock
+    grep -c "handleOnPointerUp(lastKnownPointerEventRef.current)" node_modules/vaul/dist/index.js
+    grep -B2 -A6 "function handleOnPointerUp" node_modules/vaul/dist/index.js
+
+The third command is the one that decides it. If `handleOnPointerUp` still
+begins by calling `onRelease(event)` with no null check, the bump did NOT fix
+it and option 2 applies: patch-package with `if (!event) return;` as the first
+line of `handleOnPointerUp`.
+
+**API risk is low but non-zero.** Our surface is `Drawer`, `Drawer.Content`,
+`Drawer.Title`, `Drawer.Footer` and `shouldScaleBackground` (passed explicitly
+in 8 places, so the 1.0 default change from true to false does not affect us).
+Smoke-test one drawer on a narrow viewport before deploying: Open Orders row
+actions, the responsive Place Order sheet, and the rewards leaderboard table.
+
+**Retest after either:** on a narrow viewport, open Open Orders, open a row's
+drawer, and cancel a resting order. Then confirm `ORDERBOOK-TESTNET-Y` stops
+recurring.

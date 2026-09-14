@@ -179,3 +179,21 @@ describe("input handling", () => {
     }
   });
 });
+
+describe("the DOM changed underneath React (ORDERBOOK-TESTNET-Z / P)", () => {
+  it("ignores the translation removeChild NotFoundError", () => {
+    // In-page translation swaps text nodes; React then cannot remove a child
+    // its parent no longer owns. Two sightings, both mobile, both handled.
+    expect(
+      isIgnoredSentryMessage("NotFoundError: The object can not be found here.")
+    ).toBe(true);
+  });
+
+  it("still reports a NotFoundError from our own code", () => {
+    // Scoped to the exact DOM wording, not all NotFoundError, so a genuine
+    // "not found" is not swallowed along with it.
+    expect(
+      isIgnoredSentryMessage("NotFoundError: market PDEX-USDT not found")
+    ).toBe(false);
+  });
+});

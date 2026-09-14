@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Card } from "./card";
 
 import { EXTERNAL_LINKS } from "@/config/links";
+import { defaultConfig } from "@/config";
+import { tourLaunchHref } from "@/config/tours/tourLaunch";
 
 export const Help = forwardRef<HTMLDivElement>((_, ref) => {
   return (
@@ -26,14 +28,21 @@ export const Help = forwardRef<HTMLDivElement>((_, ref) => {
         title="Deposit, Withdrawal, and Transfer differences"
         description="We'll guide you through these new processes on a quick tour."
       >
-        <Button.Outline
-          appearance="secondary"
-          disabled
-          className="w-fit"
-          size="sm"
+        {/* WAS `disabled` WITH NO onClick. Reported twice as "Open tour does
+            nothing" and still open across two retest rounds, because a disabled
+            button with no explanation is indistinguishable from a broken one.
+
+            It cannot run the tour from here - every step targets a trading-page
+            element - so per UX-LEARNINGS 5.8 it performs the prior step instead
+            and navigates to the page the tour lives on. See
+            config/tours/tourLaunch.ts. */}
+        <Link
+          href={tourLaunchHref(`/trading/${defaultConfig.landingPageMarket}`)}
         >
-          Open tour
-        </Button.Outline>
+          <Button.Outline appearance="secondary" className="w-fit" size="sm">
+            Open tour
+          </Button.Outline>
+        </Link>
       </Card>
     </div>
   );

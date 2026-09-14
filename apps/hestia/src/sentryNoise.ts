@@ -82,6 +82,24 @@ export const SENTRY_IGNORED_ERRORS: (string | RegExp)[] = [
   // "read only property", so a genuine frozen-object bug in our own code would
   // still be reported.
   /Cannot assign to read only property '\w+' of object '#<Window>'/,
+
+  // ── The DOM changed underneath React, by something that is not React ──
+  // ORDERBOOK-TESTNET-Z (and TESTNET-P before it): "NotFoundError: The object
+  // can not be found here", DOMException code 8, thrown from native
+  // `removeChild` at the bottom of a deep reconciler stack. Both sightings were
+  // mobile browsers with page translation available (iOS Chrome, Android).
+  //
+  // In-page translation replaces text nodes in place. React still holds a
+  // reference to the node it rendered, and when it later tries to remove that
+  // child the parent no longer owns it. Nothing in this app can prevent it: the
+  // mutation happens outside React's tree ownership, and the only real defence
+  // is `notranslate` on the affected subtree, which is a product decision about
+  // whether translated trading UI is desirable at all.
+  //
+  // Scoped to this exact DOM wording rather than all NotFoundError, so a
+  // genuine "not found" from our own code still reports. Both events so far
+  // arrived `handled: true`, i.e. React recovered.
+  "The object can not be found here",
 ];
 
 /**
