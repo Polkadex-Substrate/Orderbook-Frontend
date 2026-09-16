@@ -484,6 +484,40 @@ The assertion was tested against a known-bad input, not just a known-good one:
 it exits 0 on the patched file and 1 on the pristine 1.1.2, so it can actually
 fail. A check only ever run against the passing case proves nothing.
 
+**That test was not enough, and the first real failure proved it.** 2026-09-15,
+a build was started before `yarn install` had run patch-package. The guard was
+right - the patch genuinely was not applied - and it was useless, because the
+message it printed was this:
+
+```
+error Command "install\" not found.
+ERROR: Pre-flight: patches/vaul+1.1.2.patch is NOT applied to node_modules.
+  Run \yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run ... (which runs patch-package) and re-run this script.
+```
+
+The message had been written with `\\` before each backtick. In a double-quoted
+shell string `\\` collapses to one literal backslash and leaves the backtick
+live, so it opened command substitution: the guard RAN `yarn install\` and
+spliced yarn's output through the middle of its own sentence.
+
+Three fixes, all in `scripts/build-release.sh`:
+
+1. **Escaping.** `\\`` -> `\``, and a comment above the block saying why, since
+   this is invisible on reading and only appears in the path nobody runs.
+2. **The two causes are now separate messages.** Exit 1 is "patch not applied,
+   run `yarn install`". Exit 2 is "cannot find `onPointerOut` at all, vaul
+   changed shape, `yarn install` will NOT fix this". Previously both printed the
+   first message, which for exit 2 is actively misleading advice.
+3. **`set -euo pipefail` compatibility.** The first attempt at (2) put the
+   `node -e` call on its own line and read `$?` on the next. Under `-e` that
+   aborts at the node call and prints nothing at all - worse than the bug being
+   fixed. Corrected to `patch_check=0; node -e "..." || patch_check=$?`.
+
+All three failure paths were then RENDERED, not just triggered: patched (exit 0,
+logs normally), guard stripped (exit 1, correct message, backticks literal), and
+handler renamed (exit 2, the different message). Recorded as learning 10.11.
+
 **Sequencing for the next install.** `patch-package` is a NEW devDependency, so
 `yarn.lock` has to be regenerated and committed before any image build - the
 Dockerfile uses `--frozen-lockfile` and will fail otherwise. Run a plain

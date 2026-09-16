@@ -194,7 +194,24 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
   # patches/vaul+1.1.2.patch: without it, cancelling an order from the Open
   # Orders drawer throws and does nothing, with no error shown. The Dockerfile
   # runs the same assertion after its own install; this is the fast local copy.
+  # The two non-zero exits mean DIFFERENT things and need different advice, so
+  # they are reported separately. An earlier version collapsed both into "the
+  # patch is NOT applied", which would have sent you to re-run `yarn install`
+  # for a problem that `yarn install` cannot fix.
+  #
+  # Every backtick below is backslash-escaped. Inside a double-quoted string an
+  # unescaped backtick opens COMMAND SUBSTITUTION, so a message mentioning
+  # `yarn install` will RUN it and splice the output into the error text. That
+  # shipped once: the escape was written `\\` + backtick, and `\\` collapses to
+  # one literal backslash and leaves the backtick live. See section 10.11 of
+  # UX-LEARNINGS-FROM-TESTNET.md.
+  # `patch_check=0` then `|| patch_check=$?` is deliberate and both halves are
+  # load-bearing. This script runs under `set -euo pipefail`: a BARE failing
+  # command aborts immediately, so capturing $? on the next line never happens
+  # and you get no message at all. Keeping the call on the left of `||` exempts
+  # it from -e. The initialiser satisfies -u on the success path.
   if [ -d patches ] && command -v node >/dev/null 2>&1; then
+    patch_check=0
     node -e "
       const fs=require('fs');
       const f='node_modules/vaul/dist/index.js';
@@ -203,11 +220,23 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
       const m=s.match(/onPointerOut: \(event\)=>\{[\s\S]{0,400}?\},/);
       if(!m) process.exit(2);
       process.exit(/if \(lastKnownPointerEventRef\.current\)/.test(m[0]) ? 0 : 1);
-    " || die "Pre-flight: patches/vaul+1.1.2.patch is NOT applied to node_modules.
-  Run \\`yarn install\\` (which runs patch-package) and re-run this script.
-  Without it, order cancellation from the Open Orders drawer crashes silently.
-  See docs/PRE-MAINNET-BLOCKERS.md B6.
-  If vaul was upgraded and now guards onPointerOut itself, delete the patch."
+    " || patch_check=$?
+    if [ "$patch_check" -eq 1 ]; then
+      die "Pre-flight: patches/vaul+1.1.2.patch is NOT applied to node_modules.
+  Run \`yarn install\` on your Mac (its postinstall runs patch-package), then
+  re-run this script. Building without it produces an image that looks fine and
+  in which cancelling an order from the Open Orders drawer throws and does
+  nothing, with no error shown to the user. ORDERBOOK-TESTNET-Y.
+  See docs/PRE-MAINNET-BLOCKERS.md B6."
+    elif [ "$patch_check" -ne 0 ]; then
+      die "Pre-flight: cannot find vaul's onPointerOut handler to check it.
+  This is NOT the same as the patch being missing, and \`yarn install\` will not
+  fix it. vaul has changed shape - most likely it was upgraded.
+  Check whether the new version guards onPointerOut itself: if it does, delete
+  patches/vaul+1.1.2.patch and this whole pre-flight block. If it does not,
+  regenerate the patch against the new version.
+  See docs/PRE-MAINNET-BLOCKERS.md B6."
+    fi
     log "Pre-flight: node_modules patches applied"
   fi
 
