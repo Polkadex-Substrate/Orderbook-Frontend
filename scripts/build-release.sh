@@ -186,6 +186,31 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
     log "Pre-flight: node_modules matches the manifests"
   fi
 
+  # Patches actually applied to node_modules.
+  #
+  # `yarn install` runs postinstall -> patch-package, and patch-package exits 0
+  # when it finds nothing to do. So a missing or stale patch is silent on this
+  # host exactly as it would be in the image. ORDERBOOK-TESTNET-Y depends on
+  # patches/vaul+1.1.2.patch: without it, cancelling an order from the Open
+  # Orders drawer throws and does nothing, with no error shown. The Dockerfile
+  # runs the same assertion after its own install; this is the fast local copy.
+  if [ -d patches ] && command -v node >/dev/null 2>&1; then
+    node -e "
+      const fs=require('fs');
+      const f='node_modules/vaul/dist/index.js';
+      if(!fs.existsSync(f)) process.exit(0);
+      const s=fs.readFileSync(f,'utf8');
+      const m=s.match(/onPointerOut: \(event\)=>\{[\s\S]{0,400}?\},/);
+      if(!m) process.exit(2);
+      process.exit(/if \(lastKnownPointerEventRef\.current\)/.test(m[0]) ? 0 : 1);
+    " || die "Pre-flight: patches/vaul+1.1.2.patch is NOT applied to node_modules.
+  Run \\`yarn install\\` (which runs patch-package) and re-run this script.
+  Without it, order cancellation from the Open Orders drawer crashes silently.
+  See docs/PRE-MAINNET-BLOCKERS.md B6.
+  If vaul was upgraded and now guards onPointerOut itself, delete the patch."
+    log "Pre-flight: node_modules patches applied"
+  fi
+
   # Type check. Neither check above can see a missing import: prettier only
   # formats, and eslint's no-undef is DISABLED for TypeScript on the assumption
   # that tsc owns that job - so if tsc never runs, nothing owns it. A

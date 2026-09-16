@@ -432,7 +432,87 @@ This is a third-party bug and we do not control the code. Options:
    `handleOnPointerUp`. Smallest possible change, no version risk, but adds a
    patch step to the build.
 
-**Taken: option 1.** `"vaul": "^1.1.2"` added to the root `resolutions`, since
+**OPTION 1 WAS TAKEN AND IT DID NOT FIX IT. Verified 2026-09-14 on
+`0.1.0-afc83cb7`.**
+
+The resolution worked - `yarn.lock` shows `vaul@^0.9.1, vaul@^1.1.2: version
+"1.1.2"`, so both requesters collapsed onto one copy, and `node_modules/vaul`
+is 1.1.2. But `handleOnPointerUp` in 1.1.2 is byte-identical to 0.9.9: no null
+check, `onRelease(event)` straight through.
+
+**Why the closed issue was misleading, and this is the useful part.** Look at
+the two handlers in 1.1.2:
+
+```js
+onPointerOut: (event) => {
+    rest.onPointerOut?.call(rest, event);
+    handleOnPointerUp(lastKnownPointerEventRef.current);      // NO guard
+},
+onContextMenu: (event) => {
+    rest.onContextMenu?.call(rest, event);
+    if (lastKnownPointerEventRef.current) {                   // guarded
+        handleOnPointerUp(lastKnownPointerEventRef.current);
+    }
+}
+```
+
+Issue #484 was filed against `onContextMenu` (long-press on mobile). The
+maintainer guarded THAT call site and left `onPointerOut` untouched. One bug,
+two entry points, one of them fixed. We hit the other one.
+
+The general lesson, and it is the third time this pattern has cost us: a closed
+upstream issue is not evidence that YOUR reproduction is fixed. Diff the
+installed file.
+
+### DONE, 2026-09-14: patched
+
+`patches/vaul+1.1.2.patch` applies the same guard upstream already wrote for
+`onContextMenu`, to `onPointerOut`, in both `dist/index.js` and `dist/index.mjs`.
+
+Wiring, all three pieces, because any one missing makes it silently a no-op:
+
+1. `package.json` - `patch-package` + `postinstall-postinstall` devDeps and
+   `"postinstall": "patch-package"`.
+2. `Dockerfile` - `COPY patches ./patches` **before** `yarn install`. Without
+   this the directory does not exist at install time and patch-package exits 0,
+   producing an image that builds clean and does not contain the fix.
+3. Assertions in BOTH `Dockerfile` (after install, fails the build) and
+   `scripts/build-release.sh` (pre-flight, fails fast locally). Each greps the
+   installed `onPointerOut` for the guard.
+
+The assertion was tested against a known-bad input, not just a known-good one:
+it exits 0 on the patched file and 1 on the pristine 1.1.2, so it can actually
+fail. A check only ever run against the passing case proves nothing.
+
+**Sequencing for the next install.** `patch-package` is a NEW devDependency, so
+`yarn.lock` has to be regenerated and committed before any image build - the
+Dockerfile uses `--frozen-lockfile` and will fail otherwise. Run a plain
+`yarn install` on a Mac first, commit the lockfile, then build.
+
+**Retest:** narrow viewport, Open Orders, open a row drawer, cancel a resting
+order. Then confirm `ORDERBOOK-TESTNET-Y` stops recurring.
+
+**Superseded: option 2 was required because option 1 failed.** The change is one line, duplicated into both
+`dist/index.js` and `dist/index.mjs`:
+
+```js
+onPointerOut: (event) => {
+    rest.onPointerOut?.call(rest, event);
+    if (lastKnownPointerEventRef.current) {            // <-- add, mirroring onContextMenu
+        handleOnPointerUp(lastKnownPointerEventRef.current);
+    }
+},
+```
+
+It needs `patch-package`, which is NOT currently set up (no devDependency, no
+`postinstall`, no `patches/`). Adding it is a build change, so per the deploy
+script rule it must also be reflected in `scripts/build-release.sh` and the
+Dockerfile, which must run the postinstall inside the image build.
+
+Worth also opening an upstream issue: the fix is obvious and the maintainer will
+likely take it, which removes the patch again.
+
+**Superseded note, kept for the record.** `"vaul": "^1.1.2"` added to the root `resolutions`, since
 vaul arrives transitively through `@mitrabook/ux` and a direct bump would leave
 the old copy in the tree (the `sharp` episode: `package.json` looked right while
 the lockfile still carried the vulnerable version).

@@ -8,11 +8,14 @@
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "release": "scripts/build-release.sh",
-    "deploy": "scripts/deploy.sh"
+    "deploy": "scripts/deploy.sh",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@orderbook/eslint-config": "*",
     "eslint": "^8.48.0",
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0",
     "prettier": "^3.0.3",
     "tsconfig": "*",
     "turbo": "^2.10.6"

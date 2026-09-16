@@ -31,11 +31,35 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/format/package.json ./packages/format/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 
+# MUST be copied BEFORE the install. `postinstall` runs `patch-package`, which
+# reads this directory - and patch-package exits 0 when the directory is
+# absent. Without this COPY the image would build clean, deploy, and simply not
+# contain the patch, which is the same silent class of failure as the release
+# tag that never reached the client bundle.
+COPY patches ./patches
+
 # Cache mount for the yarn download cache. This layer is already skipped
 # entirely when no manifest changed; the mount only helps when one did, by
 # avoiding a full re-download of the dependency tree.
 RUN --mount=type=cache,target=/usr/local/share/.cache/yarn,sharing=locked \
     yarn install --frozen-lockfile
+
+# PROVE the patch landed rather than trusting that it did. ORDERBOOK-TESTNET-Y:
+# vaul's onPointerOut passes a possibly-null ref into onRelease, which reads
+# .target and throws, killing order cancellation silently. patches/vaul+1.1.2
+# adds the guard upstream already applied to the neighbouring onContextMenu.
+#
+# If vaul is ever upgraded to a version that fixes this itself, the patch will
+# fail to apply and yarn install will fail loudly - at which point delete the
+# patch file. That is the intended outcome, not a problem.
+RUN node -e "const s=require('fs').readFileSync('node_modules/vaul/dist/index.js','utf8'); \
+  const m=s.match(/onPointerOut: \(event\)=>\{[\s\S]{0,400}?\},/); \
+  if(!m) { console.error('[patch-check] could not locate vaul onPointerOut - did vaul change shape?'); process.exit(1); } \
+  if(!/if \(lastKnownPointerEventRef\.current\)/.test(m[0])) { \
+    console.error('[patch-check] vaul onPointerOut is NOT guarded. patches/vaul+1.1.2.patch did not apply.'); \
+    console.error('[patch-check] Order cancellation will crash silently. See docs/PRE-MAINNET-BLOCKERS.md B6.'); \
+    process.exit(1); } \
+  console.log('[patch-check] vaul onPointerOut guard present')"
 
 # ============================================
 # Stage 2: Build the application

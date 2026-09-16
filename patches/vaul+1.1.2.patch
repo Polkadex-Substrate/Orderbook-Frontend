@@ -1,0 +1,53 @@
+# vaul 1.1.2 crashes when a pointerout arrives before any pointermove.
+#
+# ORDERBOOK-TESTNET-Y / tester Bug #10: cancelling a resting order from the
+# Open Orders drawer did nothing, with no error shown anywhere.
+#
+#     TypeError: Cannot read properties of null (reading 'target')
+#
+# `lastKnownPointerEventRef` is useRef(null) and is only assigned in
+# onPointerMove. A pointerout with no preceding pointermove - a tap, or a click
+# that does not move - calls handleOnPointerUp(null), which passes null straight
+# into onRelease, which reads event.target and throws. Unhandled, so the cancel
+# mutation never runs AND no error toast appears.
+#
+# Upstream issue #484 is this bug, reported against onContextMenu (long-press).
+# The maintainer guarded THAT call site and left onPointerOut untouched - the
+# two handlers sit next to each other in 1.1.2, one with the null check and one
+# without. This patch applies the same guard they already wrote, to the other
+# entry point.
+#
+#   https://github.com/emilkowalski/vaul/issues/484
+#
+# Remove this patch once upstream guards onPointerOut. Check by diffing the two
+# handlers in dist/index.js - if both have the `if (lastKnownPointerEventRef
+# .current)` check, the patch is redundant and will fail to apply, which is the
+# signal to delete it.
+diff --git a/node_modules/vaul/dist/index.js b/node_modules/vaul/dist/index.js
+--- a/node_modules/vaul/dist/index.js
++++ b/node_modules/vaul/dist/index.js
+@@ -1543,7 +1543,9 @@
+         },
+         onPointerOut: (event)=>{
+             rest.onPointerOut == null ? void 0 : rest.onPointerOut.call(rest, event);
+-            handleOnPointerUp(lastKnownPointerEventRef.current);
++            if (lastKnownPointerEventRef.current) {
++                handleOnPointerUp(lastKnownPointerEventRef.current);
++            }
+         },
+         onContextMenu: (event)=>{
+             rest.onContextMenu == null ? void 0 : rest.onContextMenu.call(rest, event);
+diff --git a/node_modules/vaul/dist/index.mjs b/node_modules/vaul/dist/index.mjs
+--- a/node_modules/vaul/dist/index.mjs
++++ b/node_modules/vaul/dist/index.mjs
+@@ -1521,7 +1521,9 @@
+         },
+         onPointerOut: (event)=>{
+             rest.onPointerOut == null ? void 0 : rest.onPointerOut.call(rest, event);
+-            handleOnPointerUp(lastKnownPointerEventRef.current);
++            if (lastKnownPointerEventRef.current) {
++                handleOnPointerUp(lastKnownPointerEventRef.current);
++            }
+         },
+         onContextMenu: (event)=>{
+             rest.onContextMenu == null ? void 0 : rest.onContextMenu.call(rest, event);
