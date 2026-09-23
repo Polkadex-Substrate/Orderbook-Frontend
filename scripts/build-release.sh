@@ -189,11 +189,24 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
   # Patches actually applied to node_modules.
   #
   # `yarn install` runs postinstall -> patch-package, and patch-package exits 0
-  # when it finds nothing to do. So a missing or stale patch is silent on this
-  # host exactly as it would be in the image. ORDERBOOK-TESTNET-Y depends on
-  # patches/vaul+1.1.2.patch: without it, cancelling an order from the Open
-  # Orders drawer throws and does nothing, with no error shown. The Dockerfile
-  # runs the same assertion after its own install; this is the fast local copy.
+  # when it finds nothing to do. So a missing or stale patch is silent.
+  # ORDERBOOK-TESTNET-Y depends on patches/vaul+1.1.2.patch: without it,
+  # cancelling an order from the Open Orders drawer throws and does nothing,
+  # with no error shown.
+  #
+  # WHOSE node_modules THIS IS, which is the whole point of the block below.
+  # This inspects the BUILD HOST's node_modules. That is only the thing being
+  # shipped when the tarball is built here from this tree. In docker mode, and
+  # in `--tarball --from-image`, the artifact comes from the Dockerfile's OWN
+  # `yarn install --frozen-lockfile`, and the assertion that guards it lives in
+  # the Dockerfile, after that install. The host's copy is irrelevant.
+  #
+  # This distinction cost a deploy on 2026-09-15. The check was unconditionally
+  # fatal, the deploy host had never run an install carrying patch-package, and
+  # so `scripts/deploy.sh` died at step 2/5 over a property of a directory that
+  # was never going to reach the image. Worse, the advice it printed was "run
+  # yarn install", which on that host is precisely what must NOT be done - the
+  # deploy checkout is read-only by standing rule. Fatal only where it is true.
   # The two non-zero exits mean DIFFERENT things and need different advice, so
   # they are reported separately. An earlier version collapsed both into "the
   # patch is NOT applied", which would have sent you to re-run `yarn install`
@@ -221,23 +234,52 @@ if [ "$PREFLIGHT" -eq 1 ] && [ -x node_modules/.bin/prettier ]; then
       if(!m) process.exit(2);
       process.exit(/if \(lastKnownPointerEventRef\.current\)/.test(m[0]) ? 0 : 1);
     " || patch_check=$?
-    if [ "$patch_check" -eq 1 ]; then
+
+    # Does this host's node_modules end up in the artifact?
+    host_modules_ship=0
+    if [ "$MODE" = tarball ] && [ -z "$FROM_IMAGE" ]; then host_modules_ship=1; fi
+
+    # Two independent questions, deliberately kept apart:
+    #   WHAT is wrong   -> patch_check (1 = unpatched, 2 = cannot even look)
+    #   DOES IT MATTER  -> host_modules_ship
+    # Only the combination decides fatal vs advisory. Collapsing them is what
+    # blocked the 2026-09-15 deploy.
+    if [ "$patch_check" -eq 0 ]; then
+      log "Pre-flight: node_modules patches applied"
+    elif [ "$patch_check" -eq 1 ] && [ "$host_modules_ship" -eq 1 ]; then
       die "Pre-flight: patches/vaul+1.1.2.patch is NOT applied to node_modules.
-  Run \`yarn install\` on your Mac (its postinstall runs patch-package), then
-  re-run this script. Building without it produces an image that looks fine and
-  in which cancelling an order from the Open Orders drawer throws and does
-  nothing, with no error shown to the user. ORDERBOOK-TESTNET-Y.
-  See docs/PRE-MAINNET-BLOCKERS.md B6."
-    elif [ "$patch_check" -ne 0 ]; then
-      die "Pre-flight: cannot find vaul's onPointerOut handler to check it.
-  This is NOT the same as the patch being missing, and \`yarn install\` will not
-  fix it. vaul has changed shape - most likely it was upgraded.
+  This tarball is built from THIS host's node_modules, so the missing patch
+  would ship. Run \`yarn install\` on your Mac (its postinstall runs
+  patch-package), then re-run. Without it, cancelling an order from the Open
+  Orders drawer throws and does nothing, with no error shown to the user.
+  ORDERBOOK-TESTNET-Y. See docs/PRE-MAINNET-BLOCKERS.md B6."
+    elif [ "$host_modules_ship" -eq 1 ]; then
+      die "Pre-flight: cannot find vaul's onPointerOut handler to check it, and
+  this tarball ships THIS host's node_modules. \`yarn install\` will not fix
+  this - vaul has changed shape, most likely an upgrade.
   Check whether the new version guards onPointerOut itself: if it does, delete
   patches/vaul+1.1.2.patch and this whole pre-flight block. If it does not,
   regenerate the patch against the new version.
   See docs/PRE-MAINNET-BLOCKERS.md B6."
+    else
+      # Advisory. The image is built from the Dockerfile's own install, and the
+      # assertion that guards the artifact lives there, after that install.
+      #
+      # The reason is built into a variable rather than interpolated with $()
+      # inside the message: a message is not the place to run code. See the
+      # comment on backticks above, and learning 10.11.
+      if [ "$patch_check" -eq 1 ]; then
+        patch_reason="patch not applied"
+      else
+        patch_reason="cannot locate onPointerOut"
+      fi
+      warn "vaul patch check on THIS host's node_modules: $patch_reason.
+  NOT fatal here, and do NOT run \`yarn install\` on this host to silence it -
+  a deploy checkout is read-only by standing rule. The image is built from the
+  Dockerfile's own install, which applies the patch and then asserts it; that
+  assertion fails the build loudly if the patch does not apply.
+  This host's node_modules is used only for the pre-flight checks above."
     fi
-    log "Pre-flight: node_modules patches applied"
   fi
 
   # Type check. Neither check above can see a missing import: prettier only

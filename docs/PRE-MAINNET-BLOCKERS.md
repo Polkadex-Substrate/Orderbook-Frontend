@@ -518,6 +518,39 @@ All three failure paths were then RENDERED, not just triggered: patched (exit 0,
 logs normally), guard stripped (exit 1, correct message, backticks literal), and
 handler renamed (exit 2, the different message). Recorded as learning 10.11.
 
+**Then it blocked a deploy, and that was a fourth defect: it was checking the
+wrong machine.** `scripts/deploy.sh` runs on the deploy host - `git pull`, build
+image, pack tarball, install. The pull brought the fixed script onto that host,
+the pre-flight ran there, and it correctly found no patch in that host's
+`node_modules`. Irrelevant: in docker mode the image is built by the
+**Dockerfile's own** `yarn install --frozen-lockfile`, with `COPY patches
+./patches` ahead of it and the assertion after it. The host's `node_modules`
+never reaches the artifact. The check also told the operator to run `yarn
+install` on a checkout that is read-only by standing rule.
+
+The block now asks two separate questions and is fatal only on the conjunction:
+
+| | host modules ship | host modules do not ship |
+|---|---|---|
+| patch missing (exit 1) | **fatal** | warn, continue |
+| cannot locate handler (exit 2) | **fatal** | warn, continue |
+| patched (exit 0) | log | log |
+
+`host_modules_ship` is true only for a local tarball build (`--tarball` without
+`--from-image`). Docker mode and `--tarball --from-image` warn, and the warning
+says explicitly NOT to run `yarn install` to silence it.
+
+**The artifact is still guarded, and that is what makes the downgrade safe.**
+Verified in the Dockerfile: `COPY patches ./patches` (line 39) precedes
+`yarn install --frozen-lockfile` (44), the assertion follows at 55 and exits 1
+on either failure, and the builder stage takes `node_modules` from that stage.
+Strictness belongs in the container; the host pre-flight is only a fast-fail
+convenience.
+
+Six paths rendered and read: docker+patched, docker+missing, tarball
+from-image+missing, tarball local+missing, tarball local+reshaped, and
+docker+reshaped. Recorded as learning 10.12.
+
 **Sequencing for the next install.** `patch-package` is a NEW devDependency, so
 `yarn.lock` has to be regenerated and committed before any image build - the
 Dockerfile uses `--frozen-lockfile` and will fail otherwise. Run a plain
