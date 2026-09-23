@@ -324,7 +324,18 @@ command -v systemctl >/dev/null || INIT=openrc
 
 log "Detected: $OS_NAME  (package manager: $PKG, init: $INIT)"
 
-pkg_install() {
+# How long to wait for another package manager to release the dpkg lock.
+# unattended-upgrades routinely holds it for a minute or two after boot, and on
+# 2026-09-23 that turned a transient wait into a reported "fail2ban unavailable
+# for this distro" on a host where fail2ban was already installed and running.
+PKG_LOCK_WAIT_SECS="${PKG_LOCK_WAIT_SECS:-180}"
+
+# Why the last pkg_install failed: ok | locked | missing | failed.
+# Callers read this so their message can name the ACTUAL cause. Initialised
+# here because the script runs under `set -u`.
+PKG_INSTALL_REASON=ok
+
+pkg_install_once() {
   case "$PKG" in
     apt)    run "DEBIAN_FRONTEND=noninteractive apt-get install -y $*" ;;
     dnf)    run "dnf install -y $*" ;;
@@ -332,6 +343,73 @@ pkg_install() {
     zypper) run "zypper --non-interactive install $*" ;;
     pacman) run "pacman -Sy --noconfirm $*" ;;
     apk)    run "apk add --no-cache $*" ;;
+  esac
+}
+
+# Install packages, waiting out a held lock and classifying any failure.
+#
+# Returns 0 on success. On failure returns 1 and sets PKG_INSTALL_REASON, so a
+# caller can tell "this distro does not have the package" (a real, permanent
+# fact) apart from "another process was mid-upgrade" (retry in a minute). The
+# old version could not tell those apart and every caller guessed, always
+# wrongly in the same direction.
+pkg_install() {
+  local out rc waited=0
+
+  # Dry-run has nothing to fail and must keep printing through `run`.
+  if [ "$DRY_RUN" -eq 1 ]; then
+    pkg_install_once "$@"
+    PKG_INSTALL_REASON=ok
+    return 0
+  fi
+
+  while :; do
+    # `|| rc=$?` rather than a bare call: this file is `set -euo pipefail` and
+    # a bare failing command would exit the script before we could classify it.
+    # That exact bug is what silently truncated the 2026-09-23 hardening run.
+    out="$(pkg_install_once "$@" 2>&1)" && rc=0 || rc=$?
+
+    if [ "$rc" -eq 0 ]; then
+      printf '%s\n' "$out"
+      PKG_INSTALL_REASON=ok
+      return 0
+    fi
+
+    case "$out" in
+      *"Could not get lock"*|*"Unable to acquire the dpkg frontend lock"*|\
+      *"Unable to lock the administration directory"*|*"Waiting for cache lock"*)
+        if [ "$waited" -ge "$PKG_LOCK_WAIT_SECS" ]; then
+          printf '%s\n' "$out" >&2
+          PKG_INSTALL_REASON=locked
+          return 1
+        fi
+        [ "$waited" -eq 0 ] && \
+          log "Package manager is busy (dpkg lock held). Waiting up to ${PKG_LOCK_WAIT_SECS}s."
+        sleep 5
+        waited=$((waited + 5))
+        ;;
+      *"Unable to locate package"*|*"No match for argument"*|\
+      *"No package"*|*"not found in the repositories"*|*"target not found"*)
+        printf '%s\n' "$out" >&2
+        PKG_INSTALL_REASON=missing
+        return 1
+        ;;
+      *)
+        printf '%s\n' "$out" >&2
+        PKG_INSTALL_REASON=failed
+        return 1
+        ;;
+    esac
+  done
+}
+
+# One line explaining the last failure, for use inside a caller's message.
+pkg_install_why() {
+  case "$PKG_INSTALL_REASON" in
+    locked)  printf 'the package manager stayed locked for %ss (another upgrade is running)' "$PKG_LOCK_WAIT_SECS" ;;
+    missing) printf 'no such package in this distro'\''s repositories' ;;
+    failed)  printf 'the package manager returned an error, see above' ;;
+    *)       printf 'unknown reason' ;;
   esac
 }
 
@@ -1056,13 +1134,30 @@ if [ "$HARDEN" -eq 1 ]; then
     fi
     [ "$HARDEN_SSH" -eq 1 ] && harden_ssh
 
+    # Say which steps actually happened. A pass that does six things and
+    # completes four must not look like a pass that completed six: on
+    # 2026-09-23 a dpkg lock ended this block early and the only evidence was
+    # two warnings in a long log. Returns non-zero when anything was skipped.
+    harden_complete=yes
+    harden_report || harden_complete=no
+
     # Record that this host has been hardened, so deploy.sh can skip it on
     # subsequent runs instead of resetting the firewall on every deploy.
+    #
+    # The marker is written even for a partial run, because re-resetting the
+    # firewall on every deploy is its own hazard. It carries `complete=` so the
+    # state is honest and `deploy.sh` can say so rather than reporting a
+    # half-hardened host as hardened.
     if [ "$DRY_RUN" -eq 0 ]; then
       {
         echo "hardened_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         echo "ssh_hardened=$HARDEN_SSH"
         echo "cloudflare_only=$CLOUDFLARE"
+        echo "complete=$harden_complete"
+        printf '%s' "$HARDEN_LEDGER" | while IFS='|' read -r _s _st _d; do
+          [ -n "$_s" ] || continue
+          echo "step_${_s}=${_st}"
+        done
       } > "$ENV_DIR/.hardened"
       chmod 0640 "$ENV_DIR/.hardened"
     fi

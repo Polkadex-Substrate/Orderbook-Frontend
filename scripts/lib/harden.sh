@@ -13,6 +13,54 @@
 # because silently reconfiguring SSH or a firewall on someone's server is a
 # good way to lock them out of it.
 
+# ── The ledger ──────────────────────────────────────────────────────────
+# WHY THIS EXISTS. On 2026-09-23 a hardening run stopped partway through on a
+# transient dpkg lock. The output looked like two warnings in a long log, so it
+# read as "hardened, with grumbles" when it was actually "four of six applied,
+# then exited". Nothing was harmed only because the host had already been
+# hardened nine days earlier.
+#
+# A pass that does six things must therefore SAY which six it did. Every
+# function below records its outcome and harden_report prints the tally, so a
+# partial run cannot be mistaken for a complete one at a glance.
+#
+# Newline-delimited "step|status|detail" records. A plain string rather than an
+# array because install.sh targets bash 3.2 as well.
+HARDEN_LEDGER=""
+HARDEN_INCOMPLETE=0
+
+# harden_record <step> <applied|skipped|failed> [detail]
+harden_record() {
+  case "$2" in applied) : ;; *) HARDEN_INCOMPLETE=1 ;; esac
+  HARDEN_LEDGER="${HARDEN_LEDGER}${1}|${2}|${3:-}
+"
+}
+
+# Print the tally. Returns 1 if anything was not applied, so the caller can
+# decide whether that is fatal without having to re-derive it.
+harden_report() {
+  local step status detail
+  echo
+  log "Hardening summary"
+  printf '%s' "$HARDEN_LEDGER" | while IFS='|' read -r step status detail; do
+    [ -n "$step" ] || continue
+    case "$status" in
+      applied) printf '     [ok]      %s\n' "$step" ;;
+      skipped) printf '     [SKIPPED] %-18s %s\n' "$step" "$detail" ;;
+      *)       printf '     [FAILED]  %-18s %s\n' "$step" "$detail" ;;
+    esac
+  done
+  if [ "$HARDEN_INCOMPLETE" -eq 1 ]; then
+    echo
+    warn "Host hardening is INCOMPLETE. The items above marked SKIPPED or
+     FAILED did not happen. Re-run once the cause is cleared:
+       sudo scripts/deploy.sh --harden
+     A dpkg lock is usually unattended-upgrades and clears within minutes."
+    return 1
+  fi
+  return 0
+}
+
 # ── Kernel / sysctl ─────────────────────────────────────────────────────
 # Defends against: SYN floods, IP spoofing, ICMP redirect and source-route
 # attacks, and reduces info leaked to an attacker probing the host.
@@ -66,7 +114,12 @@ fs.suid_dumpable = 0
 fs.protected_hardlinks = 1
 fs.protected_symlinks = 1
 EOF
-  sysctl --system >/dev/null 2>&1 || warn "sysctl reload reported errors (often benign in containers)"
+  if sysctl --system >/dev/null 2>&1; then
+    harden_record sysctl applied
+  else
+    warn "sysctl reload reported errors (often benign in containers)"
+    harden_record sysctl failed "sysctl --system reported errors"
+  fi
 }
 
 # ── Cloudflare origin IP ranges ─────────────────────────────────────────
@@ -200,13 +253,16 @@ EOF
   else
     warn "No supported firewall tool found (ufw/firewalld/nft) - skipping.
      The app port $PORT may be reachable directly from the network."
+    harden_record firewall skipped "no supported firewall backend found"
     return
   fi
 
   if [ -n "$cf_ranges" ]; then
     log "Firewall: ssh(${ssh_port}) open; 80/443 only from Cloudflare"
+    harden_record firewall applied
   else
     log "Firewall: inbound limited to ssh(${ssh_port}), 80, 443"
+    harden_record firewall applied
   fi
 
   # Docker installs its own iptables DOCKER chain, which is consulted BEFORE
@@ -232,12 +288,14 @@ harden_bind_localhost() {
   if [ -z "${RUNTIME_ENV_FILE:-}" ]; then
     warn "RUNTIME_ENV_FILE unset - cannot bind the app to localhost.
      harden.sh must be sourced by install.sh, which defines it."
+    harden_record bind-localhost skipped "RUNTIME_ENV_FILE not set"
     return
   fi
   if [ "$DRY_RUN" -eq 0 ]; then
     sed -i 's/^HOSTNAME=.*/HOSTNAME=127.0.0.1/' "$RUNTIME_ENV_FILE" 2>/dev/null || true
     grep -q '^HOSTNAME=' "$RUNTIME_ENV_FILE" || echo "HOSTNAME=127.0.0.1" >> "$RUNTIME_ENV_FILE"
   fi
+  harden_record bind-localhost applied
 }
 
 # ── fail2ban ────────────────────────────────────────────────────────────
@@ -245,8 +303,17 @@ harden_bind_localhost() {
 # floods and scanner noise.
 harden_fail2ban() {
   log "Installing fail2ban"
-  pkg_install fail2ban || { warn "fail2ban unavailable for this distro - skipping"; return; }
-  [ "$DRY_RUN" -eq 1 ] && return
+  # The old message here was "fail2ban unavailable for this distro" for ANY
+  # failure. On 2026-09-23 it said that about a package that was installed, at
+  # the newest version, on a distro that ships it - the real cause was a dpkg
+  # lock. A wrong reason is worse than no reason: it retires the question.
+  if ! pkg_install fail2ban; then
+    warn "fail2ban not installed: $(pkg_install_why).
+     SSH brute-force protection is NOT active on this host."
+    harden_record fail2ban skipped "$(pkg_install_why)"
+    return
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then harden_record fail2ban applied "dry-run"; return; fi
   cat > /etc/fail2ban/jail.d/"$SERVICE_NAME".local <<EOF
 [DEFAULT]
 bantime  = 1h
@@ -263,7 +330,12 @@ enabled = true
 [nginx-botsearch]
 enabled = true
 EOF
-  run "systemctl enable --now fail2ban" || warn "could not start fail2ban"
+  if run "systemctl enable --now fail2ban"; then
+    harden_record fail2ban applied
+  else
+    warn "fail2ban installed and configured but would not start."
+    harden_record fail2ban failed "installed, but systemctl enable --now failed"
+  fi
 }
 
 # ── Unattended security updates ─────────────────────────────────────────
@@ -272,30 +344,64 @@ harden_auto_updates() {
   log "Enabling automatic security updates"
   case "$PKG" in
     apt)
-      pkg_install unattended-upgrades
-      [ "$DRY_RUN" -eq 1 ] && return
+      # This `pkg_install` used to be BARE. install.sh is `set -euo pipefail`
+      # and run() is `eval "$@"`, so apt exiting 100 on a dpkg lock killed the
+      # whole script right here - taking harden_bind_localhost, harden_ssh, the
+      # .hardened marker and install.sh's own summary and health check with it,
+      # while printing nothing to say the run had ended. Guarded now.
+      if ! pkg_install unattended-upgrades; then
+        warn "automatic security updates not configured: $(pkg_install_why)."
+        harden_record auto-updates skipped "$(pkg_install_why)"
+        return
+      fi
+      if [ "$DRY_RUN" -eq 1 ]; then harden_record auto-updates applied "dry-run"; return; fi
       cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
-      run "systemctl enable --now unattended-upgrades" || true
+      if run "systemctl enable --now unattended-upgrades"; then
+        harden_record auto-updates applied
+      else
+        harden_record auto-updates failed "config written, service would not start"
+      fi
       ;;
     dnf)
-      pkg_install dnf-automatic
+      if ! pkg_install dnf-automatic; then
+        warn "automatic security updates not configured: $(pkg_install_why)."
+        harden_record auto-updates skipped "$(pkg_install_why)"
+        return
+      fi
       [ "$DRY_RUN" -eq 0 ] && sed -i 's/^apply_updates.*/apply_updates = yes/' \
         /etc/dnf/automatic.conf 2>/dev/null || true
-      run "systemctl enable --now dnf-automatic.timer" || true
+      if run "systemctl enable --now dnf-automatic.timer"; then
+        harden_record auto-updates applied
+      else
+        harden_record auto-updates failed "dnf-automatic.timer would not start"
+      fi
       ;;
     yum)
-      pkg_install yum-cron
-      run "systemctl enable --now yum-cron" || true
+      if ! pkg_install yum-cron; then
+        warn "automatic security updates not configured: $(pkg_install_why)."
+        harden_record auto-updates skipped "$(pkg_install_why)"
+        return
+      fi
+      if run "systemctl enable --now yum-cron"; then
+        harden_record auto-updates applied
+      else
+        harden_record auto-updates failed "yum-cron would not start"
+      fi
       ;;
     zypper)
-      run "systemctl enable --now transactional-update.timer" 2>/dev/null \
-        || warn "enable openSUSE automatic updates manually"
+      if run "systemctl enable --now transactional-update.timer" 2>/dev/null; then
+        harden_record auto-updates applied
+      else
+        warn "enable openSUSE automatic updates manually"
+        harden_record auto-updates skipped "transactional-update.timer not available"
+      fi
       ;;
     *)
       warn "No automatic-update mechanism configured for $PKG - patch manually"
+      harden_record auto-updates skipped "no mechanism known for $PKG"
       ;;
   esac
 }
@@ -344,9 +450,11 @@ EOF
   fi
   if sshd -t 2>/dev/null; then
     run "systemctl reload sshd 2>/dev/null || systemctl reload ssh"
+    harden_record ssh applied
   else
     warn "sshd config test FAILED - reverting SSH changes"
     rm -f /etc/ssh/sshd_config.d/99-"$SERVICE_NAME".conf
+    harden_record ssh failed "sshd -t rejected the config, changes reverted"
   fi
 }
 

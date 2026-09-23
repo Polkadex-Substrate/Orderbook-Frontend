@@ -183,6 +183,14 @@ if [ "$HARDEN" = "auto" ]; then
   if [ -f "$HARDEN_MARKER" ]; then
     HARDEN=0
     log "Host already hardened ($(sed -n 's/^hardened_at=//p' "$HARDEN_MARKER" 2>/dev/null || echo 'date unknown')) - skipping"
+    # A marker written by a run that exited early says complete=no. Without
+    # this line the half-hardened case is indistinguishable from the good one,
+    # which is the whole reason the field exists.
+    if [ "$(sed -n 's/^complete=//p' "$HARDEN_MARKER" 2>/dev/null)" = "no" ]; then
+      warn "...but that run did NOT finish. Steps recorded in $HARDEN_MARKER:
+$(sed -n 's/^step_/       /p' "$HARDEN_MARKER" 2>/dev/null)
+     Re-run when the cause is cleared:  sudo scripts/deploy.sh --harden"
+    fi
   elif [ "$DRY_RUN" -eq 1 ]; then
     HARDEN=0
     log "Host not hardened yet. A real run would offer it here."
