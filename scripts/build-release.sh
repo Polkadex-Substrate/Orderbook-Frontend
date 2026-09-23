@@ -95,9 +95,16 @@ die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 # costs about two minutes per deploy and cannot find anything the first pass
 # did not. Worse, a failure here would be reported against an artifact whose
 # contents were fixed minutes ago.
+# NOTE the wording. `PREFLIGHT` gates only the SOURCE checks; the credentials
+# scan, the duplicate-@aksumite check and the lockfile check below are
+# unconditional. The first version of this line said "Pre-flight: skipped" and
+# was immediately followed by three "Pre-flight: ..." lines, which is a log
+# contradicting itself one line later. Say which half is skipped.
 if [ -n "$FROM_IMAGE" ] && [ "$PREFLIGHT" -eq 1 ]; then
   PREFLIGHT=0
-  log "Pre-flight: skipped (--from-image repacks an existing image, no source is compiled)"
+  log "Pre-flight: skipping the source checks (prettier, eslint, node_modules, tsc)
+     --from-image repacks an existing image, so nothing here gets compiled.
+     The repo checks below still run."
 fi
 
 # Sourced AFTER log/warn/die: the library calls them.
