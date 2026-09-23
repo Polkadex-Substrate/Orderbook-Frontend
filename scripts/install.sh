@@ -1132,7 +1132,14 @@ if [ "$HARDEN" -eq 1 ]; then
      Re-run with --with-nginx, or put your own proxy in front and set
      HOSTNAME=127.0.0.1 in $RUNTIME_ENV_FILE."
     fi
-    [ "$HARDEN_SSH" -eq 1 ] && harden_ssh
+    # Recorded either way. A ledger that simply omits the step it did not do
+    # reads as "all green" to anyone scanning it, and SSH key-only enforcement
+    # is exactly the control someone would wrongly assume was covered.
+    if [ "$HARDEN_SSH" -eq 1 ]; then
+      harden_ssh
+    else
+      harden_record ssh not-requested "pass --harden-ssh to enforce key-only SSH"
+    fi
 
     # Say which steps actually happened. A pass that does six things and
     # completes four must not look like a pass that completed six: on

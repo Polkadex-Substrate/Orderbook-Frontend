@@ -86,6 +86,20 @@ log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mWARN:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
+# --from-image repacks an image that already exists. No source is compiled, so
+# every pre-flight below is checking a tree that will not be built.
+#
+# This matters because deploy.sh calls this script TWICE: once to build the
+# image (step 2/5) and once with --from-image to repack it (step 3/5). Running
+# prettier, eslint and tsc a second time against the identical, unchanged tree
+# costs about two minutes per deploy and cannot find anything the first pass
+# did not. Worse, a failure here would be reported against an artifact whose
+# contents were fixed minutes ago.
+if [ -n "$FROM_IMAGE" ] && [ "$PREFLIGHT" -eq 1 ]; then
+  PREFLIGHT=0
+  log "Pre-flight: skipped (--from-image repacks an existing image, no source is compiled)"
+fi
+
 # Sourced AFTER log/warn/die: the library calls them.
 DOCKER_LIB="$REPO_ROOT/scripts/lib/docker-install.sh"
 if [ -r "$DOCKER_LIB" ]; then
@@ -600,7 +614,12 @@ if [ "$MODE" = docker ]; then
   fi
   echo
   echo "Run it (ad-hoc, for a smoke test):"
-  echo "  docker run --rm -p 3000:3000 --env-file $BUILD_ENV_FILE ${IMAGE_REPO}:${IMAGE_TAG}"
+  # 127.0.0.1: NOT bare -p 3000:3000. Docker writes its own iptables rules
+  # ahead of ufw, so a bare publish is reachable from the internet even on a
+  # host whose firewall says otherwise - which harden_firewall warns about by
+  # name a few lines later in the same deploy. This hint used to suggest
+  # exactly the thing that warning tells you not to do.
+  echo "  docker run --rm -p 127.0.0.1:3000:3000 --env-file $BUILD_ENV_FILE ${IMAGE_REPO}:${IMAGE_TAG}"
   echo
   echo "Deploy it (extracts the artifact and installs it under systemd):"
   echo "  sudo scripts/deploy.sh"

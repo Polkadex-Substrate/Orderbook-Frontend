@@ -29,9 +29,16 @@
 HARDEN_LEDGER=""
 HARDEN_INCOMPLETE=0
 
-# harden_record <step> <applied|skipped|failed> [detail]
+# harden_record <step> <applied|not-requested|skipped|failed> [detail]
+#
+# `not-requested` exists because the first version of this had only three
+# statuses, and recording an optional step as `skipped` made EVERY ordinary
+# deploy end with "hardening INCOMPLETE" and a marker saying complete=no.
+# A step you chose not to run is not a step that failed. The distinction is
+# the difference between a warning that means something and one that fires
+# every time, which is the thing this ledger exists to avoid.
 harden_record() {
-  case "$2" in applied) : ;; *) HARDEN_INCOMPLETE=1 ;; esac
+  case "$2" in applied|not-requested) : ;; *) HARDEN_INCOMPLETE=1 ;; esac
   HARDEN_LEDGER="${HARDEN_LEDGER}${1}|${2}|${3:-}
 "
 }
@@ -45,17 +52,20 @@ harden_report() {
   printf '%s' "$HARDEN_LEDGER" | while IFS='|' read -r step status detail; do
     [ -n "$step" ] || continue
     case "$status" in
-      applied) printf '     [ok]      %s\n' "$step" ;;
-      skipped) printf '     [SKIPPED] %-18s %s\n' "$step" "$detail" ;;
-      *)       printf '     [FAILED]  %-18s %s\n' "$step" "$detail" ;;
+      applied)       printf '     [ok]      %s\n' "$step" ;;
+      not-requested) printf '     [off]     %-18s %s\n' "$step" "$detail" ;;
+      skipped)       printf '     [SKIPPED] %-18s %s\n' "$step" "$detail" ;;
+      *)             printf '     [FAILED]  %-18s %s\n' "$step" "$detail" ;;
     esac
   done
   if [ "$HARDEN_INCOMPLETE" -eq 1 ]; then
     echo
-    warn "Host hardening is INCOMPLETE. The items above marked SKIPPED or
-     FAILED did not happen. Re-run once the cause is cleared:
+    warn "Host hardening is INCOMPLETE. The items marked SKIPPED or FAILED
+     above were meant to run and did not. Items marked [off] were not
+     requested and are not part of this. Re-run once the cause is cleared:
        sudo scripts/deploy.sh --harden
-     A dpkg lock is usually unattended-upgrades and clears within minutes."
+     If the cause was a busy package manager, that is usually
+     unattended-upgrades and clears within a few minutes."
     return 1
   fi
   return 0
